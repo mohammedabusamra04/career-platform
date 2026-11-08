@@ -2,7 +2,10 @@ import type { Bot } from 'grammy';
 import type { BotContext } from '../context.js';
 import { Specialization, isApprovedSpecialization } from '../../modules/preferences/preference.taxonomy.js';
 import { buildSpecializationKeyboard } from '../keyboards/specialization.keyboard.js';
+import { buildRegionKeyboard } from '../keyboards/region.keyboard.js';
+import { getRegionPromptMessage } from './region.handler.js';
 import { getWelcomeMessage } from './start.handler.js';
+import { RegionPreference } from '../../modules/preferences/preference.taxonomy.js';
 import type { SupportedLanguage } from '../session.js';
 import logger from '../../shared/utils/logger.js';
 
@@ -137,19 +140,20 @@ export function registerSpecializationHandler(bot: Bot<BotContext>): void {
 
     // Progress to Step 2: Target Region (TASK-35)
     ctx.session.step = 'region';
+    if (!ctx.session.selectedRegion) {
+      ctx.session.selectedRegion = RegionPreference.BOTH;
+    }
 
     await ctx.answerCallbackQuery({
       text: SPECIALIZATION_MESSAGES.stepConfirmed[lang],
     });
 
-    // Provide placeholder transition message for Step 2
-    const nextStepPrompt =
-      lang === 'en'
-        ? `📍 **Step 2:** Choose your target geographic market:`
-        : `📍 **الخطوة 2:** اختر نطاق السوق الجغرافي المستهدف:`;
+    const regionPrompt = getRegionPromptMessage(lang);
+    const regionKeyboard = buildRegionKeyboard(ctx.session.selectedRegion, lang);
 
-    await ctx.reply(nextStepPrompt, {
+    await ctx.reply(regionPrompt, {
       parse_mode: 'Markdown',
+      reply_markup: regionKeyboard,
     });
   });
 }
