@@ -2,6 +2,8 @@ import type { Bot } from 'grammy';
 import type { BotContext } from '../context.js';
 import { RegionPreference } from '../../modules/preferences/preference.taxonomy.js';
 import { buildRegionKeyboard } from '../keyboards/region.keyboard.js';
+import { buildConfirmationKeyboard } from '../keyboards/confirmation.keyboard.js';
+import { formatSummaryCard } from './confirmation.handler.js';
 import { buildSpecializationKeyboard } from '../keyboards/specialization.keyboard.js';
 import { getWelcomeMessage } from './start.handler.js';
 import type { SupportedLanguage } from '../session.js';
@@ -100,16 +102,17 @@ export function registerRegionHandler(bot: Bot<BotContext>): void {
 
     ctx.session.step = 'confirmation';
     const lang = ctx.session.language || 'ar';
+    const specs = ctx.session.selectedSpecializations || [];
+    const region = ctx.session.selectedRegion;
 
     await ctx.answerCallbackQuery();
 
-    const confirmationPrompt =
-      lang === 'en'
-        ? `📋 **Step 3:** Review & Confirm your career preferences:`
-        : `📋 **الخطوة 3:** مراجعة وتأكيد تفضيلاتك المهنية:`;
+    const summaryText = formatSummaryCard(specs, region, lang);
+    const confirmationKeyboard = buildConfirmationKeyboard(lang);
 
-    await ctx.reply(confirmationPrompt, {
+    await ctx.reply(summaryText, {
       parse_mode: 'Markdown',
+      reply_markup: confirmationKeyboard,
     });
   });
 }
