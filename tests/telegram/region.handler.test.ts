@@ -146,9 +146,10 @@ describe('TASK-35.1: Region Preference Selection (Arab, International, Both) (#1
       expect(mockCtx.session.selectedRegion).toBe(RegionPreference.BOTH);
       expect(mockCtx.answerCallbackQuery).toHaveBeenCalled();
       expect(mockCtx.reply).toHaveBeenCalledWith(
-        expect.stringContaining('الخطوة 3:'),
+        expect.stringContaining('ملخص تفضيلات تنبيهات الوظائف'),
         expect.objectContaining({
           parse_mode: 'Markdown',
+          reply_markup: expect.anything(),
         }),
       );
     });
@@ -173,11 +174,13 @@ describe('TASK-35.1: Region Preference Selection (Arab, International, Both) (#1
       expect(mockCtx.session.step).toBe('confirmation');
       expect(mockCtx.session.selectedRegion).toBe(RegionPreference.INTERNATIONAL);
       expect(mockCtx.reply).toHaveBeenCalledWith(
-        expect.stringContaining('Step 3:'),
+        expect.stringContaining('Review Your Job Alert Preferences'),
         expect.objectContaining({
           parse_mode: 'Markdown',
+          reply_markup: expect.anything(),
         }),
       );
     });
   });
 });
+
