@@ -9,6 +9,7 @@ import type { PreferenceSession } from './session.js';
 import { registerPreferencesHandler } from './handlers/preferences.handler.js';
 import { registerStartHandler } from './handlers/start.handler.js';
 import { registerSpecializationHandler } from './handlers/specialization.handler.js';
+import { registerRegionHandler } from './handlers/region.handler.js';
 import { deduplicateMiddleware } from './middleware/deduplicate.middleware.js';
 import { registerSubscriptionHandler } from './handlers/subscription.handler.js';
 
@@ -35,6 +36,7 @@ bot.use(
 
 registerStartHandler(bot);
 registerSpecializationHandler(bot);
+registerRegionHandler(bot);
 registerPreferencesHandler(bot);
 registerSubscriptionHandler(bot);
 
