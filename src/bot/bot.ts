@@ -13,6 +13,7 @@ import { registerRegionHandler } from './handlers/region.handler.js';
 import { registerConfirmationHandler } from './handlers/confirmation.handler.js';
 import { registerSettingsHandler } from './handlers/settings.handler.js';
 import { registerPauseResumeHandler } from './handlers/pause-resume.handler.js';
+import { registerStopHandler } from './handlers/stop.handler.js';
 import { deduplicateMiddleware } from './middleware/deduplicate.middleware.js';
 import { registerSubscriptionHandler } from './handlers/subscription.handler.js';
 
@@ -43,6 +44,7 @@ registerRegionHandler(bot);
 registerConfirmationHandler(bot);
 registerSettingsHandler(bot);
 registerPauseResumeHandler(bot);
+registerStopHandler(bot);
 registerPreferencesHandler(bot);
 registerSubscriptionHandler(bot);
 
