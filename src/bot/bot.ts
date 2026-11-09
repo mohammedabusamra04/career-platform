@@ -14,6 +14,7 @@ import { registerConfirmationHandler } from './handlers/confirmation.handler.js'
 import { registerSettingsHandler } from './handlers/settings.handler.js';
 import { registerPauseResumeHandler } from './handlers/pause-resume.handler.js';
 import { registerStopHandler } from './handlers/stop.handler.js';
+import { registerHelpHandler } from './handlers/help.handler.js';
 import { deduplicateMiddleware } from './middleware/deduplicate.middleware.js';
 import { registerSubscriptionHandler } from './handlers/subscription.handler.js';
 
@@ -45,6 +46,7 @@ registerConfirmationHandler(bot);
 registerSettingsHandler(bot);
 registerPauseResumeHandler(bot);
 registerStopHandler(bot);
+registerHelpHandler(bot);
 registerPreferencesHandler(bot);
 registerSubscriptionHandler(bot);
 
