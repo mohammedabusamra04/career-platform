@@ -8,6 +8,13 @@ import type { PreferenceSession } from './session.js';
 
 import { registerPreferencesHandler } from './handlers/preferences.handler.js';
 import { registerStartHandler } from './handlers/start.handler.js';
+import { registerSpecializationHandler } from './handlers/specialization.handler.js';
+import { registerRegionHandler } from './handlers/region.handler.js';
+import { registerConfirmationHandler } from './handlers/confirmation.handler.js';
+import { registerSettingsHandler } from './handlers/settings.handler.js';
+import { registerPauseResumeHandler } from './handlers/pause-resume.handler.js';
+import { registerStopHandler } from './handlers/stop.handler.js';
+import { registerHelpHandler } from './handlers/help.handler.js';
 import { deduplicateMiddleware } from './middleware/deduplicate.middleware.js';
 import { registerSubscriptionHandler } from './handlers/subscription.handler.js';
 
@@ -23,7 +30,9 @@ bot.use(
   session({
     initial(): PreferenceSession {
       return {
-        step: 'job-title',
+        step: 'specializations',
+        language: 'ar',
+        selectedSpecializations: [],
         preferences: {},
       };
     },
@@ -31,6 +40,13 @@ bot.use(
 );
 
 registerStartHandler(bot);
+registerSpecializationHandler(bot);
+registerRegionHandler(bot);
+registerConfirmationHandler(bot);
+registerSettingsHandler(bot);
+registerPauseResumeHandler(bot);
+registerStopHandler(bot);
+registerHelpHandler(bot);
 registerPreferencesHandler(bot);
 registerSubscriptionHandler(bot);
 
