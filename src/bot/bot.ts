@@ -12,6 +12,7 @@ import { registerSpecializationHandler } from './handlers/specialization.handler
 import { registerRegionHandler } from './handlers/region.handler.js';
 import { registerConfirmationHandler } from './handlers/confirmation.handler.js';
 import { registerSettingsHandler } from './handlers/settings.handler.js';
+import { registerPauseResumeHandler } from './handlers/pause-resume.handler.js';
 import { deduplicateMiddleware } from './middleware/deduplicate.middleware.js';
 import { registerSubscriptionHandler } from './handlers/subscription.handler.js';
 
@@ -41,6 +42,7 @@ registerSpecializationHandler(bot);
 registerRegionHandler(bot);
 registerConfirmationHandler(bot);
 registerSettingsHandler(bot);
+registerPauseResumeHandler(bot);
 registerPreferencesHandler(bot);
 registerSubscriptionHandler(bot);
 
