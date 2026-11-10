@@ -66,7 +66,10 @@ export interface CandidatePreferences {
   regionPreference: RegionPreference;
 }
 
-export type ExclusionReason = 'SPECIALIZATION_MISMATCH' | 'REGION_INCOMPATIBLE';
+export type ExclusionReason =
+  | 'SPECIALIZATION_MISMATCH'
+  | 'REGION_INCOMPATIBLE'
+  | 'HISTORICAL_DELIVERY';
 
 export interface HardFilterEvaluation {
   passed: boolean;
@@ -179,12 +182,33 @@ export class HardFilterEngine {
   }
 
   /**
-   * Evaluates full hard filter compatibility for a job against candidate preferences.
+   * Filters candidate array by excluding previously delivered jobs in O(1) lookup time.
+   * (TASK-37.2: Historical Delivery Exclusion)
+   */
+  public filterUnsentCandidates<T extends FilterableJob>(
+    candidates: readonly T[],
+    sentJobIds: Set<string>,
+  ): T[] {
+    return candidates.filter((job) => !job.id || !sentJobIds.has(job.id));
+  }
+
+  /**
+   * Evaluates full hard filter compatibility for a job against candidate preferences
+   * and optional historical sent set.
    */
   public evaluate(
     job: FilterableJob,
     preferences: CandidatePreferences,
+    sentJobIds?: Set<string>,
   ): HardFilterEvaluation {
+    if (sentJobIds && job.id && sentJobIds.has(job.id)) {
+      return {
+        passed: false,
+        exclusionReason: 'HISTORICAL_DELIVERY',
+        details: `Job with ID "${job.id}" was previously delivered to this subscriber.`,
+      };
+    }
+
     const userSpecsSet = new Set(preferences.specializations);
 
     if (!this.isSpecializationCompatible(job, userSpecsSet)) {
@@ -207,15 +231,20 @@ export class HardFilterEngine {
   }
 
   /**
-   * Filters candidate jobs array, discarding incompatible jobs in O(1) checks per item.
+   * Filters candidate jobs array, discarding incompatible and previously delivered jobs in O(1) checks per item.
    */
   public filter<T extends FilterableJob>(
     jobs: readonly T[],
     preferences: CandidatePreferences,
+    sentJobIds?: Set<string>,
   ): T[] {
     const userSpecsSet = new Set(preferences.specializations);
 
     return jobs.filter((job) => {
+      if (sentJobIds && job.id && sentJobIds.has(job.id)) {
+        return false;
+      }
+
       return (
         this.isSpecializationCompatible(job, userSpecsSet) &&
         this.isRegionCompatible(job, preferences.regionPreference)
