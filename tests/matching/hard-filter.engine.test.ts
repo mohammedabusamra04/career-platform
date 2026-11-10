@@ -272,6 +272,73 @@ describe('TASK-37.1: Specialization & Region Incompatibility Exclusion (#109)', 
     });
   });
 
+  describe('TASK-37.2: Historical Delivery Exclusion ($O(1)$ Hash Set) (#110)', () => {
+    it('filters out previously delivered jobs in O(1) time: 10 input jobs, 4 in sentSet -> 6 output (Test Spec #110)', () => {
+      // 10 candidate jobs (IDs job-1 to job-10)
+      const candidates: FilterableJob[] = Array.from({ length: 10 }, (_, i) => ({
+        id: `job-${i + 1}`,
+        primarySpecialization: Specialization.BACKEND,
+      }));
+
+      // 4 already present in sentSet: job-2, job-5, job-7, job-10
+      const sentSet = new Set<string>(['job-2', 'job-5', 'job-7', 'job-10']);
+
+      const unsent = engine.filterUnsentCandidates(candidates, sentSet);
+
+      expect(unsent).toHaveLength(6);
+      expect(unsent.map((j) => j.id)).toEqual([
+        'job-1',
+        'job-3',
+        'job-4',
+        'job-6',
+        'job-8',
+        'job-9',
+      ]);
+    });
+
+    it('evaluate() flags previously delivered jobs with HISTORICAL_DELIVERY exclusion reason', () => {
+      const job: FilterableJob = {
+        id: 'job-already-sent',
+        primarySpecialization: Specialization.BACKEND,
+      };
+      const preferences: CandidatePreferences = {
+        specializations: [Specialization.BACKEND],
+        regionPreference: RegionPreference.BOTH,
+      };
+      const sentSet = new Set<string>(['job-already-sent']);
+
+      const result = engine.evaluate(job, preferences, sentSet);
+
+      expect(result.passed).toBe(false);
+      expect(result.exclusionReason).toBe('HISTORICAL_DELIVERY');
+      expect(result.details).toContain('job-already-sent');
+    });
+
+    it('filter() integrates sentSet exclusion alongside specialization and region filters', () => {
+      const jobs: FilterableJob[] = [
+        // 1. Matches BACKEND, EG (ARAB), NOT sent -> KEEP
+        { id: 'job-1', primarySpecialization: Specialization.BACKEND, country: 'EG' },
+        // 2. Matches BACKEND, EG (ARAB), but ALREADY sent -> DROP
+        { id: 'job-2', primarySpecialization: Specialization.BACKEND, country: 'EG' },
+        // 3. Specialization mismatch (FRONTEND), NOT sent -> DROP
+        { id: 'job-3', primarySpecialization: Specialization.FRONTEND, country: 'EG' },
+        // 4. Matches BACKEND, Worldwide, NOT sent -> KEEP
+        { id: 'job-4', primarySpecialization: Specialization.BACKEND, remoteScope: 'WORLDWIDE' },
+      ];
+
+      const preferences: CandidatePreferences = {
+        specializations: [Specialization.BACKEND],
+        regionPreference: RegionPreference.ARAB,
+      };
+      const sentSet = new Set<string>(['job-2']);
+
+      const filtered = engine.filter(jobs, preferences, sentSet);
+
+      expect(filtered.map((j) => j.id)).toEqual(['job-1', 'job-4']);
+      expect(filtered).toHaveLength(2);
+    });
+  });
+
   describe('Singleton Instance', () => {
     it('exports singleton instance hardFilterEngine', () => {
       expect(hardFilterEngine).toBeInstanceOf(HardFilterEngine);
