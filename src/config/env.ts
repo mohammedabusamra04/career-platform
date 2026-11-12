@@ -42,6 +42,7 @@ export const envSchema = z.object({
   JOOBLE_API_KEY: z.string().optional().default(''),
   RAPIDAPI_KEY: z.string().optional().default(''),
   MIN_MATCH_SCORE: z.coerce.number().default(40),
+  MIN_DIGEST_SCORE_THRESHOLD: z.coerce.number().default(55),
   FIRECRAWL_API_KEY: z.string().optional().default(''),
 });
 
@@ -86,6 +87,7 @@ const env = {
   joobleApiKey: rawValidated.JOOBLE_API_KEY,
   rapidApiKey: rawValidated.RAPIDAPI_KEY,
   minMatchScore: rawValidated.MIN_MATCH_SCORE,
+  minDigestScoreThreshold: rawValidated.MIN_DIGEST_SCORE_THRESHOLD,
   firecrawlApiKey: rawValidated.FIRECRAWL_API_KEY,
 };
 
