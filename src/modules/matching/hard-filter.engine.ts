@@ -52,7 +52,7 @@ const NON_ARAB_REGION_REGEX =
 export interface FilterableJob {
   id?: string;
   title?: string;
-  primarySpecialization: Specialization;
+  primarySpecialization?: Specialization | null;
   secondarySpecialization?: Specialization | null;
   remoteScope?: RemoteScope | string | null;
   country?: string | null;
@@ -127,7 +127,7 @@ export class HardFilterEngine {
         ? userSpecializations
         : new Set(userSpecializations);
 
-    if (userSpecsSet.has(job.primarySpecialization)) {
+    if (job.primarySpecialization && userSpecsSet.has(job.primarySpecialization)) {
       return true;
     }
 
