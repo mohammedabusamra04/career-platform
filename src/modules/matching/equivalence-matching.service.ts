@@ -113,6 +113,60 @@ export class EquivalenceMatchingService {
 
     return results;
   }
+
+  /**
+   * Personalizes cached group rankings for an individual subscriber by subtracting
+   * their unique sent history in O(1) set operations, returning the top N remaining jobs.
+   *
+   * @param rankedJobs Pre-ranked candidate jobs from the equivalence group match.
+   * @param sentJobIds Set of job IDs previously delivered to this subscriber.
+   * @param limit Maximum number of candidate jobs to select (default: 20).
+   */
+  public personalizeForMember(
+    rankedJobs: readonly ScoredCandidateJob[],
+    sentJobIds: Set<string>,
+    limit: number = 20,
+  ): ScoredCandidateJob[] {
+    const personalized: ScoredCandidateJob[] = [];
+
+    for (const item of rankedJobs) {
+      if (item.job.id && sentJobIds.has(item.job.id)) {
+        continue;
+      }
+
+      personalized.push(item);
+
+      if (personalized.length >= limit) {
+        break;
+      }
+    }
+
+    return personalized;
+  }
+
+  /**
+   * Personalizes group rankings across all member subscribers in a group.
+   *
+   * @param rankedJobs Pre-ranked candidate jobs from the equivalence group match.
+   * @param membersSentHistories Map associating subscriber userId with their historical sent set.
+   * @param limit Maximum number of candidate jobs per subscriber (default: 20).
+   */
+  public personalizeGroupForMembers(
+    rankedJobs: readonly ScoredCandidateJob[],
+    membersSentHistories: Map<string, Set<string>>,
+    limit: number = 20,
+  ): Map<string, ScoredCandidateJob[]> {
+    const memberResults = new Map<string, ScoredCandidateJob[]>();
+
+    for (const [userId, sentJobIds] of membersSentHistories.entries()) {
+      memberResults.set(
+        userId,
+        this.personalizeForMember(rankedJobs, sentJobIds, limit),
+      );
+    }
+
+    return memberResults;
+  }
 }
 
 export const equivalenceMatchingService = new EquivalenceMatchingService();
