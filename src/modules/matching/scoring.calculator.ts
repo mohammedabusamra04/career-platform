@@ -44,6 +44,7 @@ export interface ScoringCandidatePreferences {
   specializations: Specialization[];
   regionPreference: RegionPreference;
   experienceLevel?: string | null;
+  workType?: string | null;
 }
 
 export interface ScoreBreakdown {
