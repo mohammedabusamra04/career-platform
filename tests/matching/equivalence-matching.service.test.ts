@@ -177,6 +177,87 @@ describe('EquivalenceMatchingService (TASK-39.1)', () => {
     });
   });
 
+  describe('Personalized Sent-Log Subtraction (TASK-39.2)', () => {
+    it('subtracts unique sent history for members in the same group (Acceptance Criteria)', () => {
+      // Create a pool of 25 jobs for the group
+      const rankedJobs = Array.from({ length: 25 }, (_, idx) => {
+        const id = `job-${idx + 1}`;
+        return {
+          job: {
+            id,
+            title: `Job Title ${idx + 1}`,
+            specialization: 'BACKEND',
+            primarySpecialization: Specialization.BACKEND,
+            remoteScope: 'WORLDWIDE',
+          },
+          scoring: {
+            score: 95 - idx,
+            isEligibleForDigest: true,
+            breakdown: {
+              specializationScore: 50,
+              levelScore: 15,
+              regionScore: 15,
+              freshnessScore: Math.max(0, 10 - idx),
+              atsScore: 5,
+              rawTotal: 95 - idx,
+              totalScore: 95 - idx,
+            },
+          },
+        };
+      });
+
+      // User A has seen Job 1; User B has not seen any
+      const userASent = new Set<string>(['job-1']);
+      const userBSent = new Set<string>();
+
+      const userAResults = service.personalizeForMember(rankedJobs, userASent, 20);
+      const userBResults = service.personalizeForMember(rankedJobs, userBSent, 20);
+
+      // User B receives top 20 (Jobs 1 to 20)
+      expect(userBResults).toHaveLength(20);
+      expect(userBResults[0].job.id).toBe('job-1');
+      expect(userBResults[19].job.id).toBe('job-20');
+
+      // User A receives Jobs 2 to 21 (Job 1 subtracted)
+      expect(userAResults).toHaveLength(20);
+      expect(userAResults.some((r) => r.job.id === 'job-1')).toBe(false);
+      expect(userAResults[0].job.id).toBe('job-2');
+      expect(userAResults[19].job.id).toBe('job-21');
+    });
+
+    it('personalizes group rankings across multiple members via personalizeGroupForMembers', () => {
+      const rankedJobs = [
+        { job: { id: 'job-1', primarySpecialization: Specialization.BACKEND }, scoring: { score: 90, isEligibleForDigest: true } as any },
+        { job: { id: 'job-2', primarySpecialization: Specialization.BACKEND }, scoring: { score: 80, isEligibleForDigest: true } as any },
+        { job: { id: 'job-3', primarySpecialization: Specialization.BACKEND }, scoring: { score: 70, isEligibleForDigest: true } as any },
+      ];
+
+      const membersSent = new Map<string, Set<string>>([
+        ['user-1', new Set(['job-1'])],
+        ['user-2', new Set(['job-2'])],
+        ['user-3', new Set(['job-1', 'job-2', 'job-3'])],
+      ]);
+
+      const memberDeliveries = service.personalizeGroupForMembers(rankedJobs, membersSent, 20);
+
+      expect(memberDeliveries.size).toBe(3);
+      expect(memberDeliveries.get('user-1')!.map((r) => r.job.id)).toEqual(['job-2', 'job-3']);
+      expect(memberDeliveries.get('user-2')!.map((r) => r.job.id)).toEqual(['job-1', 'job-3']);
+      expect(memberDeliveries.get('user-3')!).toEqual([]); // all jobs seen
+    });
+
+    it('respects custom limit when personalized jobs exceed requested count', () => {
+      const rankedJobs = Array.from({ length: 10 }, (_, i) => ({
+        job: { id: `job-${i + 1}`, primarySpecialization: Specialization.BACKEND },
+        scoring: { score: 90 - i, isEligibleForDigest: true } as any,
+      }));
+
+      const results = service.personalizeForMember(rankedJobs, new Set(), 5);
+      expect(results).toHaveLength(5);
+      expect(results.map((r) => r.job.id)).toEqual(['job-1', 'job-2', 'job-3', 'job-4', 'job-5']);
+    });
+  });
+
   it('exports singleton equivalenceMatchingService instance', () => {
     expect(equivalenceMatchingService).toBeInstanceOf(EquivalenceMatchingService);
   });
