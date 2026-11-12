@@ -181,3 +181,4 @@ describe('EquivalenceMatchingService (TASK-39.1)', () => {
     expect(equivalenceMatchingService).toBeInstanceOf(EquivalenceMatchingService);
   });
 });
+

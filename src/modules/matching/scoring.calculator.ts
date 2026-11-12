@@ -33,6 +33,7 @@ export const DIRECT_ATS_SOURCES = new Set<string>([
 ]);
 
 export interface ScorableJob extends FilterableJob {
+  specialization?: string | null;
   publishedAt?: Date | null;
   publicationDate?: Date | null;
   url?: string | null;
@@ -82,7 +83,7 @@ export class DeterministicScoringCalculator {
   ): number {
     const userSpecsSet = new Set(userSpecializations);
 
-    if (userSpecsSet.has(job.primarySpecialization)) {
+    if (job.primarySpecialization && userSpecsSet.has(job.primarySpecialization)) {
       return 50;
     }
 
