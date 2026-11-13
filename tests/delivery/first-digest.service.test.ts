@@ -175,4 +175,65 @@ describe('FirstDigestService (TASK-40.1)', () => {
 
     expect(duration).toBeLessThan(1500); // Must be strictly < 1500ms
   });
+
+  describe('Zero-Match Empty State Guidance (TASK-40.2)', () => {
+    it('returns clean empty state when no active jobs match user criteria', async () => {
+      mockPrisma.job.findMany.mockResolvedValueOnce([]); // No active jobs
+
+      const result = await service.generateAndDeliverFirstDigest('user-uuid-1', {
+        specializations: [Specialization.SECURITY],
+        regionPreference: RegionPreference.ARAB,
+      });
+
+      expect(result.hasMatches).toBe(false);
+      expect(result.jobs).toEqual([]);
+      expect(result.deliveredJobIds).toEqual([]);
+      expect(mockPrisma.sentJob.createMany).not.toHaveBeenCalled();
+    });
+
+    it('formats polite bilingual empty state guidance without star emojis and includes settings advice', () => {
+      const emptyDigest = {
+        hasMatches: false,
+        totalMatches: 0,
+        page: 1,
+        totalPages: 0,
+        jobs: [],
+        deliveredJobIds: [],
+      };
+
+      const msgAr = service.formatDigestMessage(emptyDigest, {
+        singleDailyRunTime: '21:00',
+        language: 'ar',
+      });
+
+      expect(msgAr).toContain('لا توجد وظائف مطابقة تماماً لتخصصك حالياً');
+      expect(msgAr).toContain('الملخص المسائي القادم (21:00)');
+      expect(msgAr).toContain('/settings');
+      expect(msgAr).not.toContain('✨'); // No star emoji
+
+      const msgEn = service.formatDigestMessage(emptyDigest, {
+        singleDailyRunTime: '21:00',
+        language: 'en',
+      });
+
+      expect(msgEn).toContain('No jobs currently match your criteria');
+      expect(msgEn).toContain('evening slot (21:00)');
+      expect(msgEn).toContain('/settings');
+      expect(msgEn).not.toContain('✨'); // No star emoji
+    });
+
+    it('builds empty state inline keyboard with edit specs and expand region buttons', () => {
+      const keyboardAr = service.buildEmptyStateKeyboard('ar');
+      const keyboardEn = service.buildEmptyStateKeyboard('en');
+
+      expect(keyboardAr.inline_keyboard).toHaveLength(2);
+      expect(keyboardAr.inline_keyboard[0][0].text).toContain('تعديل التخصصات');
+      expect(keyboardAr.inline_keyboard[0][0].callback_data).toBe('settings_edit_specs');
+      expect(keyboardAr.inline_keyboard[1][0].text).toContain('توسيع نطاق السوق');
+      expect(keyboardAr.inline_keyboard[1][0].callback_data).toBe('settings_edit_region');
+
+      expect(keyboardEn.inline_keyboard[0][0].text).toContain('Edit Specializations');
+      expect(keyboardEn.inline_keyboard[1][0].text).toContain('Expand Target Region');
+    });
+  });
 });
