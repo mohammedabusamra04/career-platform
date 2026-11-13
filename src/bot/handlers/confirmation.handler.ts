@@ -176,9 +176,28 @@ export function registerConfirmationHandler(
             link_preview_options: { is_disabled: true },
             reply_markup: replyMarkup,
           });
+
+          // Record delivered jobs to SentJob ONLY after message dispatch succeeds
+          if (digest.deliveredJobIds && digest.deliveredJobIds.length > 0) {
+            await digestService.recordDeliveredJobs(user.id, digest.deliveredJobIds);
+          }
         }
       } catch (digestErr: unknown) {
         logger.error(`[ConfirmationHandler] First digest delivery error: ${(digestErr as Error).message}`);
+
+        // Fallback: update placeholder so user is not stuck on "Searching..."
+        if (searchingMsg && searchingMsg.message_id && ctx.chat) {
+          const fallbackText =
+            lang === 'en'
+              ? 'Could not load your first digest right now, but your preferences are safely saved! You will receive your digest in the upcoming evening cycle (21:00).'
+              : 'تعذر تحميل الملخص الفوري حالياً، ولكن تم حفظ تفضيلاتك بنجاح! سيصلك ملخصك في الجولة المسائية القادمة (21:00).';
+
+          try {
+            await ctx.api.editMessageText(ctx.chat.id, searchingMsg.message_id, fallbackText);
+          } catch {
+            // Ignore secondary fallback edit error
+          }
+        }
       }
     } catch (err: unknown) {
       logger.error(`[ConfirmationHandler] Error saving preferences: ${(err as Error).message}`);

@@ -74,10 +74,9 @@ describe('FirstDigestService (TASK-40.1)', () => {
     },
   ];
 
-  it('queries active jobs, matches top jobs, and saves them to SentJob', async () => {
+  it('queries active jobs, matches top jobs, and returns candidates for delivery', async () => {
     mockPrisma.job.findMany.mockResolvedValueOnce(mockActiveJobs);
     mockPrisma.sentJob.findMany.mockResolvedValueOnce([]); // No prior sent jobs
-    mockPrisma.sentJob.createMany.mockResolvedValueOnce({ count: 2 });
 
     const preferences = {
       specializations: [Specialization.BACKEND],
@@ -90,7 +89,8 @@ describe('FirstDigestService (TASK-40.1)', () => {
     expect(result.jobs.length).toBe(2); // Only job-1 and job-2 are BACKEND
     expect(result.deliveredJobIds).toEqual(['job-1', 'job-2']);
 
-    // Verify sentJob creation
+    // Verify recordDeliveredJobs can be called post-dispatch
+    await service.recordDeliveredJobs('user-uuid-1', result.deliveredJobIds);
     expect(mockPrisma.sentJob.createMany).toHaveBeenCalledWith({
       data: [
         { userId: 'user-uuid-1', jobId: 'job-1' },
@@ -104,7 +104,6 @@ describe('FirstDigestService (TASK-40.1)', () => {
     mockPrisma.job.findMany.mockResolvedValueOnce(mockActiveJobs);
     // User already received job-1 in a previous interaction
     mockPrisma.sentJob.findMany.mockResolvedValueOnce([{ jobId: 'job-1' }]);
-    mockPrisma.sentJob.createMany.mockResolvedValueOnce({ count: 1 });
 
     const preferences = {
       specializations: [Specialization.BACKEND],

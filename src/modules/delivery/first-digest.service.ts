@@ -34,6 +34,11 @@ export interface FirstDigestResult {
   deliveredJobIds: string[];
 }
 
+function escapeMarkdown(text: string): string {
+  if (!text) return '';
+  return text.replace(/([_*\[\]()~`>#+\-=|{}.!\\])/g, '\\$1');
+}
+
 export class FirstDigestService {
   constructor(private readonly db: PrismaClient = prisma) {}
 
@@ -58,10 +63,14 @@ export class FirstDigestService {
   ): Promise<FirstDigestResult> {
     const startTime = Date.now();
 
-    // 1. Fetch active jobs from PostgreSQL
+    // 1. Fetch active jobs from PostgreSQL filtered by candidate specializations
     const activeJobs = await this.db.job.findMany({
       where: {
         status: 'ACTIVE',
+        OR: [
+          { primarySpecialization: { in: preferences.specializations } },
+          { secondarySpecialization: { in: preferences.specializations } },
+        ],
       },
       select: {
         id: true,
@@ -82,7 +91,7 @@ export class FirstDigestService {
       orderBy: {
         publishedAt: 'desc',
       },
-      take: 200, // Top fresh pool to evaluate
+      take: 100,
     });
 
     if (activeJobs.length === 0) {
@@ -133,27 +142,17 @@ export class FirstDigestService {
       };
     }
 
-    // 5. Slice Page 1 (top 5 jobs)
+    // 5. Slice Page 1 (top 5 jobs) with valid IDs
     const pageJobs = personalizedMatches.slice(0, pageSize);
-    const deliveredJobIds = pageJobs.map((p) => p.job.id!).filter(Boolean);
-
-    // 6. Record delivered jobs transactionally in SentJob
-    if (deliveredJobIds.length > 0) {
-      await this.db.sentJob.createMany({
-        data: deliveredJobIds.map((jobId) => ({
-          userId,
-          jobId,
-        })),
-        skipDuplicates: true,
-      });
-    }
+    const validPageJobs = pageJobs.filter((p) => typeof p.job.id === 'string' && p.job.id.length > 0);
+    const deliveredJobIds = validPageJobs.map((p) => p.job.id as string);
 
     const durationMs = Date.now() - startTime;
     logger.info(
-      `[FirstDigestService] Delivered ${deliveredJobIds.length} jobs for user ${userId} in ${durationMs}ms`,
+      `[FirstDigestService] Prepared ${deliveredJobIds.length} candidate jobs for user ${userId} in ${durationMs}ms`,
     );
 
-    const candidates: FirstDigestCandidate[] = pageJobs.map((item) => {
+    const candidates: FirstDigestCandidate[] = validPageJobs.map((item) => {
       const explanationContext = {
         job: item.job,
         preferences: {
@@ -175,10 +174,12 @@ export class FirstDigestService {
         'en',
       );
 
+      const rawCompany = 'company' in item.job ? String((item.job as { company?: unknown }).company || '') : '';
+
       return {
-        jobId: item.job.id!,
+        jobId: item.job.id as string,
         title: item.job.title || 'Untitled',
-        company: (item.job as any).company || 'Company',
+        company: rawCompany || 'Company',
         url: item.job.url || item.job.applicationUrl || '',
         applicationUrl: item.job.applicationUrl,
         location: item.job.location,
@@ -200,6 +201,21 @@ export class FirstDigestService {
       jobs: candidates,
       deliveredJobIds,
     };
+  }
+
+  /**
+   * Persists delivered jobs to SentJob records only after successful message dispatch.
+   */
+  public async recordDeliveredJobs(userId: string, jobIds: string[]): Promise<void> {
+    if (!jobIds || jobIds.length === 0) return;
+
+    await this.db.sentJob.createMany({
+      data: jobIds.map((jobId) => ({
+        userId,
+        jobId,
+      })),
+      skipDuplicates: true,
+    });
   }
 
   /**
@@ -236,6 +252,8 @@ export class FirstDigestService {
 
       const jobCards = digest.jobs
         .map((item, idx) => {
+          const safeTitle = escapeMarkdown(item.title);
+          const safeCompany = escapeMarkdown(item.company);
           const link = item.url ? `[Apply Here](${item.url})` : '';
           const remoteInfo =
             item.remoteScope === 'WORLDWIDE'
@@ -245,9 +263,9 @@ export class FirstDigestService {
                 : '🏢 Flexible';
 
           return (
-            `**${idx + 1}. ${item.title}**\n` +
-            `🏢 **Company:** ${item.company}\n` +
-            `🌐 **Work Scope:** ${remoteInfo}\n` +
+            `*${idx + 1}\\. ${safeTitle}*\n` +
+            `🏢 *Company:* ${safeCompany}\n` +
+            `🌐 *Work Scope:* ${remoteInfo}\n` +
             `${item.explanationEn}\n` +
             `🔗 ${link}\n`
           );
@@ -268,6 +286,8 @@ export class FirstDigestService {
 
     const jobCards = digest.jobs
       .map((item, idx) => {
+        const safeTitle = escapeMarkdown(item.title);
+        const safeCompany = escapeMarkdown(item.company);
         const link = item.url ? `[التقديم من هنا](${item.url})` : '';
         const remoteInfo =
           item.remoteScope === 'WORLDWIDE'
@@ -277,9 +297,9 @@ export class FirstDigestService {
               : '🏢 مرن';
 
         return (
-          `**${idx + 1}. ${item.title}**\n` +
-          `🏢 **الشركة:** ${item.company}\n` +
-          `🌐 **نطاق العمل:** ${remoteInfo}\n` +
+          `*${idx + 1}\\. ${safeTitle}*\n` +
+          `🏢 *الشركة:* ${safeCompany}\n` +
+          `🌐 *نطاق العمل:* ${remoteInfo}\n` +
           `${item.explanationAr}\n` +
           `🔗 ${link}\n`
         );
