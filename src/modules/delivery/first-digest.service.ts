@@ -1,4 +1,5 @@
 import type { PrismaClient } from '@prisma/client';
+import { InlineKeyboard } from 'grammy';
 import { prisma } from '../../shared/database/prisma.service.js';
 import {
   equivalenceMatchingService,
@@ -215,14 +216,14 @@ export class FirstDigestService {
       if (lang === 'en') {
         return (
           `🔍 **No jobs currently match your criteria**\n\n` +
-          `Your preferences have been saved successfully! You will automatically receive your personalized digest in the next evening slot (${runTime}) as soon as matching opportunities are collected ✨\n\n` +
+          `Your preferences have been saved successfully! You will automatically receive your personalized digest in the next evening slot (${runTime}) as soon as matching opportunities are collected.\n\n` +
           `💡 You can broaden your search or adjust your settings anytime via /settings`
         );
       }
 
       return (
         `🔍 **لا توجد وظائف مطابقة تماماً لتخصصك حالياً**\n\n` +
-        `لقد تم حفظ تفضيلاتك بنجاح! سيقوم البوت بإشعارك تلقائياً في الملخص المسائي القادم (${runTime}) فور رصد فرص جديدة تناسب مجالك ✨\n\n` +
+        `لقد تم حفظ تفضيلاتك بنجاح! سيقوم البوت بإشعارك تلقائياً في الملخص المسائي القادم (${runTime}) فور رصد فرص جديدة تناسب مجالك.\n\n` +
         `💡 يمكنك توسيع نطاق البحث أو مراجعة إعداداتك عبر الأمر /settings`
       );
     }
@@ -255,7 +256,7 @@ export class FirstDigestService {
 
       const footer =
         `\n────────────────────\n` +
-        `📬 **Note:** You will receive your daily updated digest once every evening at your leisure time (${runTime}) ✨`;
+        `📬 **Note:** You will receive your daily updated digest once every evening at your leisure time (${runTime}).`;
 
       return `${header}${jobCards}${footer}`;
     }
@@ -287,9 +288,23 @@ export class FirstDigestService {
 
     const footer =
       `\n────────────────────\n` +
-      `📬 **ملاحظة:** سنرسل لك ملخصك المحدث تلقائياً مرة واحدة يومياً في ساعة الراحة المسائية (${runTime}) ✨`;
+      `📬 **ملاحظة:** سنرسل لك ملخصك المحدث تلقائياً مرة واحدة يومياً في ساعة الراحة المسائية (${runTime}).`;
 
     return `${header}${jobCards}${footer}`;
+  }
+  /**
+   * Builds quick-action buttons for empty state guidance (e.g. edit specs or expand region).
+   */
+  public buildEmptyStateKeyboard(lang: 'ar' | 'en' = 'ar'): InlineKeyboard {
+    const keyboard = new InlineKeyboard();
+
+    const editSpecsLabel = lang === 'ar' ? 'تعديل التخصصات 🛠️' : 'Edit Specializations 🛠️';
+    const expandRegionLabel = lang === 'ar' ? 'توسيع نطاق السوق 🌍' : 'Expand Target Region 🌍';
+
+    keyboard.text(editSpecsLabel, 'settings_edit_specs').row();
+    keyboard.text(expandRegionLabel, 'settings_edit_region');
+
+    return keyboard;
   }
 }
 

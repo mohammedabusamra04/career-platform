@@ -164,11 +164,17 @@ export function registerConfirmationHandler(
           language: lang,
         });
 
-        // Edit searching message with formatted digest cards
+        const replyMarkup =
+          !digest.hasMatches || digest.jobs.length === 0
+            ? digestService.buildEmptyStateKeyboard(lang)
+            : undefined;
+
+        // Edit searching message with formatted digest cards and empty state buttons if 0 matches
         if (searchingMsg && searchingMsg.message_id && ctx.chat) {
           await ctx.api.editMessageText(ctx.chat.id, searchingMsg.message_id, digestCard, {
             parse_mode: 'Markdown',
             link_preview_options: { is_disabled: true },
+            reply_markup: replyMarkup,
           });
         }
       } catch (digestErr: unknown) {
