@@ -1,15 +1,10 @@
 import type { PrismaClient } from '@prisma/client';
 import { InlineKeyboard } from 'grammy';
 import { prisma } from '../../shared/database/prisma.service.js';
-import {
-  equivalenceMatchingService,
-} from '../matching/equivalence-matching.service.js';
+import { equivalenceMatchingService } from '../matching/equivalence-matching.service.js';
 import { transparentExplanationBuilder } from '../matching/score-reason.builder.js';
 import type { ScorableJob } from '../matching/scoring.calculator.js';
-import type {
-  Specialization,
-  RegionPreference,
-} from '../preferences/preference.taxonomy.js';
+import type { Specialization, RegionPreference } from '../preferences/preference.taxonomy.js';
 import logger from '../../shared/utils/logger.js';
 
 export interface FirstDigestCandidate {
@@ -148,7 +143,9 @@ export class FirstDigestService {
 
     // 5. Slice Page 1 (top 5 jobs) with valid IDs
     const pageJobs = personalizedMatches.slice(0, pageSize);
-    const validPageJobs = pageJobs.filter((p) => typeof p.job.id === 'string' && p.job.id.length > 0);
+    const validPageJobs = pageJobs.filter(
+      (p) => typeof p.job.id === 'string' && p.job.id.length > 0,
+    );
     const deliveredJobIds = validPageJobs.map((p) => p.job.id as string);
 
     const durationMs = Date.now() - startTime;
@@ -178,7 +175,8 @@ export class FirstDigestService {
         'en',
       );
 
-      const rawCompany = 'company' in item.job ? String((item.job as { company?: unknown }).company || '') : '';
+      const rawCompany =
+        'company' in item.job ? String((item.job as { company?: unknown }).company || '') : '';
 
       return {
         jobId: item.job.id as string,
