@@ -5,6 +5,7 @@ import {
   equivalenceMatchingService,
 } from '../matching/equivalence-matching.service.js';
 import { transparentExplanationBuilder } from '../matching/score-reason.builder.js';
+import type { ScorableJob } from '../matching/scoring.calculator.js';
 import type {
   Specialization,
   RegionPreference,
@@ -36,7 +37,7 @@ export interface FirstDigestResult {
 
 function escapeMarkdown(text: string): string {
   if (!text) return '';
-  return text.replace(/([_*\[\]()~`>#+\-=|{}.!\\])/g, '\\$1');
+  return text.replace(/([_*[\]()~`>#+\-=|{}.!\\])/g, '\\$1');
 }
 
 export class FirstDigestService {
@@ -122,7 +123,10 @@ export class FirstDigestService {
       userIds: [userId],
     };
 
-    const scoredGroupJobs = equivalenceMatchingService.matchGroup(group, activeJobs as any);
+    const scoredGroupJobs = equivalenceMatchingService.matchGroup(
+      group,
+      activeJobs as unknown as ScorableJob[],
+    );
 
     // 4. Personalize by subtracting already sent jobs (up to 20 top matches)
     const personalizedMatches = equivalenceMatchingService.personalizeForMember(
@@ -207,7 +211,7 @@ export class FirstDigestService {
    * Persists delivered jobs to SentJob records only after successful message dispatch.
    */
   public async recordDeliveredJobs(userId: string, jobIds: string[]): Promise<void> {
-    if (!jobIds || jobIds.length === 0) return;
+    if (jobIds.length === 0) return;
 
     await this.db.sentJob.createMany({
       data: jobIds.map((jobId) => ({

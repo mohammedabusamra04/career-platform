@@ -178,7 +178,7 @@ export function registerConfirmationHandler(
           });
 
           // Record delivered jobs to SentJob ONLY after message dispatch succeeds
-          if (digest.deliveredJobIds && digest.deliveredJobIds.length > 0) {
+          if (digest.deliveredJobIds.length > 0) {
             await digestService.recordDeliveredJobs(user.id, digest.deliveredJobIds);
           }
         }

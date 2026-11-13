@@ -4,6 +4,7 @@ import {
   registerConfirmationHandler,
   formatSummaryCard,
 } from '../../src/bot/handlers/confirmation.handler.js';
+import type { FirstDigestService } from '../../src/modules/delivery/first-digest.service.js';
 import type { BotContext } from '../../src/bot/context.js';
 import {
   RegionPreference,
@@ -59,7 +60,7 @@ describe('TASK-35.2: Interactive Summary Review & Transactional Preference Save 
         formatDigestMessage: vi.fn().mockReturnValue(''),
         buildEmptyStateKeyboard: vi.fn(),
         recordDeliveredJobs: vi.fn().mockResolvedValue(undefined),
-      } as any,
+      } as unknown as FirstDigestService,
     });
   });
 
@@ -260,7 +261,7 @@ describe('TASK-35.2: Interactive Summary Review & Transactional Preference Save 
       registerConfirmationHandler(customBot as unknown as Bot<BotContext>, {
         userRepository: mockUserRepo,
         preferenceRepository: mockPrefRepo,
-        firstDigestService: mockDigestService as any,
+        firstDigestService: mockDigestService as unknown as FirstDigestService,
       });
 
       const route = localHandlers.find((c) => c.pattern === 'pref_confirm');
@@ -342,7 +343,7 @@ describe('TASK-35.2: Interactive Summary Review & Transactional Preference Save 
       registerConfirmationHandler(customBot as unknown as Bot<BotContext>, {
         userRepository: mockUserRepo,
         preferenceRepository: mockPrefRepo,
-        firstDigestService: mockDigestService as any,
+        firstDigestService: mockDigestService as unknown as FirstDigestService,
       });
 
       const route = localHandlers.find((c) => c.pattern === 'pref_confirm');

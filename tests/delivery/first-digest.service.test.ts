@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import type { PrismaClient } from '@prisma/client';
 import { FirstDigestService } from '../../src/modules/delivery/first-digest.service.js';
 import {
   Specialization,
@@ -6,7 +7,7 @@ import {
 } from '../../src/modules/preferences/preference.taxonomy.js';
 
 describe('FirstDigestService (TASK-40.1)', () => {
-  let mockPrisma: any;
+  let mockPrisma: unknown;
   let service: FirstDigestService;
 
   beforeEach(() => {
@@ -22,7 +23,7 @@ describe('FirstDigestService (TASK-40.1)', () => {
       },
     };
 
-    service = new FirstDigestService(mockPrisma);
+    service = new FirstDigestService(mockPrisma as PrismaClient);
   });
 
   const mockActiveJobs = [
