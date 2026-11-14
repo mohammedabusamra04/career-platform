@@ -32,6 +32,7 @@ export interface IDeliverySlotRepository {
   getOrCreateSlot(
     scheduledTime: Date,
     totalEligibleUsers?: number,
+    customSlotKey?: string,
   ): Promise<DeliverySlotEntity>;
 
   findSlotByKey(slotKey: string): Promise<DeliverySlotEntity | null>;
