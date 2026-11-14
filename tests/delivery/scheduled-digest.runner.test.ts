@@ -16,8 +16,10 @@ describe('TASK-41.1: Timezone-Aware Scheduled Cron Trigger (Single Evening Slot 
     getOrCreateSlot: ReturnType<typeof vi.fn>;
     findSlotByKey: ReturnType<typeof vi.fn>;
     findSlotById: ReturnType<typeof vi.fn>;
+    findUnfinishedSlots: ReturnType<typeof vi.fn>;
     initializeDeliveries: ReturnType<typeof vi.fn>;
     getPendingDeliveries: ReturnType<typeof vi.fn>;
+    getPendingDeliveriesChunk: ReturnType<typeof vi.fn>;
     updateDeliveryStatus: ReturnType<typeof vi.fn>;
     updateBatchDeliveryStatus: ReturnType<typeof vi.fn>;
     completeSlot: ReturnType<typeof vi.fn>;
@@ -45,8 +47,10 @@ describe('TASK-41.1: Timezone-Aware Scheduled Cron Trigger (Single Evening Slot 
       getOrCreateSlot: vi.fn(),
       findSlotByKey: vi.fn(),
       findSlotById: vi.fn(),
+      findUnfinishedSlots: vi.fn().mockResolvedValue([]),
       initializeDeliveries: vi.fn(),
       getPendingDeliveries: vi.fn(),
+      getPendingDeliveriesChunk: vi.fn().mockResolvedValue([]),
       updateDeliveryStatus: vi.fn(),
       updateBatchDeliveryStatus: vi.fn(),
       completeSlot: vi.fn(),

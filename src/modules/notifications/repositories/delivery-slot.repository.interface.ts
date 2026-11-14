@@ -37,6 +37,7 @@ export interface IDeliverySlotRepository {
 
   findSlotByKey(slotKey: string): Promise<DeliverySlotEntity | null>;
   findSlotById(slotId: string): Promise<DeliverySlotEntity | null>;
+  findUnfinishedSlots(): Promise<DeliverySlotEntity[]>;
 
   initializeDeliveries(slotId: string, userIds: string[]): Promise<number>;
 

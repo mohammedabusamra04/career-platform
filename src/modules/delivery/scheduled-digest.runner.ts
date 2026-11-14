@@ -12,6 +12,11 @@ import {
   type IAdvisoryLockService,
   AdvisoryLockService,
 } from '../../shared/database/advisory-lock.service.js';
+import {
+  ChunkedCursorDispatcher,
+  type SlotDispatchSummary,
+  type DigestSendHandler,
+} from './chunked-cursor.dispatcher.js';
 import env from '../../config/env.js';
 import logger from '../../shared/utils/logger.js';
 
@@ -19,6 +24,7 @@ export interface ScheduledDigestRunnerDependencies {
   deliverySlotRepository?: IDeliverySlotRepository;
   userRepository?: IUserRepository;
   advisoryLockService?: IAdvisoryLockService;
+  dispatcher?: ChunkedCursorDispatcher;
   db?: PrismaClient;
 }
 
@@ -52,11 +58,13 @@ export class ScheduledDigestRunner {
   private readonly deliverySlotRepo: IDeliverySlotRepository;
   private readonly userRepo: IUserRepository;
   private readonly advisoryLock: IAdvisoryLockService;
+  private readonly dispatcher: ChunkedCursorDispatcher;
   private readonly timezone: string;
   private readonly dispatchTime: string;
   private readonly lockId: number;
 
   private timeoutId?: NodeJS.Timeout;
+  private recoveryTimeoutId?: NodeJS.Timeout;
   private isRunning: boolean = false;
   private nextRunDate: Date | null = null;
   private lastRunDate: Date | null = null;
@@ -70,6 +78,10 @@ export class ScheduledDigestRunner {
     this.deliverySlotRepo = deps?.deliverySlotRepository ?? new PrismaDeliverySlotRepository(db);
     this.userRepo = deps?.userRepository ?? new PrismaUserRepository(db);
     this.advisoryLock = deps?.advisoryLockService ?? new AdvisoryLockService(db);
+    this.dispatcher = deps?.dispatcher ?? new ChunkedCursorDispatcher({
+      deliverySlotRepository: this.deliverySlotRepo,
+      db,
+    });
 
     this.timezone = this.validateTimezone(config?.timezone ?? env.timezone);
     this.dispatchTime = config?.dispatchTime ?? env.dailyDigestTime;
@@ -200,6 +212,28 @@ export class ScheduledDigestRunner {
     );
 
     this.scheduleNext();
+    this.scheduleStartupRecovery();
+  }
+
+  /**
+   * Recovers and resumes all unfinished delivery slots across container restarts:
+   * Guarded by advisory lock to prevent concurrent recovery attempts.
+   */
+  public async recoverUnfinishedSlots(
+    customSender?: DigestSendHandler,
+  ): Promise<SlotDispatchSummary[]> {
+    const lockResult = await this.advisoryLock.withLock(this.lockId, async () => {
+      return await this.dispatcher.recoverUnfinishedSlots(undefined, customSender);
+    });
+
+    if (!lockResult.executed || !lockResult.result) {
+      logger.warn(
+        `[ScheduledDigestRunner] Recovery skipped: Advisory lock ${this.lockId} held by another worker`,
+      );
+      return [];
+    }
+
+    return lockResult.result;
   }
 
   /**
@@ -209,6 +243,10 @@ export class ScheduledDigestRunner {
     if (this.timeoutId) {
       clearTimeout(this.timeoutId);
       this.timeoutId = undefined;
+    }
+    if (this.recoveryTimeoutId) {
+      clearTimeout(this.recoveryTimeoutId);
+      this.recoveryTimeoutId = undefined;
     }
     this.isRunning = false;
     this.nextRunDate = null;
@@ -224,6 +262,21 @@ export class ScheduledDigestRunner {
       lastRunTime: this.lastRunDate,
       lastExecutedSlotKey: this.lastExecutedSlotKey,
     };
+  }
+
+  private scheduleStartupRecovery(attempt: number = 1): void {
+    if (!this.isRunning || attempt > 3) return;
+
+    this.recoveryTimeoutId = setTimeout(() => {
+      void (async () => {
+        try {
+          await this.recoverUnfinishedSlots();
+        } catch (err: unknown) {
+          const errMsg = err instanceof Error ? err.message : String(err);
+          logger.error(`[ScheduledDigestRunner] Error during crash recovery on startup: ${errMsg}`);
+        }
+      })();
+    }, attempt === 1 ? 0 : 5000);
   }
 
   private scheduleNext(): void {
