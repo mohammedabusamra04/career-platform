@@ -69,6 +69,22 @@ export class PrismaDeliverySlotRepository implements IDeliverySlotRepository {
     return record ? this.mapSlotToEntity(record) : null;
   }
 
+  public async findUnfinishedSlots(): Promise<DeliverySlotEntity[]> {
+    const records = await this.db.deliverySlot.findMany({
+      where: {
+        completedAt: null,
+        status: {
+          in: ['PENDING', 'FAILED'],
+        },
+      },
+      orderBy: {
+        scheduledTime: 'asc',
+      },
+    });
+
+    return records.map((r) => this.mapSlotToEntity(r));
+  }
+
   public async initializeDeliveries(
     slotId: string,
     userIds: string[],
