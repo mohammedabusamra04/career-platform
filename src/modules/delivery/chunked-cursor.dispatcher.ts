@@ -165,7 +165,7 @@ export class ChunkedCursorDispatcher {
     const throughputMsgsPerSecond = Number(((totalProcessed / durationMs) * 1000).toFixed(2));
 
     // 5. Check if any pending deliveries remain, if not complete the slot
-    const remainingCheck = (await this.deliverySlotRepo.getPendingDeliveriesChunk(slotId, 1)) ?? [];
+    const remainingCheck = await this.deliverySlotRepo.getPendingDeliveriesChunk(slotId, 1);
     const isFullyCompleted = remainingCheck.length === 0;
 
     if (isFullyCompleted) {
