@@ -347,6 +347,67 @@ describe('TASK-41.3: Idempotent State Machine & Crash Recovery (#119)', () => {
       expect(mockAdvisoryLock.withLock).toHaveBeenCalled();
     });
 
+    it('isolates errors per slot so subsequent unfinished slots continue recovering', async () => {
+      const slot1: DeliverySlotEntity = {
+        id: 'slot-fail',
+        slotKey: 'digest:2026-11-14:2100',
+        scheduledTime: new Date(),
+        status: 'PENDING',
+        totalRecipients: 5,
+        sentCount: 0,
+        failedCount: 0,
+        startedAt: new Date(),
+        completedAt: null,
+      };
+
+      const slot2: DeliverySlotEntity = {
+        id: 'slot-success',
+        slotKey: 'digest:2026-11-15:2100',
+        scheduledTime: new Date(),
+        status: 'PENDING',
+        totalRecipients: 5,
+        sentCount: 0,
+        failedCount: 0,
+        startedAt: new Date(),
+        completedAt: null,
+      };
+
+      mockSlotRepo.findUnfinishedSlots.mockResolvedValue([slot1, slot2]);
+      mockSlotRepo.findSlotById.mockImplementation(async (id: string) => {
+        if (id === 'slot-fail') {
+          throw new Error('Database connectivity glitch');
+        }
+        return slot2;
+      });
+
+      mockSlotRepo.getPendingDeliveriesChunk
+        .mockResolvedValueOnce([
+          {
+            id: 'd-2',
+            slotId: 'slot-success',
+            userId: 'user-2',
+            status: 'PENDING',
+            lastError: null,
+            deliveredAt: null,
+            attempts: 0,
+          },
+        ])
+        .mockResolvedValueOnce([]);
+
+      const dispatcher = new ChunkedCursorDispatcher({
+        deliverySlotRepository: mockSlotRepo as unknown as IDeliverySlotRepository,
+        rateLimiter: new TokenBucketRateLimiter({ capacity: 100, refillRatePerSecond: 100 }),
+        sender: async () => ({ success: true }),
+      });
+
+      const summaries = await dispatcher.recoverUnfinishedSlots();
+
+      // Slot 1 failed, but Slot 2 successfully recovered
+      expect(summaries).toHaveLength(1);
+      expect(summaries[0].slotId).toBe('slot-success');
+      expect(summaries[0].totalSent).toBe(1);
+    });
+
     it('safely skips recovery if another worker holds the advisory lock', async () => {
       mockAdvisoryLock.withLock.mockResolvedValue({
         executed: false,

@@ -250,8 +250,15 @@ export class ChunkedCursorDispatcher {
 
     const summaries: SlotDispatchSummary[] = [];
     for (const slot of unfinishedSlots) {
-      const summary = await this.dispatchSlot(slot.id, options, customSender);
-      summaries.push(summary);
+      try {
+        const summary = await this.resumeUnfinishedSlot(slot.id, options, customSender);
+        summaries.push(summary);
+      } catch (err: unknown) {
+        const errMsg = err instanceof Error ? err.message : String(err);
+        logger.error(
+          `[ChunkedCursorDispatcher] Error recovering slot ${slot.slotKey} (ID: ${slot.id}): ${errMsg}`,
+        );
+      }
     }
 
     return summaries;

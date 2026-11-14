@@ -64,6 +64,7 @@ export class ScheduledDigestRunner {
   private readonly lockId: number;
 
   private timeoutId?: NodeJS.Timeout;
+  private recoveryTimeoutId?: NodeJS.Timeout;
   private isRunning: boolean = false;
   private nextRunDate: Date | null = null;
   private lastRunDate: Date | null = null;
@@ -211,15 +212,7 @@ export class ScheduledDigestRunner {
     );
 
     this.scheduleNext();
-
-    void (async () => {
-      try {
-        await this.recoverUnfinishedSlots();
-      } catch (err: unknown) {
-        const errMsg = err instanceof Error ? err.message : String(err);
-        logger.error(`[ScheduledDigestRunner] Error during crash recovery on startup: ${errMsg}`);
-      }
-    })();
+    this.scheduleStartupRecovery();
   }
 
   /**
@@ -251,6 +244,10 @@ export class ScheduledDigestRunner {
       clearTimeout(this.timeoutId);
       this.timeoutId = undefined;
     }
+    if (this.recoveryTimeoutId) {
+      clearTimeout(this.recoveryTimeoutId);
+      this.recoveryTimeoutId = undefined;
+    }
     this.isRunning = false;
     this.nextRunDate = null;
     logger.info('[ScheduledDigestRunner] Stopped scheduler');
@@ -265,6 +262,21 @@ export class ScheduledDigestRunner {
       lastRunTime: this.lastRunDate,
       lastExecutedSlotKey: this.lastExecutedSlotKey,
     };
+  }
+
+  private scheduleStartupRecovery(attempt: number = 1): void {
+    if (!this.isRunning || attempt > 3) return;
+
+    this.recoveryTimeoutId = setTimeout(() => {
+      void (async () => {
+        try {
+          await this.recoverUnfinishedSlots();
+        } catch (err: unknown) {
+          const errMsg = err instanceof Error ? err.message : String(err);
+          logger.error(`[ScheduledDigestRunner] Error during crash recovery on startup: ${errMsg}`);
+        }
+      })();
+    }, attempt === 1 ? 0 : 5000);
   }
 
   private scheduleNext(): void {
