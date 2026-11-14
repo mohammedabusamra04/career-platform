@@ -165,7 +165,7 @@ export class ChunkedCursorDispatcher {
     const throughputMsgsPerSecond = Number(((totalProcessed / durationMs) * 1000).toFixed(2));
 
     // 5. Check if any pending deliveries remain, if not complete the slot
-    const remainingCheck = await this.deliverySlotRepo.getPendingDeliveriesChunk(slotId, 1);
+    const remainingCheck = (await this.deliverySlotRepo.getPendingDeliveriesChunk(slotId, 1)) ?? [];
     const isFullyCompleted = remainingCheck.length === 0;
 
     if (isFullyCompleted) {
@@ -186,5 +186,74 @@ export class ChunkedCursorDispatcher {
       throughputMsgsPerSecond,
       isFullyCompleted,
     };
+  }
+
+  /**
+   * Resumes an interrupted or partially completed delivery slot:
+   * 1. Checks if slot is already marked SENT or completed (idempotency guard).
+   * 2. Automatically skips all recipients already marked 'SENT'.
+   * 3. Dispatches remaining PENDING / FAILED recipients in cursor chunks.
+   * 4. Completes the slot once all pending deliveries are delivered.
+   */
+  public async resumeUnfinishedSlot(
+    slotId: string,
+    options?: DispatcherOptions,
+    customSender?: DigestSendHandler,
+  ): Promise<SlotDispatchSummary> {
+    const slot = await this.deliverySlotRepo.findSlotById(slotId);
+    if (!slot) {
+      throw new Error(`DeliverySlot not found for id: ${slotId}`);
+    }
+
+    if (slot.completedAt !== null || slot.status === 'SENT') {
+      logger.info(
+        `[ChunkedCursorDispatcher] Slot ${slot.slotKey} is already completed. Skipping resume.`,
+      );
+      return {
+        slotId,
+        totalProcessed: 0,
+        totalSent: 0,
+        totalFailed: 0,
+        totalBlocked: 0,
+        totalBatches: 0,
+        durationMs: 0,
+        throughputMsgsPerSecond: 0,
+        isFullyCompleted: true,
+      };
+    }
+
+    logger.info(
+      `[ChunkedCursorDispatcher] Resuming unfinished slot ${slot.slotKey} (Progress: ${slot.sentCount} sent, ${slot.failedCount} failed of ${slot.totalRecipients})`,
+    );
+
+    return this.dispatchSlot(slotId, options, customSender);
+  }
+
+  /**
+   * Crash Recovery: Queries and resumes all unfinished slots across container restarts:
+   * - Queries slots where status IN ('PENDING', 'FAILED') and completedAt IS NULL.
+   * - Sequentially dispatches remaining recipients for each slot without duplicate messages.
+   */
+  public async recoverUnfinishedSlots(
+    options?: DispatcherOptions,
+    customSender?: DigestSendHandler,
+  ): Promise<SlotDispatchSummary[]> {
+    const unfinishedSlots = await this.deliverySlotRepo.findUnfinishedSlots();
+    if (unfinishedSlots.length === 0) {
+      logger.info('[ChunkedCursorDispatcher] No unfinished delivery slots to recover');
+      return [];
+    }
+
+    logger.info(
+      `[ChunkedCursorDispatcher] Found ${unfinishedSlots.length} unfinished delivery slot(s) to recover after restart`,
+    );
+
+    const summaries: SlotDispatchSummary[] = [];
+    for (const slot of unfinishedSlots) {
+      const summary = await this.dispatchSlot(slot.id, options, customSender);
+      summaries.push(summary);
+    }
+
+    return summaries;
   }
 }
