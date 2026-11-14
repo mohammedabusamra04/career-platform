@@ -28,8 +28,9 @@ export class PrismaDeliverySlotRepository implements IDeliverySlotRepository {
   public async getOrCreateSlot(
     scheduledTime: Date,
     totalEligibleUsers: number = 0,
+    customSlotKey?: string,
   ): Promise<DeliverySlotEntity> {
-    const slotKey = generateSlotKey(scheduledTime);
+    const slotKey = customSlotKey ?? generateSlotKey(scheduledTime);
 
     const existing = await this.db.deliverySlot.findUnique({
       where: { slotKey },

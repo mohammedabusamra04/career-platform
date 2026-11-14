@@ -1,8 +1,10 @@
 import type { PrismaClient } from '@prisma/client';
 import { prisma as defaultPrisma } from './prisma.service.js';
+import env from '../../config/env.js';
 import logger from '../utils/logger.js';
 
 export const JOB_COLLECTION_ADVISORY_LOCK_ID = 824401;
+export const DIGEST_DELIVERY_ADVISORY_LOCK_ID = env.digestDeliveryLockId ?? 824402;
 
 export interface IAdvisoryLockService {
   tryAcquire(lockId: number): Promise<boolean>;
@@ -18,9 +20,14 @@ export class AdvisoryLockService implements IAdvisoryLockService {
 
   public async tryAcquire(lockId: number): Promise<boolean> {
     try {
-      const rows = await this.db.$queryRawUnsafe<Array<Record<string, unknown>>>(
-        `SELECT pg_try_advisory_lock(${lockId}) AS acquired;`,
-      );
+      const rows =
+        typeof this.db.$queryRaw === 'function'
+          ? await this.db.$queryRaw<Array<Record<string, unknown>>>`
+              SELECT pg_try_advisory_lock(${lockId}::bigint) AS acquired;
+            `
+          : await (this.db as unknown as { $queryRawUnsafe: (q: string) => Promise<Array<Record<string, unknown>>> }).$queryRawUnsafe(
+              `SELECT pg_try_advisory_lock(${lockId}) AS acquired;`,
+            );
 
       if (!rows || rows.length === 0) {
         return false;
@@ -38,9 +45,14 @@ export class AdvisoryLockService implements IAdvisoryLockService {
 
   public async release(lockId: number): Promise<boolean> {
     try {
-      const rows = await this.db.$queryRawUnsafe<Array<Record<string, unknown>>>(
-        `SELECT pg_advisory_unlock(${lockId}) AS released;`,
-      );
+      const rows =
+        typeof this.db.$queryRaw === 'function'
+          ? await this.db.$queryRaw<Array<Record<string, unknown>>>`
+              SELECT pg_advisory_unlock(${lockId}::bigint) AS released;
+            `
+          : await (this.db as unknown as { $queryRawUnsafe: (q: string) => Promise<Array<Record<string, unknown>>> }).$queryRawUnsafe(
+              `SELECT pg_advisory_unlock(${lockId}) AS released;`,
+            );
 
       if (!rows || rows.length === 0) {
         return false;
