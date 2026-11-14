@@ -45,6 +45,12 @@ export interface IDeliverySlotRepository {
     limit?: number,
   ): Promise<DigestDeliveryEntity[]>;
 
+  getPendingDeliveriesChunk(
+    slotId: string,
+    limit?: number,
+    cursorId?: string,
+  ): Promise<DigestDeliveryEntity[]>;
+
   updateDeliveryStatus(
     slotId: string,
     userId: string,

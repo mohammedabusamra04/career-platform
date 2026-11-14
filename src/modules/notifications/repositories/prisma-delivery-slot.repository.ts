@@ -112,6 +112,29 @@ export class PrismaDeliverySlotRepository implements IDeliverySlotRepository {
     return records.map((r) => this.mapDeliveryToEntity(r));
   }
 
+  public async getPendingDeliveriesChunk(
+    slotId: string,
+    limit: number = 25,
+    cursorId?: string,
+  ): Promise<DigestDeliveryEntity[]> {
+    const records = await this.db.digestDelivery.findMany({
+      where: {
+        slotId,
+        status: {
+          in: ['PENDING', 'FAILED'],
+        },
+      },
+      orderBy: {
+        id: 'asc',
+      },
+      take: limit,
+      skip: cursorId ? 1 : 0,
+      cursor: cursorId ? { id: cursorId } : undefined,
+    });
+
+    return records.map((r) => this.mapDeliveryToEntity(r));
+  }
+
   public async updateDeliveryStatus(
     slotId: string,
     userId: string,
