@@ -11,7 +11,6 @@ import { PrismaUserRepository } from '../users/repositories/prisma-user.reposito
 import {
   type IAdvisoryLockService,
   AdvisoryLockService,
-  DIGEST_DELIVERY_ADVISORY_LOCK_ID,
 } from '../../shared/database/advisory-lock.service.js';
 import env from '../../config/env.js';
 import logger from '../../shared/utils/logger.js';
@@ -72,9 +71,9 @@ export class ScheduledDigestRunner {
     this.userRepo = deps?.userRepository ?? new PrismaUserRepository(db);
     this.advisoryLock = deps?.advisoryLockService ?? new AdvisoryLockService(db);
 
-    this.timezone = this.validateTimezone(config?.timezone ?? env.timezone ?? 'Asia/Gaza');
-    this.dispatchTime = config?.dispatchTime ?? env.dailyDigestTime ?? '21:00';
-    this.lockId = config?.lockId ?? env.digestDeliveryLockId ?? DIGEST_DELIVERY_ADVISORY_LOCK_ID;
+    this.timezone = this.validateTimezone(config?.timezone ?? env.timezone);
+    this.dispatchTime = config?.dispatchTime ?? env.dailyDigestTime;
+    this.lockId = config?.lockId ?? env.digestDeliveryLockId;
   }
 
   /**
@@ -170,7 +169,7 @@ export class ScheduledDigestRunner {
       };
     });
 
-    if (!lockResult.executed) {
+    if (!lockResult.executed || !lockResult.result) {
       logger.warn(
         `[ScheduledDigestRunner] Concurrent execution blocked by advisory lock ${this.lockId} for slot ${slotKey}`,
       );
@@ -184,7 +183,7 @@ export class ScheduledDigestRunner {
       };
     }
 
-    return lockResult.result!;
+    return lockResult.result;
   }
 
   /**
@@ -237,18 +236,20 @@ export class ScheduledDigestRunner {
       `[ScheduledDigestRunner] Next slot scheduled at ${this.nextRunDate.toISOString()} (in ${Math.round(delayMs / 60000)} minutes)`,
     );
 
-    this.timeoutId = setTimeout(async () => {
-      try {
-        if (this.nextRunDate) {
-          await this.executeScheduledSlot(this.nextRunDate);
+    this.timeoutId = setTimeout(() => {
+      void (async () => {
+        try {
+          if (this.nextRunDate) {
+            await this.executeScheduledSlot(this.nextRunDate);
+          }
+        } catch (err) {
+          logger.error(
+            `[ScheduledDigestRunner] Uncaught error executing scheduled slot: ${err instanceof Error ? err.message : String(err)}`,
+          );
+        } finally {
+          this.scheduleNext();
         }
-      } catch (err) {
-        logger.error(
-          `[ScheduledDigestRunner] Uncaught error executing scheduled slot: ${err instanceof Error ? err.message : String(err)}`,
-        );
-      } finally {
-        this.scheduleNext();
-      }
+      })();
     }, delayMs);
   }
 
