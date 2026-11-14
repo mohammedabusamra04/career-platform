@@ -89,75 +89,76 @@ export class ChunkedCursorDispatcher {
       `[ChunkedCursorDispatcher] Starting dispatch for slot ${slot.slotKey} (Batch Size: ${batchSize}, Max Rate: 25 msgs/sec)`,
     );
 
-    while (true) {
+    let hasMoreBatches = true;
+    while (hasMoreBatches) {
       const remainingAllowed = maxDeliveries ? Math.min(batchSize, maxDeliveries - totalProcessed) : batchSize;
       if (remainingAllowed <= 0) {
-        break;
-      }
+        hasMoreBatches = false;
+      } else {
+        // 1. Fetch sequential cursor batch of 25 pending deliveries
+        const chunk = await this.deliverySlotRepo.getPendingDeliveriesChunk(slotId, remainingAllowed, cursorId);
+        if (chunk.length === 0) {
+          hasMoreBatches = false;
+        } else {
+          totalBatches++;
+          const batchUpdates: DeliveryStatusUpdate[] = [];
+          const itemsToProcess = maxDeliveries ? chunk.slice(0, maxDeliveries - totalProcessed) : chunk;
 
-      // 1. Fetch sequential cursor batch of 25 pending deliveries
-      const chunk = await this.deliverySlotRepo.getPendingDeliveriesChunk(slotId, remainingAllowed, cursorId);
-      if (!chunk || chunk.length === 0) {
-        break;
-      }
+          // 2. Process deliveries paced by the TokenBucket rate limiter
+          for (const item of itemsToProcess) {
+            await this.rateLimiter.acquire(1);
 
-      totalBatches++;
-      const batchUpdates: DeliveryStatusUpdate[] = [];
-      const itemsToProcess = maxDeliveries ? chunk.slice(0, maxDeliveries - totalProcessed) : chunk;
+            try {
+              const res = await sendHandler(item.userId);
 
-      // 2. Process deliveries paced by the TokenBucket rate limiter
-      for (const item of itemsToProcess) {
-        await this.rateLimiter.acquire(1);
+              if (res.success) {
+                batchUpdates.push({
+                  userId: item.userId,
+                  status: 'SENT',
+                });
+                totalSent++;
+              } else if (res.isBlocked) {
+                batchUpdates.push({
+                  userId: item.userId,
+                  status: 'BLOCKED',
+                  lastError: res.error ?? 'Bot blocked by user',
+                });
+                totalBlocked++;
+              } else {
+                batchUpdates.push({
+                  userId: item.userId,
+                  status: 'FAILED',
+                  lastError: res.error ?? 'Digest delivery failed',
+                });
+                totalFailed++;
+              }
+            } catch (err: unknown) {
+              const errMsg = err instanceof Error ? err.message : String(err);
+              batchUpdates.push({
+                userId: item.userId,
+                status: 'FAILED',
+                lastError: errMsg,
+              });
+              totalFailed++;
+            }
 
-        try {
-          const res = await sendHandler(item.userId);
-
-          if (res.success) {
-            batchUpdates.push({
-              userId: item.userId,
-              status: 'SENT',
-            });
-            totalSent++;
-          } else if (res.isBlocked) {
-            batchUpdates.push({
-              userId: item.userId,
-              status: 'BLOCKED',
-              lastError: res.error ?? 'Bot blocked by user',
-            });
-            totalBlocked++;
-          } else {
-            batchUpdates.push({
-              userId: item.userId,
-              status: 'FAILED',
-              lastError: res.error ?? 'Digest delivery failed',
-            });
-            totalFailed++;
+            totalProcessed++;
           }
-        } catch (err: unknown) {
-          const errMsg = err instanceof Error ? err.message : String(err);
-          batchUpdates.push({
-            userId: item.userId,
-            status: 'FAILED',
-            lastError: errMsg,
-          });
-          totalFailed++;
+
+          // 3. Atomically persist batch updates in PostgreSQL
+          if (batchUpdates.length > 0) {
+            await this.deliverySlotRepo.updateBatchDeliveryStatus(slotId, batchUpdates);
+          }
+
+          // 4. Advance cursor to last record in processed items
+          const lastItem = itemsToProcess[itemsToProcess.length - 1];
+          cursorId = lastItem.id;
+
+          logger.info(
+            `[ChunkedCursorDispatcher] Processed batch #${totalBatches} (${batchUpdates.length} items). Total sent: ${totalSent}, failed: ${totalFailed}`,
+          );
         }
-
-        totalProcessed++;
       }
-
-      // 3. Atomically persist batch updates in PostgreSQL
-      if (batchUpdates.length > 0) {
-        await this.deliverySlotRepo.updateBatchDeliveryStatus(slotId, batchUpdates);
-      }
-
-      // 4. Advance cursor to last record in processed items
-      const lastItem = itemsToProcess[itemsToProcess.length - 1];
-      cursorId = lastItem.id;
-
-      logger.info(
-        `[ChunkedCursorDispatcher] Processed batch #${totalBatches} (${batchUpdates.length} items). Total sent: ${totalSent}, failed: ${totalFailed}`,
-      );
     }
 
     const durationMs = Math.max(1, Date.now() - startTime);

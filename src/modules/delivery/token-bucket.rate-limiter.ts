@@ -29,7 +29,8 @@ export class TokenBucketRateLimiter {
   public async acquire(tokensNeeded: number = 1): Promise<void> {
     if (tokensNeeded <= 0) return;
 
-    while (true) {
+    let isWaiting = true;
+    while (isWaiting) {
       const now = Date.now();
 
       // Prune timestamps older than 1 second (1000ms)
@@ -41,13 +42,13 @@ export class TokenBucketRateLimiter {
         for (let i = 0; i < tokensNeeded; i++) {
           this.timestamps.push(Date.now());
         }
-        return;
+        isWaiting = false;
+      } else {
+        // Calculate required wait until the oldest timestamp in window expires
+        const oldest = this.timestamps[0];
+        const waitMs = oldest + ONE_SECOND_MS - now + JITTER_BUFFER_MS;
+        await this.sleep(Math.max(waitMs, JITTER_BUFFER_MS));
       }
-
-      // Calculate required wait until the oldest timestamp in window expires
-      const oldest = this.timestamps[0];
-      const waitMs = oldest + ONE_SECOND_MS - now + JITTER_BUFFER_MS;
-      await this.sleep(Math.max(waitMs, JITTER_BUFFER_MS));
     }
   }
 
