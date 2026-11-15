@@ -28,8 +28,9 @@ export class PrismaDeliverySlotRepository implements IDeliverySlotRepository {
   public async getOrCreateSlot(
     scheduledTime: Date,
     totalEligibleUsers: number = 0,
+    customSlotKey?: string,
   ): Promise<DeliverySlotEntity> {
-    const slotKey = generateSlotKey(scheduledTime);
+    const slotKey = customSlotKey ?? generateSlotKey(scheduledTime);
 
     const existing = await this.db.deliverySlot.findUnique({
       where: { slotKey },
@@ -66,6 +67,22 @@ export class PrismaDeliverySlotRepository implements IDeliverySlotRepository {
     });
 
     return record ? this.mapSlotToEntity(record) : null;
+  }
+
+  public async findUnfinishedSlots(): Promise<DeliverySlotEntity[]> {
+    const records = await this.db.deliverySlot.findMany({
+      where: {
+        completedAt: null,
+        status: {
+          in: ['PENDING', 'FAILED'],
+        },
+      },
+      orderBy: {
+        scheduledTime: 'asc',
+      },
+    });
+
+    return records.map((r) => this.mapSlotToEntity(r));
   }
 
   public async initializeDeliveries(
@@ -106,6 +123,29 @@ export class PrismaDeliverySlotRepository implements IDeliverySlotRepository {
         attempts: 'asc',
       },
       take: limit,
+    });
+
+    return records.map((r) => this.mapDeliveryToEntity(r));
+  }
+
+  public async getPendingDeliveriesChunk(
+    slotId: string,
+    limit: number = 25,
+    cursorId?: string,
+  ): Promise<DigestDeliveryEntity[]> {
+    const records = await this.db.digestDelivery.findMany({
+      where: {
+        slotId,
+        status: {
+          in: ['PENDING', 'FAILED'],
+        },
+      },
+      orderBy: {
+        id: 'asc',
+      },
+      take: limit,
+      skip: cursorId ? 1 : 0,
+      cursor: cursorId ? { id: cursorId } : undefined,
     });
 
     return records.map((r) => this.mapDeliveryToEntity(r));
@@ -211,6 +251,61 @@ export class PrismaDeliverySlotRepository implements IDeliverySlotRepository {
     });
 
     return this.mapSlotToEntity(updated);
+  }
+
+  public async markSlotSkippedExpired(
+    slotKey: string,
+    scheduledTime: Date,
+  ): Promise<DeliverySlotEntity> {
+    const existing = await this.db.deliverySlot.findUnique({
+      where: { slotKey },
+    });
+
+    if (existing) {
+      if (existing.completedAt !== null || existing.status === 'SENT') {
+        return this.mapSlotToEntity(existing);
+      }
+
+      // Safe conditional update requiring slot to still be unfinished
+      const updateResult = await this.db.deliverySlot.updateMany({
+        where: {
+          id: existing.id,
+          completedAt: null,
+          status: { notIn: ['SENT', 'SKIPPED_EXPIRED'] },
+        },
+        data: {
+          status: 'SKIPPED_EXPIRED',
+          completedAt: new Date(),
+        },
+      });
+
+      if (updateResult.count === 0) {
+        // Slot completed concurrently; refetch without overwriting
+        const reloaded = await this.db.deliverySlot.findUnique({
+          where: { id: existing.id },
+        });
+        return this.mapSlotToEntity(reloaded ?? existing);
+      }
+
+      const updated = await this.db.deliverySlot.findUnique({
+        where: { id: existing.id },
+      });
+      return this.mapSlotToEntity(updated ?? existing);
+    }
+
+    const created = await this.db.deliverySlot.create({
+      data: {
+        slotKey,
+        scheduledTime,
+        status: 'SKIPPED_EXPIRED',
+        totalRecipients: 0,
+        sentCount: 0,
+        failedCount: 0,
+        completedAt: new Date(),
+      },
+    });
+
+    return this.mapSlotToEntity(created);
   }
 
   private mapSlotToEntity(row: PrismaDeliverySlotRecord): DeliverySlotEntity {

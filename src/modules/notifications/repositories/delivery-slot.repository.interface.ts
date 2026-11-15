@@ -32,16 +32,24 @@ export interface IDeliverySlotRepository {
   getOrCreateSlot(
     scheduledTime: Date,
     totalEligibleUsers?: number,
+    customSlotKey?: string,
   ): Promise<DeliverySlotEntity>;
 
   findSlotByKey(slotKey: string): Promise<DeliverySlotEntity | null>;
   findSlotById(slotId: string): Promise<DeliverySlotEntity | null>;
+  findUnfinishedSlots(): Promise<DeliverySlotEntity[]>;
 
   initializeDeliveries(slotId: string, userIds: string[]): Promise<number>;
 
   getPendingDeliveries(
     slotId: string,
     limit?: number,
+  ): Promise<DigestDeliveryEntity[]>;
+
+  getPendingDeliveriesChunk(
+    slotId: string,
+    limit?: number,
+    cursorId?: string,
   ): Promise<DigestDeliveryEntity[]>;
 
   updateDeliveryStatus(
@@ -57,4 +65,8 @@ export interface IDeliverySlotRepository {
   ): Promise<void>;
 
   completeSlot(slotId: string): Promise<DeliverySlotEntity>;
+  markSlotSkippedExpired(
+    slotKey: string,
+    scheduledTime: Date,
+  ): Promise<DeliverySlotEntity>;
 }
