@@ -4,8 +4,12 @@ import { prisma as defaultPrisma } from '../../shared/database/prisma.service.js
 import type {
   IDeliverySlotRepository,
   DeliveryStatusUpdate,
+  DeliverySlotEntity,
 } from '../notifications/repositories/delivery-slot.repository.interface.js';
 import { PrismaDeliverySlotRepository } from '../notifications/repositories/prisma-delivery-slot.repository.js';
+import { UserStatus } from '../users/user.types.js';
+import type { IUserRepository } from '../users/repositories/user.repository.interface.js';
+import { PrismaUserRepository } from '../users/repositories/prisma-user.repository.js';
 import { TokenBucketRateLimiter } from './token-bucket.rate-limiter.js';
 import logger from '../../shared/utils/logger.js';
 
@@ -13,12 +17,65 @@ export interface DigestDispatchResult {
   success: boolean;
   error?: string;
   isBlocked?: boolean;
+  retryAfterSeconds?: number;
+  errorCode?: number;
+}
+
+export interface ParsedTelegramError {
+  isRateLimit: boolean;
+  retryAfterSeconds?: number;
+  isBlocked: boolean;
+  errorCode?: number;
+  message: string;
+}
+
+export function parseTelegramError(err: unknown): ParsedTelegramError {
+  const errMsg = err instanceof Error ? err.message : String(err);
+  let errorCode: number | undefined = undefined;
+  let retryAfterSeconds: number | undefined = undefined;
+
+  if (typeof err === 'object' && err !== null) {
+    const obj = err as Record<string, unknown>;
+    if (typeof obj.error_code === 'number') {
+      errorCode = obj.error_code;
+    }
+    if (typeof obj.parameters === 'object' && obj.parameters !== null) {
+      const params = obj.parameters as Record<string, unknown>;
+      if (typeof params.retry_after === 'number') {
+        retryAfterSeconds = params.retry_after;
+      }
+    }
+  }
+
+  if (!retryAfterSeconds) {
+    const match = errMsg.match(/retry after (\d+)/i);
+    if (match) {
+      retryAfterSeconds = parseInt(match[1], 10);
+    }
+  }
+
+  const isRateLimit =
+    errorCode === 429 || errMsg.includes('429') || errMsg.toLowerCase().includes('too many requests');
+  const isBlocked =
+    errorCode === 403 ||
+    errMsg.includes('403') ||
+    errMsg.toLowerCase().includes('bot was blocked by the user') ||
+    errMsg.toLowerCase().includes('forbidden');
+
+  return {
+    isRateLimit,
+    retryAfterSeconds: retryAfterSeconds ?? (isRateLimit ? 1 : undefined),
+    isBlocked,
+    errorCode,
+    message: errMsg,
+  };
 }
 
 export type DigestSendHandler = (userId: string) => Promise<DigestDispatchResult>;
 
 export interface ChunkedCursorDispatcherDependencies {
   deliverySlotRepository?: IDeliverySlotRepository;
+  userRepository?: IUserRepository;
   rateLimiter?: TokenBucketRateLimiter;
   sender?: DigestSendHandler;
   db?: PrismaClient;
@@ -27,6 +84,7 @@ export interface ChunkedCursorDispatcherDependencies {
 export interface DispatcherOptions {
   batchSize?: number;
   maxDeliveries?: number;
+  maxRetriesPerDelivery?: number;
 }
 
 export interface SlotDispatchSummary {
@@ -43,12 +101,14 @@ export interface SlotDispatchSummary {
 
 export class ChunkedCursorDispatcher {
   private readonly deliverySlotRepo: IDeliverySlotRepository;
+  private readonly userRepo: IUserRepository;
   private readonly rateLimiter: TokenBucketRateLimiter;
   private readonly sender?: DigestSendHandler;
 
   constructor(deps?: ChunkedCursorDispatcherDependencies) {
     const db = deps?.db ?? defaultPrisma;
     this.deliverySlotRepo = deps?.deliverySlotRepository ?? new PrismaDeliverySlotRepository(db);
+    this.userRepo = deps?.userRepository ?? new PrismaUserRepository(db);
     this.rateLimiter = deps?.rateLimiter ?? new TokenBucketRateLimiter({ capacity: 25, refillRatePerSecond: 25 });
     this.sender = deps?.sender;
   }
@@ -103,43 +163,91 @@ export class ChunkedCursorDispatcher {
           totalBatches++;
           const batchUpdates: DeliveryStatusUpdate[] = [];
           const itemsToProcess = maxDeliveries ? chunk.slice(0, maxDeliveries - totalProcessed) : chunk;
+          const maxRetries = options?.maxRetriesPerDelivery ?? 3;
 
           // 2. Process deliveries paced by the TokenBucket rate limiter
           for (const item of itemsToProcess) {
-            await this.rateLimiter.acquire(1);
+            let deliveryAttempt = 0;
+            let delivered = false;
+            let isUserBlocked = false;
+            let lastErrorMsg = 'Digest delivery failed';
 
-            try {
-              const res = await sendHandler(item.userId);
+            while (!delivered && deliveryAttempt < maxRetries) {
+              deliveryAttempt++;
+              await this.rateLimiter.acquire(1);
 
-              if (res.success) {
-                batchUpdates.push({
-                  userId: item.userId,
-                  status: 'SENT',
-                });
-                totalSent++;
-              } else if (res.isBlocked) {
+              try {
+                const res = await sendHandler(item.userId);
+
+                if (res.success) {
+                  batchUpdates.push({
+                    userId: item.userId,
+                    status: 'SENT',
+                  });
+                  totalSent++;
+                  delivered = true;
+                } else if (res.isBlocked) {
+                  isUserBlocked = true;
+                  lastErrorMsg = res.error ?? 'Bot blocked by user';
+                  break;
+                } else if (res.retryAfterSeconds !== undefined || res.errorCode === 429) {
+                  const waitSec = res.retryAfterSeconds ?? 1;
+                  logger.warn(
+                    `[ChunkedCursorDispatcher] Telegram 429 rate limit hit for user ${item.userId}. Pausing loop for ${waitSec}s`,
+                  );
+                  await this.sleep(ms(`${waitSec}s`));
+                  deliveryAttempt--;
+                } else {
+                  lastErrorMsg = res.error ?? 'Digest delivery failed';
+                }
+              } catch (err: unknown) {
+                const parsed = parseTelegramError(err);
+
+                if (parsed.isBlocked) {
+                  isUserBlocked = true;
+                  lastErrorMsg = parsed.message;
+                  break;
+                } else if (parsed.isRateLimit) {
+                  const waitSec = parsed.retryAfterSeconds ?? 1;
+                  logger.warn(
+                    `[ChunkedCursorDispatcher] Telegram 429 rate limit error for user ${item.userId}. Pausing loop for ${waitSec}s`,
+                  );
+                  await this.sleep(ms(`${waitSec}s`));
+                  deliveryAttempt--;
+                } else {
+                  lastErrorMsg = parsed.message;
+                }
+              }
+            }
+
+            if (!delivered) {
+              if (isUserBlocked) {
                 batchUpdates.push({
                   userId: item.userId,
                   status: 'BLOCKED',
-                  lastError: res.error ?? 'Bot blocked by user',
+                  lastError: lastErrorMsg,
                 });
                 totalBlocked++;
+
+                try {
+                  await this.userRepo.updateStatusById(item.userId, UserStatus.BLOCKED);
+                  logger.info(
+                    `[ChunkedCursorDispatcher] Updated User ${item.userId} status to BLOCKED in database`,
+                  );
+                } catch (userErr: unknown) {
+                  const errMsg = userErr instanceof Error ? userErr.message : String(userErr);
+                  logger.warn(
+                    `[ChunkedCursorDispatcher] Failed to update user ${item.userId} to BLOCKED: ${errMsg}`,
+                  );
+                }
               } else {
                 batchUpdates.push({
                   userId: item.userId,
                   status: 'FAILED',
-                  lastError: res.error ?? 'Digest delivery failed',
+                  lastError: lastErrorMsg,
                 });
                 totalFailed++;
               }
-            } catch (err: unknown) {
-              const errMsg = err instanceof Error ? err.message : String(err);
-              batchUpdates.push({
-                userId: item.userId,
-                status: 'FAILED',
-                lastError: errMsg,
-              });
-              totalFailed++;
             }
 
             totalProcessed++;
@@ -237,8 +345,10 @@ export class ChunkedCursorDispatcher {
   public async recoverUnfinishedSlots(
     options?: DispatcherOptions,
     customSender?: DigestSendHandler,
+    targetSlots?: DeliverySlotEntity[],
   ): Promise<SlotDispatchSummary[]> {
-    const unfinishedSlots = await this.deliverySlotRepo.findUnfinishedSlots();
+    const unfinishedSlots =
+      targetSlots ?? (await this.deliverySlotRepo.findUnfinishedSlots());
     if (unfinishedSlots.length === 0) {
       logger.info('[ChunkedCursorDispatcher] No unfinished delivery slots to recover');
       return [];
@@ -262,5 +372,9 @@ export class ChunkedCursorDispatcher {
     }
 
     return summaries;
+  }
+
+  private sleep(sleepMs: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, sleepMs));
   }
 }

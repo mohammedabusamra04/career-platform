@@ -9,6 +9,7 @@ import type {
   DeliverySlotEntity,
   DigestDeliveryEntity,
 } from '../../src/modules/notifications/repositories/delivery-slot.repository.interface.js';
+import type { IUserRepository } from '../../src/modules/users/repositories/user.repository.interface.js';
 
 describe('TASK-41.2: Chunked Cursor Dispatcher (Batches of 25 with 25 msgs/sec pacing) (#118)', () => {
   let mockSlotRepo: {
@@ -23,8 +24,16 @@ describe('TASK-41.2: Chunked Cursor Dispatcher (Batches of 25 with 25 msgs/sec p
     completeSlot: ReturnType<typeof vi.fn>;
   };
 
+  let mockUserRepo: {
+    updateStatusById: ReturnType<typeof vi.fn>;
+  };
+
   beforeEach(() => {
     vi.restoreAllMocks();
+
+    mockUserRepo = {
+      updateStatusById: vi.fn().mockResolvedValue({}),
+    };
 
     mockSlotRepo = {
       findSlotById: vi.fn().mockResolvedValue({
@@ -90,6 +99,7 @@ describe('TASK-41.2: Chunked Cursor Dispatcher (Batches of 25 with 25 msgs/sec p
 
     const dispatcher = new ChunkedCursorDispatcher({
       deliverySlotRepository: mockSlotRepo as unknown as IDeliverySlotRepository,
+      userRepository: mockUserRepo as unknown as IUserRepository,
       rateLimiter: fastLimiter,
       sender: mockSender,
     });
@@ -143,6 +153,7 @@ describe('TASK-41.2: Chunked Cursor Dispatcher (Batches of 25 with 25 msgs/sec p
     const fastLimiter = new TokenBucketRateLimiter({ capacity: 50, refillRatePerSecond: 1000 });
     const dispatcher = new ChunkedCursorDispatcher({
       deliverySlotRepository: mockSlotRepo as unknown as IDeliverySlotRepository,
+      userRepository: mockUserRepo as unknown as IUserRepository,
       rateLimiter: fastLimiter,
       sender: mockSender,
     });

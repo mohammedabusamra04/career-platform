@@ -80,6 +80,7 @@ export class ScheduledDigestRunner {
     this.advisoryLock = deps?.advisoryLockService ?? new AdvisoryLockService(db);
     this.dispatcher = deps?.dispatcher ?? new ChunkedCursorDispatcher({
       deliverySlotRepository: this.deliverySlotRepo,
+      userRepository: this.userRepo,
       db,
     });
 
@@ -221,9 +222,10 @@ export class ScheduledDigestRunner {
    */
   public async recoverUnfinishedSlots(
     customSender?: DigestSendHandler,
+    targetSlots?: DeliverySlotEntity[],
   ): Promise<SlotDispatchSummary[]> {
     const lockResult = await this.advisoryLock.withLock(this.lockId, async () => {
-      return await this.dispatcher.recoverUnfinishedSlots(undefined, customSender);
+      return await this.dispatcher.recoverUnfinishedSlots(undefined, customSender, targetSlots);
     });
 
     if (!lockResult.executed || !lockResult.result) {
