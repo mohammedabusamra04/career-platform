@@ -117,3 +117,12 @@ export const jobNotificationScheduler = new JobNotificationScheduler(
   subscriptionService,
   preferenceService,
 );
+
+import { ScheduledDigestRunner } from '../modules/delivery/scheduled-digest.runner.js';
+import { MissedSlotWatchdogService } from '../modules/delivery/missed-slot-watchdog.service.js';
+
+export const scheduledDigestRunner = new ScheduledDigestRunner();
+export const missedSlotWatchdogService = new MissedSlotWatchdogService({
+  scheduledRunner: scheduledDigestRunner,
+});
+

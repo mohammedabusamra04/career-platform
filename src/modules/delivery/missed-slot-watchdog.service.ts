@@ -161,7 +161,8 @@ export class MissedSlotWatchdogService {
           };
         }
 
-        const resumeRes = await this.scheduledRunner.recoverUnfinishedSlots();
+        // Restrict recovery specifically to this slotKey rather than resuming arbitrary historical slots
+        const resumeRes = await this.scheduledRunner.recoverUnfinishedSlots(undefined, [slot]);
         return {
           checked: true,
           action: 'RESUMED_UNFINISHED' as const,

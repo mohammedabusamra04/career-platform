@@ -4,6 +4,7 @@ import { prisma as defaultPrisma } from '../../shared/database/prisma.service.js
 import type {
   IDeliverySlotRepository,
   DeliveryStatusUpdate,
+  DeliverySlotEntity,
 } from '../notifications/repositories/delivery-slot.repository.interface.js';
 import { PrismaDeliverySlotRepository } from '../notifications/repositories/prisma-delivery-slot.repository.js';
 import { UserStatus } from '../users/user.types.js';
@@ -344,8 +345,9 @@ export class ChunkedCursorDispatcher {
   public async recoverUnfinishedSlots(
     options?: DispatcherOptions,
     customSender?: DigestSendHandler,
+    targetSlots?: DeliverySlotEntity[],
   ): Promise<SlotDispatchSummary[]> {
-    const unfinishedSlots = await this.deliverySlotRepo.findUnfinishedSlots();
+    const unfinishedSlots = targetSlots ?? (await this.deliverySlotRepo.findUnfinishedSlots());
     if (unfinishedSlots.length === 0) {
       logger.info('[ChunkedCursorDispatcher] No unfinished delivery slots to recover');
       return [];

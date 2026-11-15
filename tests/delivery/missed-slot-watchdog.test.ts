@@ -13,6 +13,8 @@ import type {
   IDeliverySlotRepository,
   DeliverySlotEntity,
 } from '../../src/modules/notifications/repositories/delivery-slot.repository.interface.js';
+import { PrismaDeliverySlotRepository } from '../../src/modules/notifications/repositories/prisma-delivery-slot.repository.js';
+import type { PrismaClient } from '@prisma/client';
 import type { IAdvisoryLockService } from '../../src/shared/database/advisory-lock.service.js';
 
 describe('TASK-42.2: Missed Slot Detection & Watchdog Recovery (#121)', () => {
@@ -178,7 +180,10 @@ describe('TASK-42.2: Missed Slot Detection & Watchdog Recovery (#121)', () => {
       const result = await watchdog.checkAndRecoverMissedSlots(rebootTime);
 
       expect(result.action).toBe('RESUMED_UNFINISHED');
-      expect(mockScheduledRunner.recoverUnfinishedSlots).toHaveBeenCalledTimes(1);
+      expect(mockScheduledRunner.recoverUnfinishedSlots).toHaveBeenCalledWith(
+        undefined,
+        [existingUnfinishedSlot],
+      );
       expect(mockScheduledRunner.executeScheduledSlot).not.toHaveBeenCalled();
     });
 
@@ -296,6 +301,61 @@ describe('TASK-42.2: Missed Slot Detection & Watchdog Recovery (#121)', () => {
       expect(watchdog.getStatus().isRunning).toBe(false);
 
       vi.useRealTimers();
+    });
+  });
+
+  describe('Boundary and Concurrency Edge Cases', () => {
+    it('calculates the latest scheduled slot correctly across dispatch-time and day boundaries', () => {
+      const watchdog = new MissedSlotWatchdogService(undefined, {
+        timezone: 'Asia/Gaza',
+        dispatchTime: '21:00',
+      });
+
+      // 1. Before 21:00 (e.g., 20:30 on Nov 15) -> latest scheduled slot was yesterday (Nov 14 at 21:00)
+      const beforeDispatch = DateTime.fromISO('2026-11-15T20:30:00.000', { zone: 'Asia/Gaza' }).toJSDate();
+      const slotBefore = watchdog.getLatestScheduledSlotTime(beforeDispatch);
+      const dtBefore = DateTime.fromJSDate(slotBefore).setZone('Asia/Gaza');
+      expect(dtBefore.day).toBe(14);
+      expect(dtBefore.hour).toBe(21);
+      expect(dtBefore.minute).toBe(0);
+
+      // 2. After 21:00 (e.g., 21:15 on Nov 15) -> latest scheduled slot was today (Nov 15 at 21:00)
+      const afterDispatch = DateTime.fromISO('2026-11-15T21:15:00.000', { zone: 'Asia/Gaza' }).toJSDate();
+      const slotAfter = watchdog.getLatestScheduledSlotTime(afterDispatch);
+      const dtAfter = DateTime.fromJSDate(slotAfter).setZone('Asia/Gaza');
+      expect(dtAfter.day).toBe(15);
+      expect(dtAfter.hour).toBe(21);
+      expect(dtAfter.minute).toBe(0);
+    });
+
+    it('avoids overwriting a slot that is already completed when marking expiration', async () => {
+      const mockDb = {
+        deliverySlot: {
+          findUnique: vi.fn().mockResolvedValue({
+            id: 'slot-already-sent',
+            slotKey: 'digest:2026-11-15:2100',
+            scheduledTime: new Date(),
+            status: 'SENT',
+            completedAt: new Date(),
+            totalRecipients: 50,
+            sentCount: 50,
+            failedCount: 0,
+            startedAt: new Date(),
+          }),
+          updateMany: vi.fn(),
+          create: vi.fn(),
+        },
+      };
+
+      const repo = new PrismaDeliverySlotRepository(mockDb as unknown as PrismaClient);
+      const result = await repo.markSlotSkippedExpired(
+        'digest:2026-11-15:2100',
+        new Date(),
+      );
+
+      // Verify that updateMany was NOT called because slot is already completed (SENT)
+      expect(mockDb.deliverySlot.updateMany).not.toHaveBeenCalled();
+      expect(result.status).toBe('SENT');
     });
   });
 });

@@ -222,9 +222,10 @@ export class ScheduledDigestRunner {
    */
   public async recoverUnfinishedSlots(
     customSender?: DigestSendHandler,
+    targetSlots?: DeliverySlotEntity[],
   ): Promise<SlotDispatchSummary[]> {
     const lockResult = await this.advisoryLock.withLock(this.lockId, async () => {
-      return await this.dispatcher.recoverUnfinishedSlots(undefined, customSender);
+      return await this.dispatcher.recoverUnfinishedSlots(undefined, customSender, targetSlots);
     });
 
     if (!lockResult.executed || !lockResult.result) {

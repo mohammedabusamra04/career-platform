@@ -262,14 +262,35 @@ export class PrismaDeliverySlotRepository implements IDeliverySlotRepository {
     });
 
     if (existing) {
-      const updated = await this.db.deliverySlot.update({
-        where: { id: existing.id },
+      if (existing.completedAt !== null || existing.status === 'SENT') {
+        return this.mapSlotToEntity(existing);
+      }
+
+      // Safe conditional update requiring slot to still be unfinished
+      const updateResult = await this.db.deliverySlot.updateMany({
+        where: {
+          id: existing.id,
+          completedAt: null,
+          status: { notIn: ['SENT', 'SKIPPED_EXPIRED'] },
+        },
         data: {
           status: 'SKIPPED_EXPIRED',
           completedAt: new Date(),
         },
       });
-      return this.mapSlotToEntity(updated);
+
+      if (updateResult.count === 0) {
+        // Slot completed concurrently; refetch without overwriting
+        const reloaded = await this.db.deliverySlot.findUnique({
+          where: { id: existing.id },
+        });
+        return this.mapSlotToEntity(reloaded ?? existing);
+      }
+
+      const updated = await this.db.deliverySlot.findUnique({
+        where: { id: existing.id },
+      });
+      return this.mapSlotToEntity(updated ?? existing);
     }
 
     const created = await this.db.deliverySlot.create({
