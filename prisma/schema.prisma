@@ -51,6 +51,7 @@ enum DeliveryStatus {
   SENT
   FAILED
   BLOCKED
+  SKIPPED_EXPIRED
 }
 
 enum FeedbackType {

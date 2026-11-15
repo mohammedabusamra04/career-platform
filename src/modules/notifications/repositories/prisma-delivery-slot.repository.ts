@@ -253,6 +253,40 @@ export class PrismaDeliverySlotRepository implements IDeliverySlotRepository {
     return this.mapSlotToEntity(updated);
   }
 
+  public async markSlotSkippedExpired(
+    slotKey: string,
+    scheduledTime: Date,
+  ): Promise<DeliverySlotEntity> {
+    const existing = await this.db.deliverySlot.findUnique({
+      where: { slotKey },
+    });
+
+    if (existing) {
+      const updated = await this.db.deliverySlot.update({
+        where: { id: existing.id },
+        data: {
+          status: 'SKIPPED_EXPIRED',
+          completedAt: new Date(),
+        },
+      });
+      return this.mapSlotToEntity(updated);
+    }
+
+    const created = await this.db.deliverySlot.create({
+      data: {
+        slotKey,
+        scheduledTime,
+        status: 'SKIPPED_EXPIRED',
+        totalRecipients: 0,
+        sentCount: 0,
+        failedCount: 0,
+        completedAt: new Date(),
+      },
+    });
+
+    return this.mapSlotToEntity(created);
+  }
+
   private mapSlotToEntity(row: PrismaDeliverySlotRecord): DeliverySlotEntity {
     return {
       id: row.id,
