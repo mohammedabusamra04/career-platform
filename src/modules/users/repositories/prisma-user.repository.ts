@@ -77,6 +77,32 @@ export class PrismaUserRepository implements IUserRepository {
     return this.mapToDomain(updated);
   }
 
+  public async updateStatusById(
+    id: string,
+    status: UserStatus,
+    pausedUntil: Date | null = null,
+  ): Promise<User> {
+    const existing = await this.db.user.findUnique({
+      where: { id },
+    });
+
+    if (!existing) {
+      throw new Error(`User with id ${id} does not exist.`);
+    }
+
+    assertValidTransition(existing.status as UserStatus, status);
+
+    const updated = await this.db.user.update({
+      where: { id },
+      data: {
+        status: status as PrismaUserRecord['status'],
+        pausedUntil: status === UserStatus.PAUSED ? pausedUntil : null,
+      },
+    });
+
+    return this.mapToDomain(updated);
+  }
+
   public async markAsDeleted(telegramId: number | bigint): Promise<User> {
     const existing = await this.db.user.findUnique({
       where: { telegramId: BigInt(telegramId) },

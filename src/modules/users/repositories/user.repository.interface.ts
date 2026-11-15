@@ -9,6 +9,11 @@ export interface IUserRepository {
     status: UserStatus,
     pausedUntil?: Date | null,
   ): Promise<User>;
+  updateStatusById(
+    id: string,
+    status: UserStatus,
+    pausedUntil?: Date | null,
+  ): Promise<User>;
   markAsDeleted(telegramId: number | bigint): Promise<User>;
   findActiveRecipients(now?: Date): Promise<User[]>;
 }
