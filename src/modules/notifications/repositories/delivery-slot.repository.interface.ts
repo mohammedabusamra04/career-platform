@@ -65,4 +65,8 @@ export interface IDeliverySlotRepository {
   ): Promise<void>;
 
   completeSlot(slotId: string): Promise<DeliverySlotEntity>;
+  markSlotSkippedExpired(
+    slotKey: string,
+    scheduledTime: Date,
+  ): Promise<DeliverySlotEntity>;
 }
