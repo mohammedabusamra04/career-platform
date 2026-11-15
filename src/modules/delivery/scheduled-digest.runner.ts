@@ -80,6 +80,7 @@ export class ScheduledDigestRunner {
     this.advisoryLock = deps?.advisoryLockService ?? new AdvisoryLockService(db);
     this.dispatcher = deps?.dispatcher ?? new ChunkedCursorDispatcher({
       deliverySlotRepository: this.deliverySlotRepo,
+      userRepository: this.userRepo,
       db,
     });
 
