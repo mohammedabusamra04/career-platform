@@ -276,7 +276,7 @@ describe('TASK-42.2: Missed Slot Detection & Watchdog Recovery (#121)', () => {
     });
   });
 
-  describe('Watchdog Lifecycle (start / stop)', () => {
+  describe('Watchdog Lifecycle and Periodic Execution', () => {
     it('initializes periodic 15-minute timer and stops cleanly', () => {
       vi.useFakeTimers();
 
@@ -300,6 +300,84 @@ describe('TASK-42.2: Missed Slot Detection & Watchdog Recovery (#121)', () => {
       watchdog.stop();
       expect(watchdog.getStatus().isRunning).toBe(false);
 
+      vi.useRealTimers();
+    });
+
+    it('triggers periodic execution at each configured interval and ceases execution after stop', async () => {
+      vi.useFakeTimers();
+
+      const watchdog = new MissedSlotWatchdogService(
+        {
+          deliverySlotRepository: mockSlotRepo as unknown as IDeliverySlotRepository,
+          scheduledRunner: mockScheduledRunner as unknown as ScheduledDigestRunner,
+          advisoryLockService: mockAdvisoryLock as unknown as IAdvisoryLockService,
+        },
+        {
+          checkIntervalMs: ms('15m'),
+        },
+      );
+
+      const checkSpy = vi.spyOn(watchdog, 'checkAndRecoverMissedSlots').mockResolvedValue({
+        checked: true,
+        action: 'ALREADY_COMPLETED',
+        slotKey: 'digest:2026-11-15:2100',
+        scheduledTime: new Date(),
+        elapsedMs: 0,
+      });
+
+      watchdog.start();
+      // 1. Initial check triggered immediately upon start
+      expect(checkSpy).toHaveBeenCalledTimes(1);
+
+      // 2. Advance 15 minutes -> triggers first periodic check
+      await vi.advanceTimersByTimeAsync(ms('15m'));
+      expect(checkSpy).toHaveBeenCalledTimes(2);
+
+      // 3. Advance another 15 minutes -> triggers second periodic check
+      await vi.advanceTimersByTimeAsync(ms('15m'));
+      expect(checkSpy).toHaveBeenCalledTimes(3);
+
+      // 4. Stop watchdog
+      watchdog.stop();
+      expect(watchdog.getStatus().isRunning).toBe(false);
+
+      // 5. Advance 15 minutes after stop -> no further checks triggered
+      await vi.advanceTimersByTimeAsync(ms('15m'));
+      expect(checkSpy).toHaveBeenCalledTimes(3);
+
+      vi.useRealTimers();
+    });
+
+    it('ensures start() is idempotent and does not create duplicate interval timers', async () => {
+      vi.useFakeTimers();
+
+      const watchdog = new MissedSlotWatchdogService(
+        {
+          deliverySlotRepository: mockSlotRepo as unknown as IDeliverySlotRepository,
+          scheduledRunner: mockScheduledRunner as unknown as ScheduledDigestRunner,
+          advisoryLockService: mockAdvisoryLock as unknown as IAdvisoryLockService,
+        },
+        {
+          checkIntervalMs: ms('15m'),
+        },
+      );
+
+      const checkSpy = vi.spyOn(watchdog, 'checkAndRecoverMissedSlots').mockResolvedValue({
+        checked: true,
+        action: 'ALREADY_COMPLETED',
+        slotKey: 'digest:2026-11-15:2100',
+        scheduledTime: new Date(),
+        elapsedMs: 0,
+      });
+
+      watchdog.start();
+      watchdog.start(); // second call should be safely ignored
+      expect(checkSpy).toHaveBeenCalledTimes(1);
+
+      await vi.advanceTimersByTimeAsync(ms('15m'));
+      expect(checkSpy).toHaveBeenCalledTimes(2);
+
+      watchdog.stop();
       vi.useRealTimers();
     });
   });

@@ -347,7 +347,8 @@ export class ChunkedCursorDispatcher {
     customSender?: DigestSendHandler,
     targetSlots?: DeliverySlotEntity[],
   ): Promise<SlotDispatchSummary[]> {
-    const unfinishedSlots = targetSlots ?? (await this.deliverySlotRepo.findUnfinishedSlots());
+    const unfinishedSlots =
+      targetSlots ?? (await this.deliverySlotRepo.findUnfinishedSlots());
     if (unfinishedSlots.length === 0) {
       logger.info('[ChunkedCursorDispatcher] No unfinished delivery slots to recover');
       return [];
