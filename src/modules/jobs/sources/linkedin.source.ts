@@ -2,6 +2,7 @@ import type { Job, JobSearchQuery } from '../job.types.js';
 import { JobSourceType } from '../job.types.js';
 import type { JobSource } from './job-source.interface.js';
 import { ExperienceLevel, WorkType } from '../../../shared/types/job.js';
+import logger from '../../../shared/utils/logger.js';
 
 interface JSearchJobItem {
   job_id?: string;
@@ -65,7 +66,8 @@ export class LinkedinJobSource implements JobSource {
           : [];
 
       return jobsList.map((item) => this.mapToJob(item, query));
-    } catch {
+    } catch (err: unknown) {
+      logger.warn(`[LinkedInJobSource] Fetch error: ${(err as Error).message}`);
       return [];
     }
   }

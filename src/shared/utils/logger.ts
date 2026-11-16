@@ -10,6 +10,12 @@ const logger = {
   error: (message: string) => {
     console.error(`[ERROR] ${message}`);
   },
+
+  debug: (message: string) => {
+    if (process.env.DEBUG) {
+      console.debug(`[DEBUG] ${message}`);
+    }
+  },
 };
 
 export default logger;
