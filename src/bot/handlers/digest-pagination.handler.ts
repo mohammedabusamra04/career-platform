@@ -73,7 +73,7 @@ export function registerDigestPaginationHandler(
 
       // Retrieve up to 20 candidate jobs matching user preferences
       const candidateJobs = await digestService.getPersonalizedDigestJobs(user.id);
-      if (!candidateJobs || candidateJobs.length === 0) {
+      if (candidateJobs.length === 0) {
         return;
       }
 
