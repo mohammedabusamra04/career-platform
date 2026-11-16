@@ -54,8 +54,8 @@ async function gracefulShutdown(signal: string): Promise<void> {
 
   try {
     await bot.stop();
-  } catch {
-    // ignore if bot was not running
+  } catch (err: unknown) {
+    logger.debug(`[Server] Bot stop skipped or already stopped: ${(err as Error).message}`);
   }
 
   server.close(() => {
