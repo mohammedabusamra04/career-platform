@@ -168,7 +168,7 @@ export function registerConfirmationHandler(
         const replyMarkup =
           !digest.hasMatches || digest.jobs.length === 0
             ? digestService.buildEmptyStateKeyboard(lang)
-            : buildDigestPaginationKeyboard(1, digest.totalPages, lang);
+            : buildDigestPaginationKeyboard(1, digest.totalPages, lang, digest.jobs);
 
         // Edit searching message with formatted digest cards and empty state buttons if 0 matches
         if (searchingMsg && searchingMsg.message_id && ctx.chat) {
