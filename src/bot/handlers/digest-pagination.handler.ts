@@ -89,6 +89,7 @@ export function registerDigestPaginationHandler(
         pagination.currentPage,
         pagination.totalPages,
         lang,
+        pagination.pagedJobs,
       );
 
       // Edit message in-place without producing new chat messages
