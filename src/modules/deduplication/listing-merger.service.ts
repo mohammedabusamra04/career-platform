@@ -1,4 +1,5 @@
 import type { Job } from '../jobs/job.types.js';
+import logger from '../../shared/utils/logger.js';
 
 export enum LinkTier {
   DIRECT_ATS = 3,
@@ -99,7 +100,8 @@ export function getLinkTier(rawUrl?: string | null, source?: string | null): Lin
       const parsed = new URL(urlLower);
       hostname = parsed.hostname;
     }
-  } catch {
+  } catch (err: unknown) {
+    logger.debug(`[ListingMerger] URL hostname parse fallback: ${(err as Error).message}`);
     hostname = urlLower;
   }
 

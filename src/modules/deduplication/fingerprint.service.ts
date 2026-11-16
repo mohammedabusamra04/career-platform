@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 
 import type { Job } from '../jobs/job.types.js';
 import { TRACKING_QUERY_PARAMS } from '../jobs/job.sanitizer.js';
+import logger from '../../shared/utils/logger.js';
 
 /**
  * TASK-28: Two-Tier Deduplication & Rich Data Merger (#46)
@@ -119,7 +120,8 @@ export class FingerprintService {
         .join('&');
 
       return `${protocol}//${host}${pathname}${search ? `?${search}` : ''}`;
-    } catch {
+    } catch (err: unknown) {
+      logger.debug(`[FingerprintService] URL canonicalization fallback for ${rawUrl}: ${(err as Error).message}`);
       return rawUrl.trim().toLowerCase().replace(/\/+$/, '');
     }
   }
