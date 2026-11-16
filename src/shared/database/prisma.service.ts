@@ -19,7 +19,8 @@ export function buildDatabaseUrl(
       parsed.searchParams.set('pool_timeout', String(poolTimeout));
     }
     return parsed.toString();
-  } catch {
+  } catch (err: unknown) {
+    logger.warn(`[PrismaService] Failed parsing DATABASE_URL: ${(err as Error).message}`);
     return baseUrl;
   }
 }
@@ -92,7 +93,8 @@ export class PrismaService extends PrismaClient {
     try {
       await this.$queryRawUnsafe('SELECT 1');
       return true;
-    } catch {
+    } catch (err: unknown) {
+      logger.warn(`[PrismaService] Ping probe failed: ${(err as Error).message}`);
       return false;
     }
   }

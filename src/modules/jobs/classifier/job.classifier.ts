@@ -13,6 +13,7 @@ import {
 
 import { SeniorityClassifier, seniorityClassifier } from './seniority.classifier.js';
 import { WorkTypeClassifier, workTypeClassifier } from './work-type.classifier.js';
+import logger from '../../../shared/utils/logger.js';
 import {
   RemoteScopeClassifier,
   remoteScopeClassifier,
@@ -780,8 +781,8 @@ export class DeterministicJobClassifier {
           classificationMethod: 'AI_FALLBACK',
         };
       }
-    } catch {
-      // Graceful degradation: AI outage leaves deterministic result intact without throwing
+    } catch (err: unknown) {
+      logger.warn(`[JobClassifier] AI fallback resolution failed, retaining deterministic result: ${(err as Error).message}`);
     }
 
     return deterministic;

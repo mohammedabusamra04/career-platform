@@ -2,6 +2,7 @@ import type { Job, JobSearchQuery } from '../job.types.js';
 import { JobSourceType } from '../job.types.js';
 import type { JobSource } from './job-source.interface.js';
 import { ExperienceLevel, WorkType } from '../../../shared/types/job.js';
+import logger from '../../../shared/utils/logger.js';
 
 interface ArbeitnowJobItem {
   slug?: string;
@@ -67,7 +68,8 @@ export class ArbeitnowJobSource implements JobSource {
       });
 
       return filtered.slice(0, 20).map((item) => this.mapToJob(item, query));
-    } catch {
+    } catch (err: unknown) {
+      logger.warn(`[ArbeitnowJobSource] Fetch error: ${(err as Error).message}`);
       return [];
     }
   }

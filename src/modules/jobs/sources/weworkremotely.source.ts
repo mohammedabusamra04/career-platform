@@ -2,6 +2,7 @@ import type { Job, JobSearchQuery } from '../job.types.js';
 import { JobSourceType } from '../job.types.js';
 import type { JobSource } from './job-source.interface.js';
 import { ExperienceLevel, WorkType } from '../../../shared/types/job.js';
+import logger from '../../../shared/utils/logger.js';
 
 export class WeWorkRemotelyJobSource implements JobSource {
   public readonly type = JobSourceType.WE_WORK_REMOTELY;
@@ -24,7 +25,8 @@ export class WeWorkRemotelyJobSource implements JobSource {
 
       const xml = await response.text();
       return this.parseRss(xml, query);
-    } catch {
+    } catch (err: unknown) {
+      logger.warn(`[WeWorkRemotelyJobSource] Fetch error: ${(err as Error).message}`);
       return [];
     }
   }

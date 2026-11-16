@@ -17,6 +17,7 @@
 
 import ms from 'ms';
 import { z } from 'zod';
+import logger from '../../shared/utils/logger.js';
 
 /** Default processing timeout for expensive regex operations */
 export const DEFAULT_SANITIZATION_TIMEOUT_MS = ms('2s');
@@ -35,7 +36,8 @@ export const urlSchema = z
       try {
         const parsed = new URL(val);
         return parsed.protocol === 'http:' || parsed.protocol === 'https:';
-      } catch {
+      } catch (err: unknown) {
+        logger.debug(`[JobSanitizer] Invalid URL protocol parse for ${val}: ${(err as Error).message}`);
         return false;
       }
     },
@@ -235,8 +237,8 @@ export function stripUtmParams(rawUrl: string): string {
 
     // Clean up empty query string delimiter
     return parsed.toString().replace(/\?$/, '');
-  } catch {
-    // If not parseable as a valid URL, return trimmed original
+  } catch (err: unknown) {
+    logger.debug(`[JobSanitizer] URL normalization fallback for ${trimmed}: ${(err as Error).message}`);
     return trimmed;
   }
 }

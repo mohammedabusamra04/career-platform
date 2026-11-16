@@ -9,6 +9,7 @@ import {
   Specialization,
 } from '../../modules/preferences/preference.taxonomy.js';
 import { buildSpecializationKeyboard } from '../keyboards/specialization.keyboard.js';
+import { buildDigestPaginationKeyboard } from '../keyboards/digest-pagination.keyboard.js';
 import { getWelcomeMessage } from './start.handler.js';
 import type { SupportedLanguage } from '../session.js';
 import {
@@ -167,7 +168,7 @@ export function registerConfirmationHandler(
         const replyMarkup =
           !digest.hasMatches || digest.jobs.length === 0
             ? digestService.buildEmptyStateKeyboard(lang)
-            : undefined;
+            : buildDigestPaginationKeyboard(1, digest.totalPages, lang);
 
         // Edit searching message with formatted digest cards and empty state buttons if 0 matches
         if (searchingMsg && searchingMsg.message_id && ctx.chat) {
@@ -194,8 +195,8 @@ export function registerConfirmationHandler(
 
           try {
             await ctx.api.editMessageText(ctx.chat.id, searchingMsg.message_id, fallbackText);
-          } catch {
-            // Ignore secondary fallback edit error
+          } catch (fallbackErr: unknown) {
+            logger.warn(`[ConfirmationHandler] Secondary fallback edit error: ${(fallbackErr as Error).message}`);
           }
         }
       }

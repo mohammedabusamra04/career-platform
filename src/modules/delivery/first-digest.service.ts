@@ -1,11 +1,55 @@
 import type { PrismaClient } from '@prisma/client';
 import { InlineKeyboard } from 'grammy';
+import ms from 'ms';
 import { prisma } from '../../shared/database/prisma.service.js';
 import { equivalenceMatchingService } from '../matching/equivalence-matching.service.js';
 import { transparentExplanationBuilder } from '../matching/score-reason.builder.js';
 import type { ScorableJob } from '../matching/scoring.calculator.js';
 import type { Specialization, RegionPreference } from '../preferences/preference.taxonomy.js';
+import type { DigestCardJob } from '../notifications/telegram/digest-card.formatter.js';
 import logger from '../../shared/utils/logger.js';
+
+export const HISTORICAL_SENT_WINDOW = ms('4h');
+
+export interface RawDatabaseJob {
+  id: string;
+  title: string;
+  company?: string | null;
+  source?: string | null;
+  url?: string | null;
+  applicationUrl?: string | null;
+  location?: string | null;
+  country?: string | null;
+  remoteScope?: string | null;
+  primarySpecialization?: Specialization | string | null;
+  secondarySpecialization?: Specialization | string | null;
+  experienceLevel?: string | null;
+  workType?: string | null;
+  publishedAt?: Date | null;
+}
+
+/**
+ * Explicitly maps database job records into strongly-typed ScorableJob models,
+ * validating required fields and eliminating unsafe unchecked casts.
+ */
+export function mapToScorableJob(job: RawDatabaseJob): ScorableJob {
+  return {
+    id: job.id,
+    title: job.title,
+    primarySpecialization: (job.primarySpecialization as Specialization) ?? null,
+    secondarySpecialization: (job.secondarySpecialization as Specialization) ?? null,
+    remoteScope: job.remoteScope,
+    country: job.country,
+    location: job.location,
+    workType: job.workType,
+    source: job.source,
+    url: job.url,
+    applicationUrl: job.applicationUrl,
+    experienceLevel: job.experienceLevel,
+    publishedAt: job.publishedAt,
+    publicationDate: job.publishedAt,
+  };
+}
 
 export interface FirstDigestCandidate {
   jobId: string;
@@ -87,7 +131,7 @@ export class FirstDigestService {
       orderBy: {
         publishedAt: 'desc',
       },
-      take: 100,
+      take: 250,
     });
 
     if (activeJobs.length === 0) {
@@ -118,9 +162,10 @@ export class FirstDigestService {
       userIds: [userId],
     };
 
+    const scorableJobs = activeJobs.map(mapToScorableJob);
     const scoredGroupJobs = equivalenceMatchingService.matchGroup(
       group,
-      activeJobs as unknown as ScorableJob[],
+      scorableJobs,
     );
 
     // 4. Personalize by subtracting already sent jobs (up to 20 top matches)
@@ -217,6 +262,104 @@ export class FirstDigestService {
         jobId,
       })),
       skipDuplicates: true,
+    });
+  }
+
+  /**
+   * Retrieves up to 20 candidate jobs personalized for a user's preferences,
+   * used for in-place pagination across digest pages.
+   */
+  public async getPersonalizedDigestJobs(userId: string): Promise<DigestCardJob[]> {
+    const userPref = await this.db.userPreference.findUnique({
+      where: { userId },
+    });
+
+    if (!userPref || !userPref.specializations?.length) {
+      return [];
+    }
+
+    const specs = userPref.specializations as Specialization[];
+    const activeJobs = await this.db.job.findMany({
+      where: {
+        status: 'ACTIVE',
+        OR: [
+          { primarySpecialization: { in: specs } },
+          { secondarySpecialization: { in: specs } },
+        ],
+      },
+      select: {
+        id: true,
+        title: true,
+        company: true,
+        url: true,
+        applicationUrl: true,
+        location: true,
+        country: true,
+        remoteScope: true,
+        primarySpecialization: true,
+        secondarySpecialization: true,
+        experienceLevel: true,
+        workType: true,
+        publishedAt: true,
+      },
+      orderBy: {
+        publishedAt: 'desc',
+      },
+      take: 250,
+    });
+
+    if (activeJobs.length === 0) {
+      return [];
+    }
+
+    // Exclude jobs sent in previous cycles while retaining current session jobs
+    const cutoffDate = new Date(Date.now() - HISTORICAL_SENT_WINDOW);
+    const historicalSent = await this.db.sentJob.findMany({
+      where: {
+        userId,
+        sentAt: { lt: cutoffDate },
+      },
+      select: { jobId: true },
+    });
+    const historicalSentIds = new Set(historicalSent.map((s) => s.jobId));
+
+    const group = {
+      preferenceHash: userPref.preferenceHash || 'digest-pagination',
+      specializations: specs,
+      regionPreference: userPref.regionPreference as RegionPreference,
+      experienceLevel: userPref.experienceLevel ?? null,
+      workType: userPref.workType ?? null,
+      userIds: [userId],
+    };
+
+    const scorableJobs = activeJobs.map(mapToScorableJob);
+    const scored = equivalenceMatchingService.matchGroup(
+      group,
+      scorableJobs,
+    );
+
+    const personalized = equivalenceMatchingService.personalizeForMember(
+      scored,
+      historicalSentIds,
+      20,
+    );
+
+    return personalized.map((item) => {
+      const rawCompany =
+        'company' in item.job ? String((item.job as { company?: unknown }).company || '') : '';
+
+      return {
+        id: item.job.id as string,
+        title: item.job.title || 'Untitled Role',
+        company: rawCompany || 'Company',
+        url: item.job.url || item.job.applicationUrl || '',
+        applicationUrl: item.job.applicationUrl,
+        location: item.job.location,
+        country: item.job.country,
+        remoteScope: item.job.remoteScope,
+        experienceLevel: item.job.experienceLevel,
+        score: item.scoring.score,
+      };
     });
   }
 

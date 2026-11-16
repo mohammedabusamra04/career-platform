@@ -3,6 +3,7 @@ import type { Job, JobSearchQuery } from '../job.types.js';
 import { JobSourceType } from '../job.types.js';
 import type { JobSource } from './job-source.interface.js';
 import { ExperienceLevel, WorkType } from '../../../shared/types/job.js';
+import logger from '../../../shared/utils/logger.js';
 
 /**
  * Scrapes Naukrigulf.com (primary job search portal in the GCC / Gulf region).
@@ -35,7 +36,8 @@ export class NaukrigulfJobSource implements JobSource {
 
       const html = await response.text();
       return this.parseJobs(html, query);
-    } catch {
+    } catch (err: unknown) {
+      logger.warn(`[NaukrigulfJobSource] Fetch error: ${(err as Error).message}`);
       return [];
     }
   }
