@@ -5,6 +5,7 @@ import { equivalenceMatchingService } from '../matching/equivalence-matching.ser
 import { transparentExplanationBuilder } from '../matching/score-reason.builder.js';
 import type { ScorableJob } from '../matching/scoring.calculator.js';
 import type { Specialization, RegionPreference } from '../preferences/preference.taxonomy.js';
+import type { DigestCardJob } from '../notifications/telegram/digest-card.formatter.js';
 import logger from '../../shared/utils/logger.js';
 
 export interface FirstDigestCandidate {
@@ -217,6 +218,88 @@ export class FirstDigestService {
         jobId,
       })),
       skipDuplicates: true,
+    });
+  }
+
+  /**
+   * Retrieves up to 20 candidate jobs personalized for a user's preferences,
+   * used for in-place pagination across digest pages.
+   */
+  public async getPersonalizedDigestJobs(userId: string): Promise<DigestCardJob[]> {
+    const userPref = await this.db.userPreference.findUnique({
+      where: { userId },
+    });
+
+    if (!userPref || !userPref.specializations?.length) {
+      return [];
+    }
+
+    const specs = userPref.specializations as Specialization[];
+    const activeJobs = await this.db.job.findMany({
+      where: {
+        status: 'ACTIVE',
+        OR: [
+          { primarySpecialization: { in: specs } },
+          { secondarySpecialization: { in: specs } },
+        ],
+      },
+      select: {
+        id: true,
+        title: true,
+        company: true,
+        url: true,
+        applicationUrl: true,
+        location: true,
+        country: true,
+        remoteScope: true,
+        primarySpecialization: true,
+        secondarySpecialization: true,
+        experienceLevel: true,
+        workType: true,
+        publishedAt: true,
+      },
+      orderBy: {
+        publishedAt: 'desc',
+      },
+      take: 100,
+    });
+
+    if (activeJobs.length === 0) {
+      return [];
+    }
+
+    const group = {
+      preferenceHash: userPref.preferenceHash || 'digest-pagination',
+      specializations: specs,
+      regionPreference: userPref.regionPreference as RegionPreference,
+      experienceLevel: userPref.experienceLevel ?? null,
+      workType: userPref.workType ?? null,
+      userIds: [userId],
+    };
+
+    const scored = equivalenceMatchingService.matchGroup(
+      group,
+      activeJobs as unknown as ScorableJob[],
+    );
+
+    const personalized = equivalenceMatchingService.personalizeForMember(scored, new Set(), 20);
+
+    return personalized.map((item) => {
+      const rawCompany =
+        'company' in item.job ? String((item.job as { company?: unknown }).company || '') : '';
+
+      return {
+        id: item.job.id as string,
+        title: item.job.title || 'Untitled Role',
+        company: rawCompany || 'Company',
+        url: item.job.url || item.job.applicationUrl || '',
+        applicationUrl: item.job.applicationUrl,
+        location: item.job.location,
+        country: item.job.country,
+        remoteScope: item.job.remoteScope,
+        experienceLevel: item.job.experienceLevel,
+        score: item.scoring.score,
+      };
     });
   }
 
