@@ -111,6 +111,7 @@ describe('DigestPaginationHandler (TASK-43.2)', () => {
 
       mockDigestService = {
         getPersonalizedDigestJobs: vi.fn().mockResolvedValue(mockCandidateJobs),
+        recordDeliveredJobs: vi.fn().mockResolvedValue(undefined),
       } as unknown as FirstDigestService;
 
       mockBot = {
@@ -169,6 +170,34 @@ describe('DigestPaginationHandler (TASK-43.2)', () => {
           }),
         }),
       );
+
+      // Verify delivered jobs for page 2 are recorded upon successful edit
+      expect(mockDigestService.recordDeliveredJobs).toHaveBeenCalledWith(
+        'user-uuid-1',
+        ['job-6', 'job-7', 'job-8', 'job-9', 'job-10'],
+      );
+    });
+
+    it('should not record delivered jobs if editMessageText fails', async () => {
+      const ctx = {
+        match: ['digest:page:2', '2'],
+        from: { id: 123456789 },
+        session: { language: 'ar' },
+        answerCallbackQuery: vi.fn().mockResolvedValue(true),
+        editMessageText: vi.fn().mockRejectedValue(new Error('Network error')),
+      } as unknown as BotContext;
+
+      await pageCallbackHandler(ctx);
+
+      expect(mockDigestService.recordDeliveredJobs).not.toHaveBeenCalled();
+    });
+
+    it('initial confirmation digest attaches pagination controls with the correct total page count', () => {
+      // 12 jobs partitioned with pageSize 5 => 3 pages total
+      const keyboard = buildDigestPaginationKeyboard(1, 3, 'ar');
+      expect(keyboard.inline_keyboard[0][0].text).toBe('📄 1/3');
+      expect(keyboard.inline_keyboard[0][1].text).toBe('التالي ▶️');
+      expect(keyboard.inline_keyboard[0][1].callback_data).toBe('digest:page:2');
     });
 
     it('should edit message with English language when user session language is en', async () => {

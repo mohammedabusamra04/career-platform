@@ -39,8 +39,8 @@ export function registerDigestPaginationHandler(
   bot.callbackQuery('digest:noop', async (ctx) => {
     try {
       await ctx.answerCallbackQuery();
-    } catch {
-      // Ignore answer failure on stale callbacks
+    } catch (err: unknown) {
+      logger.warn(`[DigestPaginationHandler] Stale noop callback: ${(err as Error).message}`);
     }
   });
 
@@ -49,8 +49,8 @@ export function registerDigestPaginationHandler(
     // Acknowledge the callback immediately to prevent Telegram client spinner hanging
     try {
       await ctx.answerCallbackQuery();
-    } catch {
-      // Continue even if acknowledgment fails
+    } catch (err: unknown) {
+      logger.warn(`[DigestPaginationHandler] Failed acknowledging page callback: ${(err as Error).message}`);
     }
 
     const rawPage = ctx.match?.[1];
@@ -97,6 +97,15 @@ export function registerDigestPaginationHandler(
         link_preview_options: { is_disabled: true },
         reply_markup: keyboard,
       });
+
+      // Record displayed jobs to SentJob ONLY after in-place edit succeeds
+      const displayedJobIds = pagination.pagedJobs
+        .map((job) => job.id)
+        .filter((id): id is string => typeof id === 'string' && id.length > 0);
+
+      if (displayedJobIds.length > 0) {
+        await digestService.recordDeliveredJobs(user.id, displayedJobIds);
+      }
     } catch (err: unknown) {
       const errMsg = (err as Error).message || '';
       // Telegram throws an error if editMessageText is called with identical content

@@ -21,6 +21,9 @@ describe('FirstDigestService (TASK-40.1)', () => {
         findMany: vi.fn(),
         createMany: vi.fn(),
       },
+      userPreference: {
+        findUnique: vi.fn(),
+      },
     };
 
     service = new FirstDigestService(mockPrisma as PrismaClient);
@@ -234,6 +237,104 @@ describe('FirstDigestService (TASK-40.1)', () => {
 
       expect(keyboardEn.inline_keyboard[0][0].text).toContain('Edit Specializations');
       expect(keyboardEn.inline_keyboard[1][0].text).toContain('Expand Target Region');
+    });
+  });
+
+  describe('getPersonalizedDigestJobs', () => {
+    it('applies region, experience, work-type, and sent-job filtering correctly', async () => {
+      // User preferences: Backend, Arab region only, Senior level
+      (mockPrisma as { userPreference: { findUnique: ReturnType<typeof vi.fn> } }).userPreference.findUnique.mockResolvedValueOnce({
+        userId: 'user-uuid-1',
+        specializations: [Specialization.BACKEND],
+        regionPreference: RegionPreference.ARAB,
+        experienceLevel: 'SENIOR',
+        workType: 'FULL_TIME',
+        preferenceHash: 'pref-hash-1',
+      });
+
+      // 1 job with Arab region and Senior level (should pass)
+      // 1 job with US/Europe region (should be excluded by ARAB region preference)
+      const jobs = [
+        {
+          id: 'arab-job-1',
+          title: 'Senior Backend Engineer',
+          company: 'ArabTech',
+          url: 'https://arabtech.com/1',
+          source: 'bayt',
+          location: 'Riyadh, Saudi Arabia',
+          country: 'SA',
+          remoteScope: 'COUNTRY',
+          primarySpecialization: Specialization.BACKEND,
+          secondarySpecialization: null,
+          experienceLevel: 'SENIOR',
+          workType: 'FULL_TIME',
+          publishedAt: new Date(),
+        },
+        {
+          id: 'us-job-2',
+          title: 'Backend Specialist',
+          company: 'USTech',
+          url: 'https://ustech.com/2',
+          source: 'lever',
+          location: 'San Francisco, USA',
+          country: 'US',
+          remoteScope: 'COUNTRY',
+          primarySpecialization: Specialization.BACKEND,
+          secondarySpecialization: null,
+          experienceLevel: 'SENIOR',
+          workType: 'FULL_TIME',
+          publishedAt: new Date(),
+        },
+      ];
+
+      (mockPrisma as { job: { findMany: ReturnType<typeof vi.fn> } }).job.findMany.mockResolvedValueOnce(jobs);
+      // No historical sent jobs
+      (mockPrisma as { sentJob: { findMany: ReturnType<typeof vi.fn> } }).sentJob.findMany.mockResolvedValueOnce([]);
+
+      const personalized = await service.getPersonalizedDigestJobs('user-uuid-1');
+
+      expect(personalized).toHaveLength(1);
+      expect(personalized[0].id).toBe('arab-job-1');
+    });
+
+    it('evaluates enough active jobs after preference matching to provide the requested maximum', async () => {
+      (mockPrisma as { userPreference: { findUnique: ReturnType<typeof vi.fn> } }).userPreference.findUnique.mockResolvedValueOnce({
+        userId: 'user-uuid-2',
+        specializations: [Specialization.BACKEND],
+        regionPreference: RegionPreference.BOTH,
+        experienceLevel: null,
+        workType: null,
+      });
+
+      // Generate 25 matching jobs
+      const generatedJobs = Array.from({ length: 25 }, (_, i) => ({
+        id: `batch-job-${i + 1}`,
+        title: `Backend Developer ${i + 1}`,
+        company: `Company ${i + 1}`,
+        url: `https://example.com/jobs/${i + 1}`,
+        source: 'greenhouse',
+        location: 'Dubai, UAE',
+        country: 'AE',
+        remoteScope: 'WORLDWIDE',
+        primarySpecialization: Specialization.BACKEND,
+        secondarySpecialization: null,
+        experienceLevel: 'MID',
+        workType: 'FULL_TIME',
+        publishedAt: new Date(),
+      }));
+
+      (mockPrisma as { job: { findMany: ReturnType<typeof vi.fn> } }).job.findMany.mockResolvedValueOnce(generatedJobs);
+      (mockPrisma as { sentJob: { findMany: ReturnType<typeof vi.fn> } }).sentJob.findMany.mockResolvedValueOnce([]);
+
+      const result = await service.getPersonalizedDigestJobs('user-uuid-2');
+
+      // Caps at exactly 20 jobs for 4 pages of 5 jobs each
+      expect(result).toHaveLength(20);
+      expect((mockPrisma as { job: { findMany: ReturnType<typeof vi.fn> } }).job.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          take: 250,
+        }),
+      );
     });
   });
 });

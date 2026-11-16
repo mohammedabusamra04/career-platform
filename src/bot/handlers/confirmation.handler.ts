@@ -195,8 +195,8 @@ export function registerConfirmationHandler(
 
           try {
             await ctx.api.editMessageText(ctx.chat.id, searchingMsg.message_id, fallbackText);
-          } catch {
-            // Ignore secondary fallback edit error
+          } catch (fallbackErr: unknown) {
+            logger.warn(`[ConfirmationHandler] Secondary fallback edit error: ${(fallbackErr as Error).message}`);
           }
         }
       }
