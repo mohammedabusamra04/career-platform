@@ -471,8 +471,8 @@ export class JobExplorerService {
       .join('\n\n────────────────────\n\n');
 
     const disclaimer = isArabic
-      ? '💡 *تنويه شفاف:* الروابط أعلاه تنقلك مباشرة إلى موقع التقديم الرسمي. البوت لا يقدّم على الوظائف بالنيابة عنك.'
-      : '💡 *Direct Application:* The links above take you directly to official job listings. The bot does not apply on your behalf.';
+      ? '💡 *تنبيه:* الروابط أعلاه تنقلك مباشرة إلى موقع التقديم الرسمي. البوت لا يقدّم على الوظائف بالنيابة عنك.'
+      : '💡 *Notice:* The links above take you directly to official job listings. The bot does not apply on your behalf.';
 
     return `${header}\n\n${sortInfo}${jobCards}\n\n────────────────────\n${disclaimer}`;
   }
