@@ -172,14 +172,25 @@ export function registerJobsHandler(
 
   // 4. Sorting Toggle Callback: jobs:sort:(BEST_MATCH|LATEST)
   bot.callbackQuery(/^jobs:sort:(BEST_MATCH|LATEST)$/, async (ctx) => {
+    const requestedSort = ctx.match?.[1] as JobSortOrder;
+    if (!requestedSort) return;
+
+    const lang: SupportedLanguage = ctx.session?.language || 'ar';
+    const isArabic = lang === 'ar';
+    const toastText =
+      requestedSort === 'LATEST'
+        ? isArabic
+          ? '⏱️ تم الترتيب حسب: الأحدث نشراً'
+          : '⏱️ Sorted by: Latest Published'
+        : isArabic
+          ? '🎯 تم الترتيب حسب: الأكثر مطابقة'
+          : '🎯 Sorted by: Best Match';
+
     try {
-      await ctx.answerCallbackQuery();
+      await ctx.answerCallbackQuery({ text: toastText });
     } catch (err: unknown) {
       logger.warn(`[JobsHandler] Failed acknowledging sort callback: ${(err as Error).message}`);
     }
-
-    const requestedSort = ctx.match?.[1] as JobSortOrder;
-    if (!requestedSort) return;
 
     if (ctx.session) {
       ctx.session.jobsSort = requestedSort;
@@ -187,8 +198,6 @@ export function registerJobsHandler(
 
     const telegramId = ctx.from?.id;
     if (!telegramId) return;
-
-    const lang: SupportedLanguage = ctx.session?.language || 'ar';
 
     try {
       const user = await userRepo.findByTelegramId(telegramId);

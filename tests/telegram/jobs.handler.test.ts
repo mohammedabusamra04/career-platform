@@ -220,19 +220,24 @@ describe('JobsHandler (TASK-44.1)', () => {
   });
 
   describe('Callback Query: jobs:sort:(BEST_MATCH|LATEST)', () => {
-    it('should switch sorting order, update session, and edit message in-place', async () => {
-      const sessionObj = { language: 'en' as const, jobsSort: 'BEST_MATCH' as const };
+    it('should switch sorting order to LATEST, show localized toast, and edit message in-place without restarting flow', async () => {
+      const sessionObj = { language: 'ar' as const, jobsSort: 'BEST_MATCH' as const };
       const ctx = {
         match: ['jobs:sort:LATEST', 'LATEST'],
         from: { id: 123456789 },
         session: sessionObj,
+        reply: vi.fn(),
         answerCallbackQuery: vi.fn().mockResolvedValue(true),
         editMessageText: vi.fn().mockResolvedValue(true),
       } as unknown as BotContext;
 
       await sortHandler(ctx);
 
-      expect(ctx.answerCallbackQuery).toHaveBeenCalledTimes(1);
+      expect(ctx.answerCallbackQuery).toHaveBeenCalledWith(
+        expect.objectContaining({
+          text: '⏱️ تم الترتيب حسب: الأحدث نشراً',
+        }),
+      );
       expect(sessionObj.jobsSort).toBe('LATEST');
       expect(mockExplorerService.getJobsForUser).toHaveBeenCalledWith('user-uuid-1', {
         page: 1,
@@ -240,6 +245,48 @@ describe('JobsHandler (TASK-44.1)', () => {
         sort: 'LATEST',
       });
       expect(ctx.editMessageText).toHaveBeenCalledTimes(1);
+      // Verify conversation flow was NOT restarted (reply never called)
+      expect(ctx.reply).not.toHaveBeenCalled();
+    });
+
+    it('should switch sorting order to BEST_MATCH, show English toast, and edit message in-place', async () => {
+      const sessionObj = { language: 'en' as const, jobsSort: 'LATEST' as const };
+      const ctx = {
+        match: ['jobs:sort:BEST_MATCH', 'BEST_MATCH'],
+        from: { id: 123456789 },
+        session: sessionObj,
+        reply: vi.fn(),
+        answerCallbackQuery: vi.fn().mockResolvedValue(true),
+        editMessageText: vi.fn().mockResolvedValue(true),
+      } as unknown as BotContext;
+
+      await sortHandler(ctx);
+
+      expect(ctx.answerCallbackQuery).toHaveBeenCalledWith(
+        expect.objectContaining({
+          text: '🎯 Sorted by: Best Match',
+        }),
+      );
+      expect(sessionObj.jobsSort).toBe('BEST_MATCH');
+      expect(mockExplorerService.getJobsForUser).toHaveBeenCalledWith('user-uuid-1', {
+        page: 1,
+        pageSize: 5,
+        sort: 'BEST_MATCH',
+      });
+      expect(ctx.editMessageText).toHaveBeenCalledTimes(1);
+      expect(ctx.reply).not.toHaveBeenCalled();
+    });
+
+    it('should safely ignore "message is not modified" error from Telegram API', async () => {
+      const ctx = {
+        match: ['jobs:sort:LATEST', 'LATEST'],
+        from: { id: 123456789 },
+        session: { language: 'ar', jobsSort: 'BEST_MATCH' },
+        answerCallbackQuery: vi.fn().mockResolvedValue(true),
+        editMessageText: vi.fn().mockRejectedValue(new Error('Bad Request: message is not modified')),
+      } as unknown as BotContext;
+
+      await expect(sortHandler(ctx)).resolves.not.toThrow();
     });
   });
 });
