@@ -29,18 +29,24 @@ describe('DigestCardFormatter (TASK-43.1)', () => {
   });
 
   describe('sanitizeApplicationUrl', () => {
-    it('should return valid HTTPS and HTTP URLs', () => {
+    it('should strictly enforce HTTPS format, upgrading HTTP to HTTPS', () => {
       expect(sanitizeApplicationUrl('https://careers.google.com/jobs/123')).toBe(
         'https://careers.google.com/jobs/123',
       );
       expect(sanitizeApplicationUrl('http://jobs.example.com')).toBe(
-        'http://jobs.example.com',
+        'https://jobs.example.com',
+      );
+      expect(sanitizeApplicationUrl('jobs.example.com/apply')).toBe(
+        'https://jobs.example.com/apply',
       );
     });
 
-    it('should reject unsafe schemes and empty inputs', () => {
+    it('should reject unsafe schemes, malformed strings, and empty inputs', () => {
       expect(sanitizeApplicationUrl('javascript:alert(1)')).toBe('');
       expect(sanitizeApplicationUrl('ftp://example.com')).toBe('');
+      expect(sanitizeApplicationUrl('data:text/html,<script>')).toBe('');
+      expect(sanitizeApplicationUrl('file:///etc/passwd')).toBe('');
+      expect(sanitizeApplicationUrl('malformed url <>')).toBe('');
       expect(sanitizeApplicationUrl('')).toBe('');
       expect(sanitizeApplicationUrl(null)).toBe('');
       expect(sanitizeApplicationUrl(undefined)).toBe('');

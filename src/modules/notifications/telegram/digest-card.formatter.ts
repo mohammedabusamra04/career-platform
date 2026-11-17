@@ -53,13 +53,34 @@ export function escapeTelegramMarkdown(text: string): string {
 }
 
 /**
- * Sanitizes URLs to ensure direct, secure HTTPS protocol.
+ * Sanitizes and validates URLs to strictly enforce secure HTTPS protocol.
+ * Automatically upgrades HTTP URLs to HTTPS, validates format via URL parser,
+ * and strips unsafe schemes (javascript:, file:, data:, ftp:, etc.).
  */
 export function sanitizeApplicationUrl(rawUrl?: string | null): string {
   if (!rawUrl || typeof rawUrl !== 'string') return '';
-  const trimmed = rawUrl.trim();
-  if (trimmed.startsWith('https://') || trimmed.startsWith('http://')) {
-    return trimmed;
+  let trimmed = rawUrl.trim();
+  if (!trimmed) return '';
+
+  // Reject unsafe schemes
+  if (/^(javascript|data|file|ftp):/i.test(trimmed)) {
+    return '';
+  }
+
+  // Upgrade http:// to https:// or prepend https:// if protocol is omitted
+  if (/^http:\/\//i.test(trimmed)) {
+    trimmed = trimmed.replace(/^http:\/\//i, 'https://');
+  } else if (!/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(trimmed)) {
+    trimmed = `https://${trimmed}`;
+  }
+
+  try {
+    const parsed = new URL(trimmed);
+    if (parsed.protocol === 'https:') {
+      return trimmed;
+    }
+  } catch {
+    return '';
   }
   return '';
 }
