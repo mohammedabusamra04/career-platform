@@ -160,11 +160,85 @@ describe('JobExplorerService (TASK-44.1)', () => {
       expect(result.sort).toBe('LATEST');
       expect(result.jobs).toHaveLength(5);
 
+      // Verify Prisma query was instructed to order by publishedAt DESC, id DESC
+      expect(mockPrisma.job.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          orderBy: [
+            { publishedAt: 'desc' },
+            { id: 'desc' },
+          ],
+        }),
+      );
+
       // Verify descending timestamp order
       for (let i = 0; i < result.jobs.length - 1; i++) {
         const t1 = new Date(result.jobs[i].publishedAt!).getTime();
         const t2 = new Date(result.jobs[i + 1].publishedAt!).getTime();
         expect(t1).toBeGreaterThanOrEqual(t2);
+      }
+    });
+
+    it('should break ties deterministically by id when publishedAt is identical in LATEST sort', async () => {
+      const identicalDate = new Date('2026-11-17T20:00:00Z');
+      const tieJobs = [
+        {
+          id: 'job-aaa',
+          title: 'Role AAA',
+          company: 'Company A',
+          url: 'https://example.com/a',
+          primarySpecialization: Specialization.BACKEND,
+          remoteScope: 'WORLDWIDE',
+          publishedAt: identicalDate,
+        },
+        {
+          id: 'job-zzz',
+          title: 'Role ZZZ',
+          company: 'Company Z',
+          url: 'https://example.com/z',
+          primarySpecialization: Specialization.BACKEND,
+          remoteScope: 'WORLDWIDE',
+          publishedAt: identicalDate,
+        },
+      ];
+
+      const localPrisma = {
+        userPreference: {
+          findUnique: vi.fn().mockResolvedValue({
+            userId: 'user-uuid-tie',
+            specializations: [Specialization.BACKEND],
+            regionPreference: RegionPreference.BOTH,
+            experienceLevel: 'SENIOR',
+            workType: 'FULL_TIME',
+            preferenceHash: 'hash-tie-break',
+          }),
+        },
+        job: {
+          findMany: vi.fn().mockResolvedValue(tieJobs),
+        },
+      };
+
+      const localService = new JobExplorerService(localPrisma as unknown as PrismaClient);
+
+      const result = await localService.getJobsForUser('user-uuid-tie', {
+        sort: 'LATEST',
+      });
+
+      expect(result.jobs).toHaveLength(2);
+      // 'job-zzz' should precede 'job-aaa' due to b.id.localeCompare(a.id)
+      expect(result.jobs[0].id).toBe('job-zzz');
+      expect(result.jobs[1].id).toBe('job-aaa');
+    });
+
+    it('should default to BEST_MATCH (deterministic score descending) when sort is omitted', async () => {
+      const result = await service.getJobsForUser('user-uuid-1');
+
+      expect(result.sort).toBe('BEST_MATCH');
+      expect(result.jobs).toHaveLength(5);
+
+      for (let i = 0; i < result.jobs.length - 1; i++) {
+        const score1 = result.jobs[i].score ?? 0;
+        const score2 = result.jobs[i + 1].score ?? 0;
+        expect(score1).toBeGreaterThanOrEqual(score2);
       }
     });
 
