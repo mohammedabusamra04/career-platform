@@ -1,9 +1,13 @@
-import type { PrismaClient } from '@prisma/client';
+import type { PrismaClient, Prisma } from '@prisma/client';
 import ms from 'ms';
 import { prisma as defaultPrisma } from '../../shared/database/prisma.service.js';
 
 export const EXPLORER_SLA_TARGET_MS = ms('300ms');
-import { hardFilterEngine } from '../matching/hard-filter.engine.js';
+import {
+  hardFilterEngine,
+  ARAB_COUNTRY_CODES,
+  ARAB_SOURCES,
+} from '../matching/hard-filter.engine.js';
 import { equivalenceMatchingService } from '../matching/equivalence-matching.service.js';
 import { mapToScorableJob, type RawDatabaseJob } from '../delivery/first-digest.service.js';
 import {
@@ -13,15 +17,24 @@ import {
   formatExperienceLevel,
   formatMatchTone,
 } from '../notifications/telegram/digest-card.formatter.js';
-import type { Specialization, RegionPreference } from '../preferences/preference.taxonomy.js';
+import {
+  RegionPreference,
+  type Specialization,
+} from '../preferences/preference.taxonomy.js';
 import logger from '../../shared/utils/logger.js';
 
 export type JobSortOrder = 'BEST_MATCH' | 'LATEST';
+
+export interface KeysetCursor {
+  sortKey: number | string;
+  jobId: string;
+}
 
 export interface JobExplorerOptions {
   page?: number;
   pageSize?: number;
   sort?: JobSortOrder;
+  cursor?: string;
 }
 
 export interface ExplorerJobItem {
@@ -46,7 +59,65 @@ export interface JobExplorerResult {
   pageSize: number;
   sort: JobSortOrder;
   jobs: ExplorerJobItem[];
+  nextCursor?: string | null;
+  prevCursor?: string | null;
   executionTimeMs: number;
+}
+
+/**
+ * Encodes a keyset cursor token containing sort key and job ID tie-breaker.
+ */
+export function encodeKeysetCursor(cursor: KeysetCursor): string {
+  return Buffer.from(JSON.stringify(cursor)).toString('base64url');
+}
+
+/**
+ * Safely decodes a keyset cursor token.
+ */
+export function decodeKeysetCursor(token?: string | null): KeysetCursor | null {
+  if (!token) return null;
+  try {
+    const raw = Buffer.from(token, 'base64url').toString('utf-8');
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed.jobId === 'string' && parsed.sortKey !== undefined) {
+      return parsed as KeysetCursor;
+    }
+  } catch (err: unknown) {
+    logger.warn(`[JobExplorerService] Failed decoding keyset cursor: ${(err as Error).message}`);
+  }
+  return null;
+}
+
+/**
+ * Builds Prisma database-level regional eligibility filter matching hard-filter taxonomy.
+ * Applies criteria in PostgreSQL directly to prevent truncating candidate results.
+ */
+export function buildDatabaseRegionFilter(regionPref: RegionPreference): Prisma.JobWhereInput {
+  if (regionPref === RegionPreference.BOTH) {
+    return {};
+  }
+
+  const arabCountries = Array.from(ARAB_COUNTRY_CODES);
+  const arabSources = Array.from(ARAB_SOURCES);
+
+  if (regionPref === RegionPreference.ARAB) {
+    return {
+      OR: [
+        { remoteScope: 'WORLDWIDE' },
+        { country: { in: arabCountries } },
+        { source: { in: arabSources } },
+      ],
+    };
+  }
+
+  // INTERNATIONAL: Exclude on-site local roles restricted to Arab countries
+  return {
+    OR: [
+      { remoteScope: 'WORLDWIDE' },
+      { country: { notIn: arabCountries } },
+      { country: null },
+    ],
+  };
 }
 
 export const ARABIC_HEADER_TEMPLATES = [
@@ -132,14 +203,26 @@ export class JobExplorerService {
     const regionPref = userPref.regionPreference as RegionPreference;
 
     // 2. Direct query against PostgreSQL shared pool using composite index:
-    // (primarySpecialization, remoteScope, status) and (status, publishedAt DESC)
-    const rawJobs = await this.db.job.findMany({
-      where: {
+    // (primarySpecialization, remoteScope, status) and (status, publishedAt DESC).
+    // Push regional eligibility directly into database query to avoid truncating candidates.
+    const regionFilter = buildDatabaseRegionFilter(regionPref);
+    const whereConditions: Prisma.JobWhereInput[] = [
+      {
         status: 'ACTIVE',
         OR: [
           { primarySpecialization: { in: specs } },
           { secondarySpecialization: { in: specs } },
         ],
+      },
+    ];
+
+    if (regionFilter.OR) {
+      whereConditions.push({ OR: regionFilter.OR });
+    }
+
+    const rawJobs = await this.db.job.findMany({
+      where: {
+        AND: whereConditions,
       },
       select: {
         id: true,
@@ -156,10 +239,10 @@ export class JobExplorerService {
         workType: true,
         publishedAt: true,
       },
-      orderBy: {
-        publishedAt: 'desc',
-      },
-      take: 500, // Safe pool buffer for in-memory score sorting and regional hard-filtering
+      orderBy: [
+        { publishedAt: 'desc' },
+        { id: 'desc' },
+      ],
     });
 
     // 3. Filter jobs by regional compatibility
@@ -225,23 +308,80 @@ export class JobExplorerService {
       };
     });
 
-    // 5. Apply sorting: 'BEST_MATCH' (score DESC) vs 'LATEST' (publishedAt DESC)
+    // 5. Apply deterministic keyset sorting with unique job-ID tie-breaker
     if (sort === 'LATEST') {
       allMatches.sort((a, b) => {
         const timeA = a.publishedAt ? new Date(a.publishedAt).getTime() : 0;
         const timeB = b.publishedAt ? new Date(b.publishedAt).getTime() : 0;
-        return timeB - timeA;
+        if (timeB !== timeA) return timeB - timeA;
+        return b.id.localeCompare(a.id);
       });
     } else {
-      allMatches.sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
+      allMatches.sort((a, b) => {
+        const scoreDiff = (b.score ?? 0) - (a.score ?? 0);
+        if (scoreDiff !== 0) return scoreDiff;
+        const timeA = a.publishedAt ? new Date(a.publishedAt).getTime() : 0;
+        const timeB = b.publishedAt ? new Date(b.publishedAt).getTime() : 0;
+        if (timeB !== timeA) return timeB - timeA;
+        return b.id.localeCompare(a.id);
+      });
     }
 
-    // 6. Keyset page slicing (5 jobs per page)
+    // 6. Keyset pagination using cursor or page-index fallback
     const totalMatches = allMatches.length;
     const totalPages = Math.max(1, Math.ceil(totalMatches / pageSize));
-    const safeCurrentPage = Math.min(page, totalPages);
-    const startIndex = (safeCurrentPage - 1) * pageSize;
+
+    let startIndex = 0;
+    const decodedCursor = decodeKeysetCursor(options?.cursor);
+
+    if (decodedCursor) {
+      const cursorIndex = allMatches.findIndex(
+        (item) => item.id === decodedCursor.jobId,
+      );
+      if (cursorIndex !== -1) {
+        startIndex = cursorIndex + 1;
+      }
+    } else {
+      const safeCurrentPage = Math.min(page, totalPages);
+      startIndex = (safeCurrentPage - 1) * pageSize;
+    }
+
     const pagedJobs = allMatches.slice(startIndex, startIndex + pageSize);
+    const calculatedCurrentPage = Math.min(
+      Math.floor(startIndex / pageSize) + 1,
+      totalPages,
+    );
+
+    // Build deterministic keyset cursors for next and previous navigation
+    let nextCursor: string | null = null;
+    let prevCursor: string | null = null;
+
+    if (pagedJobs.length > 0) {
+      const lastJob = pagedJobs[pagedJobs.length - 1];
+      const nextIndex = startIndex + pagedJobs.length;
+      if (nextIndex < totalMatches) {
+        const sortKey =
+          sort === 'LATEST'
+            ? lastJob.publishedAt?.toISOString() || ''
+            : lastJob.score ?? 0;
+        nextCursor = encodeKeysetCursor({
+          sortKey,
+          jobId: lastJob.id,
+        });
+      }
+
+      if (startIndex > 0) {
+        const firstJob = pagedJobs[0];
+        const sortKey =
+          sort === 'LATEST'
+            ? firstJob.publishedAt?.toISOString() || ''
+            : firstJob.score ?? 0;
+        prevCursor = encodeKeysetCursor({
+          sortKey,
+          jobId: firstJob.id,
+        });
+      }
+    }
 
     const executionTimeMs = Date.now() - startTime;
     logger.info(
@@ -251,11 +391,13 @@ export class JobExplorerService {
     return {
       hasMatches: true,
       totalMatches,
-      currentPage: safeCurrentPage,
+      currentPage: calculatedCurrentPage,
       totalPages,
       pageSize,
       sort,
       jobs: pagedJobs,
+      nextCursor,
+      prevCursor,
       executionTimeMs,
     };
   }

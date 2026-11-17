@@ -107,21 +107,27 @@ export function registerJobsHandler(
     }
   });
 
-  // 3. Keyset Pagination Callback: jobs:page:<targetPage>
-  bot.callbackQuery(/^jobs:page:(\d+)$/, async (ctx) => {
+  // 3. Keyset Pagination Callback: jobs:page:<sort>:<targetPage> or legacy jobs:page:<targetPage>
+  bot.callbackQuery(/^jobs:page:(?:(BEST_MATCH|LATEST):)?(\d+)$/, async (ctx) => {
     try {
       await ctx.answerCallbackQuery();
     } catch (err: unknown) {
       logger.warn(`[JobsHandler] Failed acknowledging page callback: ${(err as Error).message}`);
     }
 
-    const rawPage = ctx.match?.[1];
+    // Read sort order directly from stateless callback data; fallback to session or default
+    const rawSort = ctx.match?.[1] as JobSortOrder | undefined;
+    const rawPage = ctx.match?.[2];
     const targetPage = rawPage ? parseInt(rawPage, 10) : 1;
     const telegramId = ctx.from?.id;
     if (!telegramId) return;
 
     const lang: SupportedLanguage = ctx.session?.language || 'ar';
-    const sort: JobSortOrder = ctx.session?.jobsSort || 'BEST_MATCH';
+    const sort: JobSortOrder = rawSort || ctx.session?.jobsSort || 'BEST_MATCH';
+
+    if (ctx.session && rawSort) {
+      ctx.session.jobsSort = rawSort;
+    }
 
     try {
       const user = await userRepo.findByTelegramId(telegramId);
@@ -220,3 +226,4 @@ export function registerJobsHandler(
     }
   });
 }
+

@@ -5,6 +5,9 @@ import {
   formatJobsHeader,
   ARABIC_HEADER_TEMPLATES,
   ENGLISH_HEADER_TEMPLATES,
+  buildDatabaseRegionFilter,
+  encodeKeysetCursor,
+  decodeKeysetCursor,
 } from '../../src/modules/jobs/job-explorer.service.js';
 import {
   Specialization,
@@ -114,11 +117,15 @@ describe('JobExplorerService (TASK-44.1)', () => {
       expect(mockPrisma.job.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: expect.objectContaining({
-            status: 'ACTIVE',
-            OR: [
-              { primarySpecialization: { in: [Specialization.BACKEND] } },
-              { secondarySpecialization: { in: [Specialization.BACKEND] } },
-            ],
+            AND: expect.arrayContaining([
+              expect.objectContaining({
+                status: 'ACTIVE',
+                OR: [
+                  { primarySpecialization: { in: [Specialization.BACKEND] } },
+                  { secondarySpecialization: { in: [Specialization.BACKEND] } },
+                ],
+              }),
+            ]),
           }),
         }),
       );
@@ -128,6 +135,7 @@ describe('JobExplorerService (TASK-44.1)', () => {
       expect(result.totalPages).toBe(10); // 47 / 5 = 10 pages
       expect(result.currentPage).toBe(1);
       expect(result.jobs).toHaveLength(5);
+      expect(result.nextCursor).toBeDefined();
       expect(result.executionTimeMs).toBeLessThan(300); // Sub-300ms SLA
     });
 
@@ -235,5 +243,52 @@ describe('JobExplorerService (TASK-44.1)', () => {
       expect(enMsg).toContain('Staff AI Engineer');
       expect(enMsg).toContain('🎯 Best Match');
     });
+
+    it('should build database regional filter without pre-truncating candidates', () => {
+      const bothFilter = buildDatabaseRegionFilter(RegionPreference.BOTH);
+      expect(bothFilter).toEqual({});
+
+      const arabFilter = buildDatabaseRegionFilter(RegionPreference.ARAB);
+      expect(arabFilter.OR).toBeDefined();
+      expect(arabFilter.OR).toEqual(
+        expect.arrayContaining([
+          { remoteScope: 'WORLDWIDE' },
+          expect.objectContaining({ country: expect.any(Object) }),
+        ]),
+      );
+
+      const intlFilter = buildDatabaseRegionFilter(RegionPreference.INTERNATIONAL);
+      expect(intlFilter.OR).toBeDefined();
+    });
+
+    it('should encode, decode, and navigate keyset cursor deterministically', async () => {
+      // 1. Fetch Page 1
+      const page1 = await service.getJobsForUser('user-uuid-1', {
+        page: 1,
+        pageSize: 5,
+        sort: 'BEST_MATCH',
+      });
+
+      expect(page1.jobs).toHaveLength(5);
+      expect(page1.nextCursor).toBeDefined();
+
+      const decoded = decodeKeysetCursor(page1.nextCursor);
+      expect(decoded?.jobId).toBe(page1.jobs[4].id);
+
+      // 2. Keyset navigation to next slice using cursor token
+      const page2 = await service.getJobsForUser('user-uuid-1', {
+        cursor: page1.nextCursor!,
+        pageSize: 5,
+        sort: 'BEST_MATCH',
+      });
+
+      expect(page2.jobs).toHaveLength(5);
+      // Guarantee zero duplicates between page 1 and page 2
+      const page1Ids = new Set(page1.jobs.map((j) => j.id));
+      for (const job of page2.jobs) {
+        expect(page1Ids.has(job.id)).toBe(false);
+      }
+    });
   });
 });
+

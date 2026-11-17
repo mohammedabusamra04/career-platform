@@ -66,13 +66,13 @@ export function buildJobExplorerKeyboard(options: JobExplorerKeyboardOptions): I
     const indicatorText = `📄 ${safeCurrent}/${totalPages}`;
 
     if (safeCurrent > 1) {
-      keyboard.text(prevText, `jobs:page:${safeCurrent - 1}`);
+      keyboard.text(prevText, `jobs:page:${sort}:${safeCurrent - 1}`);
     }
 
     keyboard.text(indicatorText, 'jobs:noop');
 
     if (safeCurrent < totalPages) {
-      keyboard.text(nextText, `jobs:page:${safeCurrent + 1}`);
+      keyboard.text(nextText, `jobs:page:${sort}:${safeCurrent + 1}`);
     }
   }
 
@@ -94,3 +94,4 @@ export function buildJobExplorerEmptyKeyboard(language: SupportedLanguage = 'ar'
 
   return keyboard;
 }
+

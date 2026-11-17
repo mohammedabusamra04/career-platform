@@ -173,11 +173,11 @@ describe('JobsHandler (TASK-44.1)', () => {
   });
 
   describe('Callback Query: jobs:page:<targetPage>', () => {
-    it('should acknowledge callback and edit message in-place for target page', async () => {
+    it('should acknowledge callback and edit message in-place for target page statelessly from callback query', async () => {
       const ctx = {
-        match: ['jobs:page:2', '2'],
+        match: ['jobs:page:BEST_MATCH:2', 'BEST_MATCH', '2'],
         from: { id: 123456789 },
-        session: { language: 'ar', jobsSort: 'BEST_MATCH' },
+        session: { language: 'ar' },
         answerCallbackQuery: vi.fn().mockResolvedValue(true),
         editMessageText: vi.fn().mockResolvedValue(true),
       } as unknown as BotContext;
@@ -197,6 +197,25 @@ describe('JobsHandler (TASK-44.1)', () => {
           reply_markup: expect.any(Object),
         }),
       );
+    });
+
+    it('should support legacy page format without sort in callback data', async () => {
+      const ctx = {
+        match: ['jobs:page:3', undefined, '3'],
+        from: { id: 123456789 },
+        session: { language: 'en', jobsSort: 'LATEST' },
+        answerCallbackQuery: vi.fn().mockResolvedValue(true),
+        editMessageText: vi.fn().mockResolvedValue(true),
+      } as unknown as BotContext;
+
+      await pageHandler(ctx);
+
+      expect(ctx.answerCallbackQuery).toHaveBeenCalledTimes(1);
+      expect(mockExplorerService.getJobsForUser).toHaveBeenCalledWith('user-uuid-1', {
+        page: 3,
+        pageSize: 5,
+        sort: 'LATEST',
+      });
     });
   });
 
@@ -224,3 +243,4 @@ describe('JobsHandler (TASK-44.1)', () => {
     });
   });
 });
+
