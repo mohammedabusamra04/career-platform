@@ -308,6 +308,8 @@ describe('JobExplorerService (TASK-44.1)', () => {
       expect(arMsg).toContain('Staff AI Engineer');
       expect(arMsg).toContain('DeepTech');
       expect(arMsg).toContain('🎯 الأكثر مطابقة');
+      // TASK-44.3: Verify transparent application disclaimer
+      expect(arMsg).toContain('البوت لا يقدّم على الوظائف بالنيابة عنك');
 
       const enMsg = service.formatJobsExplorerMessage(mockResult, {
         language: 'en',
@@ -316,6 +318,62 @@ describe('JobExplorerService (TASK-44.1)', () => {
       expect(enMsg).toContain('47');
       expect(enMsg).toContain('Staff AI Engineer');
       expect(enMsg).toContain('🎯 Best Match');
+      // TASK-44.3: Verify English transparent disclaimer
+      expect(enMsg).toContain('The bot does not apply on your behalf');
+    });
+
+    it('should validate all rendered links as secure HTTPS and omit invalid links (TASK-44.3)', () => {
+      const mockResult = {
+        hasMatches: true,
+        totalMatches: 2,
+        currentPage: 1,
+        totalPages: 1,
+        pageSize: 5,
+        sort: 'BEST_MATCH' as const,
+        jobs: [
+          {
+            id: 'job-https',
+            title: 'Frontend Engineer',
+            company: 'WebWorks',
+            url: 'http://insecure-domain.com/jobs/1', // HTTP to be upgraded
+            applicationUrl: 'http://insecure-domain.com/apply/1',
+            score: 85,
+          },
+          {
+            id: 'job-invalid',
+            title: 'Malicious Role',
+            company: 'ShadyCorp',
+            url: 'javascript:alert(1)', // Unsafe scheme
+            applicationUrl: 'ftp://files.example.com/job',
+            score: 75,
+          },
+        ],
+        executionTimeMs: 10,
+      };
+
+      const formatted = service.formatJobsExplorerMessage(mockResult, { language: 'en' });
+
+      // Extract all Markdown link URLs: [text](url)
+      const markdownLinkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
+      const extractedUrls: string[] = [];
+      let match: RegExpExecArray | null;
+
+      while ((match = markdownLinkRegex.exec(formatted)) !== null) {
+        extractedUrls.push(match[2]);
+      }
+
+      // Verify that every extracted URL strictly begins with https://
+      expect(extractedUrls.length).toBeGreaterThan(0);
+      for (const url of extractedUrls) {
+        expect(url).toMatch(/^https:\/\//);
+        expect(url).not.toMatch(/^http:\/\//);
+        expect(url).not.toMatch(/^javascript:/i);
+        expect(url).not.toMatch(/^ftp:/i);
+      }
+
+      // The malicious role title should be rendered as plain bold text, NOT a markdown link
+      expect(formatted).toContain('*Malicious Role*');
+      expect(formatted).not.toContain('[Malicious Role](');
     });
 
     it('should build database regional filter without pre-truncating candidates', () => {
