@@ -20,4 +20,5 @@ export interface PreferenceSession {
   selectedSpecializations?: Specialization[];
   selectedRegion?: RegionPreference;
   preferences: Partial<UserPreferences>;
+  jobsSort?: 'BEST_MATCH' | 'LATEST';
 }

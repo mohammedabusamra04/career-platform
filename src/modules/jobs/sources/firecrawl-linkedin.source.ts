@@ -2,6 +2,7 @@ import type { Job, JobSearchQuery } from '../job.types.js';
 import { JobSourceType } from '../job.types.js';
 import type { JobSource } from './job-source.interface.js';
 import { ExperienceLevel, WorkType } from '../../../shared/types/job.js';
+import logger from '../../../shared/utils/logger.js';
 
 interface FirecrawlJobItem {
   title?: string;
@@ -86,7 +87,8 @@ export class FirecrawlLinkedInSource implements JobSource {
       return extractedJobs
         .filter((item) => Boolean(item.title && item.company))
         .map((item) => this.mapToJob(item, query));
-    } catch {
+    } catch (err: unknown) {
+      logger.warn(`[FirecrawlLinkedInSource] Fetch error: ${(err as Error).message}`);
       return [];
     }
   }

@@ -635,8 +635,8 @@ Rules:
 
     try {
       parsed = JSON.parse(cleaned);
-    } catch {
-      throw new AIProviderError('AI returned invalid JSON');
+    } catch (err: unknown) {
+      throw new AIProviderError(`AI returned invalid JSON: ${(err as Error).message}`);
     }
 
     if (
@@ -681,8 +681,8 @@ Rules:
 
     try {
       parsed = JSON.parse(cleaned);
-    } catch {
-      throw new AIProviderError('AI returned invalid JSON for job analysis');
+    } catch (err: unknown) {
+      throw new AIProviderError(`AI returned invalid JSON for job analysis: ${(err as Error).message}`);
     }
 
     if (typeof parsed !== 'object' || parsed === null) {

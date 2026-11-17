@@ -1,4 +1,5 @@
 import type { Job } from './job.types.js';
+import logger from '../../shared/utils/logger.js';
 
 export function validateJob(job: Job): boolean {
   const url = job.applicationUrl || job.url;
@@ -22,7 +23,8 @@ function isValidUrl(value: string): boolean {
     const url = new URL(value);
 
     return url.protocol === 'http:' || url.protocol === 'https:';
-  } catch {
+  } catch (err: unknown) {
+    logger.debug(`[JobValidator] Invalid URL parse for ${value}: ${(err as Error).message}`);
     return false;
   }
 }
