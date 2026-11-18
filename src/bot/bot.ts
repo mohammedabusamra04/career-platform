@@ -19,6 +19,7 @@ import { registerPauseResumeHandler } from './handlers/pause-resume.handler.js';
 import { registerStopHandler } from './handlers/stop.handler.js';
 import { registerHelpHandler } from './handlers/help.handler.js';
 import { deduplicateMiddleware } from './middleware/deduplicate.middleware.js';
+import { callbackValidationMiddleware } from './middleware/callback-validation.middleware.js';
 import { registerSubscriptionHandler } from './handlers/subscription.handler.js';
 
 if (!env.telegramBotToken) {
@@ -28,6 +29,7 @@ if (!env.telegramBotToken) {
 export const bot = new Bot<BotContext>(env.telegramBotToken);
 
 bot.use(deduplicateMiddleware);
+bot.use(callbackValidationMiddleware);
 
 bot.use(
   session({
