@@ -12,17 +12,19 @@ router.post(
   '/run',
   requirePipelineAuth,
   validateBody(pipelineTriggerBodySchema),
-  async (_req, res, next) => {
-    try {
-      const result = await jobPipelineService.run();
+  (_req, res, next): void => {
+    void (async () => {
+      try {
+        const result = await jobPipelineService.run();
 
-      res.success({
-        message: 'Job pipeline executed successfully',
-        data: result,
-      });
-    } catch (error) {
-      next(error);
-    }
+        res.success({
+          message: 'Job pipeline executed successfully',
+          data: result,
+        });
+      } catch (error: unknown) {
+        next(error);
+      }
+    })();
   },
 );
 

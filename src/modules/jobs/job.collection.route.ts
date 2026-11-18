@@ -29,27 +29,29 @@ router.post(
   requirePipelineAuth,
   validateQuery(collectionTriggerQuerySchema),
   validateBody(collectionTriggerBodySchema),
-  async (req, res, next) => {
-    try {
-      const force = String(req.query.force) === 'true' || req.body?.force === true;
-      const result = await jobCollectionService.executeCollectionCycle({ force });
+  (req, res, next): void => {
+    void (async () => {
+      try {
+        const force = String(req.query.force) === 'true' || req.body?.force === true;
+        const result = await jobCollectionService.executeCollectionCycle({ force });
 
-      if (!result.executed) {
-        res.status(409).json({
-          success: false,
-          message: result.skippedReason || 'Collection cycle locked by another runner',
-          runId: result.runId,
+        if (!result.executed) {
+          res.status(409).json({
+            success: false,
+            message: result.skippedReason || 'Collection cycle locked by another runner',
+            runId: result.runId,
+          });
+          return;
+        }
+
+        res.success({
+          message: 'Job collection cycle executed successfully',
+          data: result.stats,
         });
-        return;
+      } catch (error: unknown) {
+        next(error);
       }
-
-      res.success({
-        message: 'Job collection cycle executed successfully',
-        data: result.stats,
-      });
-    } catch (error) {
-      next(error);
-    }
+    })();
   },
 );
 
