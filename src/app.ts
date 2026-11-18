@@ -20,6 +20,7 @@ app.use(express.json());
 app.use(responseFormatter);
 
 app.use('/jobs/pipeline', jobPipelineRouter);
+app.use('/internal/pipeline', jobPipelineRouter);
 app.use('/jobs/collection', jobCollectionRouter);
 
 app.get('/', (_req, res) => {
