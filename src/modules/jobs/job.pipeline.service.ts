@@ -3,6 +3,10 @@ import { cacheKeys } from '../../cache/cache.keys.js';
 import { CACHE_TTL } from '../../cache/cache.ttl.js';
 import env from '../../config/env.js';
 import logger from '../../shared/utils/logger.js';
+import {
+  JOB_PIPELINE_ADVISORY_LOCK_ID,
+  type IAdvisoryLockService,
+} from '../../shared/database/advisory-lock.service.js';
 
 import type {
   Job,
@@ -73,6 +77,8 @@ export interface PipelineRunResult {
   skippedNoPreferences: number;
   errors: number;
   totalJobsCollected: number;
+  executed?: boolean;
+  skippedReason?: string;
 }
 
 export interface LastPipelineStats {
@@ -106,29 +112,51 @@ export class JobPipelineService {
     private readonly preferenceService: PreferenceReader,
     private readonly matchingService: JobMatcher,
     private readonly notificationService: JobNotifier,
+    private readonly advisoryLock?: IAdvisoryLockService,
   ) {}
 
   getLastStats(): LastPipelineStats | null {
     return this.lastStats;
   }
 
-  async run(): Promise<PipelineRunResult> {
-    const subscribers =
-      await this.subscriptionService.getSubscribedUsers();
+  async run(options?: { force?: boolean }): Promise<PipelineRunResult> {
+    let acquired = false;
+    if (this.advisoryLock) {
+      acquired = await this.advisoryLock.tryAcquire(JOB_PIPELINE_ADVISORY_LOCK_ID);
+      if (!acquired && !options?.force) {
+        logger.warn('Pipeline already running in another process');
+        return {
+          subscribers: 0,
+          processed: 0,
+          notifiedWithJobs: 0,
+          notifiedNoMatch: 0,
+          skippedNoPreferences: 0,
+          errors: 0,
+          totalJobsCollected: 0,
+          executed: false,
+          skippedReason: 'Pipeline already running in another process',
+        };
+      }
+    }
 
-    logger.info(
-      `Job pipeline started. Found ${subscribers.length} subscribed users.`,
-    );
+    try {
+      const subscribers =
+        await this.subscriptionService.getSubscribedUsers();
 
-    const result: PipelineRunResult = {
-  subscribers: subscribers.length,
-  processed: subscribers.length,
-  notifiedWithJobs: 0,
-  notifiedNoMatch: 0,
-  skippedNoPreferences: 0,
-  errors: 0,
-  totalJobsCollected: 0,
-};
+      logger.info(
+        `Job pipeline started. Found ${subscribers.length} subscribed users.`,
+      );
+
+      const result: PipelineRunResult = {
+        subscribers: subscribers.length,
+        processed: subscribers.length,
+        notifiedWithJobs: 0,
+        notifiedNoMatch: 0,
+        skippedNoPreferences: 0,
+        errors: 0,
+        totalJobsCollected: 0,
+        executed: true,
+      };
 
     /*
      * ---------------------------------------------------------
@@ -559,7 +587,12 @@ export class JobPipelineService {
       `Job pipeline finished. subscribers=${result.subscribers}, processed=${result.processed}, notifiedWithJobs=${result.notifiedWithJobs}, notifiedNoMatch=${result.notifiedNoMatch}, skippedNoPrefs=${result.skippedNoPreferences}, errors=${result.errors}, totalJobsCollected=${result.totalJobsCollected}`,
     );
 
-    return result;
+      return result;
+    } finally {
+      if (acquired && this.advisoryLock) {
+        await this.advisoryLock.release(JOB_PIPELINE_ADVISORY_LOCK_ID);
+      }
+    }
   }
 
   /*
