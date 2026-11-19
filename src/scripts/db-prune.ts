@@ -20,7 +20,13 @@ async function main(): Promise<void> {
     process.exit(0);
   } catch (err: any) {
     logger.error(`Database pruning failed: ${err.message}`);
-    await prisma.disconnect().catch(() => {});
+    await prisma.disconnect().catch((disconnectErr: unknown) => {
+      logger.warn(
+        `Failed to disconnect Prisma during cleanup: ${
+          disconnectErr instanceof Error ? disconnectErr.message : String(disconnectErr)
+        }`,
+      );
+    });
     process.exit(1);
   }
 }
