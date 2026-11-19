@@ -24,6 +24,12 @@ vi.mock('../../src/config/services.js', () => ({
       timezone: 'UTC',
     }),
   },
+  scheduledDigestRunner: {
+    getStatus: vi.fn().mockReturnValue({
+      isRunning: false,
+      lastExecutedSlotKey: null,
+    }),
+  },
   activeJobSources: [],
   prismaJobRepository: {},
   deduplicationService: {},
