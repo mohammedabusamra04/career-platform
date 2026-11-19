@@ -8,6 +8,21 @@ import {
   jobNotificationScheduler,
 } from '../../src/config/services.js';
 
+vi.mock('../../src/shared/database/prisma.service.js', () => ({
+  prisma: {
+    ping: vi.fn().mockResolvedValue(true),
+    getPoolMetrics: vi.fn().mockResolvedValue({
+      total: 5,
+      active: 2,
+      idle: 3,
+      maxPoolSize: 20,
+    }),
+    deliverySlot: {
+      findFirst: vi.fn().mockResolvedValue(null),
+    },
+  },
+}));
+
 vi.mock('../../src/config/services.js', () => ({
   jobCollectionService: {
     executeCollectionCycle: vi.fn(),
@@ -27,6 +42,16 @@ vi.mock('../../src/config/services.js', () => ({
       lastRun: null,
       notificationTimes: ['09:00', '21:00'],
       timezone: 'Asia/Gaza',
+    }),
+  },
+  scheduledDigestRunner: {
+    getStatus: vi.fn().mockReturnValue({
+      isRunning: false,
+      lastExecutedSlotKey: null,
+      lastRunTime: null,
+      nextRunTime: null,
+      timezone: 'Asia/Gaza',
+      dispatchTime: '21:00',
     }),
   },
   activeJobSources: [
@@ -117,6 +142,7 @@ describe('TASK-26.2: Collector Execution Metrics & Telemetry Integration', () =>
     };
 
     healthHandler({} as Request, mockRes as unknown as Response);
+    await new Promise((resolve) => setTimeout(resolve, 20));
 
     // 3. Verify GET /health payload returns exact matching counts
     expect(mockRes.success).toHaveBeenCalledWith(
@@ -140,7 +166,7 @@ describe('TASK-26.2: Collector Execution Metrics & Telemetry Integration', () =>
     );
   });
 
-  it('returns null for lastCollectionStats when no collection has been executed yet', () => {
+  it('returns null for lastCollectionStats when no collection has been executed yet', async () => {
     vi.mocked(jobCollectionService.getLastStats).mockReturnValue(null);
 
     const healthHandler = getHealthHandler();
@@ -149,6 +175,7 @@ describe('TASK-26.2: Collector Execution Metrics & Telemetry Integration', () =>
     };
 
     healthHandler({} as Request, mockRes as unknown as Response);
+    await new Promise((resolve) => setTimeout(resolve, 20));
 
     expect(mockRes.success).toHaveBeenCalledWith(
       expect.objectContaining({
