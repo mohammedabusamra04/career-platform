@@ -85,6 +85,9 @@ export interface DispatcherOptions {
   batchSize?: number;
   maxDeliveries?: number;
   maxRetriesPerDelivery?: number;
+  dbMaxRetryAttempts?: number;
+  dbRetryDelayMs?: number;
+  sleepFn?: (msVal: number) => Promise<void>;
 }
 
 export interface SlotDispatchSummary {
@@ -129,7 +132,11 @@ export class ChunkedCursorDispatcher {
       throw new Error('No DigestSendHandler configured for ChunkedCursorDispatcher');
     }
 
-    const slot = await this.deliverySlotRepo.findSlotById(slotId);
+    const slot = await this.executeWithDbRetry(
+      () => this.deliverySlotRepo.findSlotById(slotId),
+      'findSlotById',
+      options,
+    );
     if (!slot) {
       throw new Error(`DeliverySlot not found for id: ${slotId}`);
     }
@@ -156,7 +163,11 @@ export class ChunkedCursorDispatcher {
         hasMoreBatches = false;
       } else {
         // 1. Fetch sequential cursor batch of 25 pending deliveries
-        const chunk = await this.deliverySlotRepo.getPendingDeliveriesChunk(slotId, remainingAllowed, cursorId);
+        const chunk = await this.executeWithDbRetry(
+          () => this.deliverySlotRepo.getPendingDeliveriesChunk(slotId, remainingAllowed, cursorId),
+          'getPendingDeliveriesChunk',
+          options,
+        );
         if (chunk.length === 0) {
           hasMoreBatches = false;
         } else {
@@ -192,10 +203,11 @@ export class ChunkedCursorDispatcher {
                   break;
                 } else if (res.retryAfterSeconds !== undefined || res.errorCode === 429) {
                   const waitSec = res.retryAfterSeconds ?? 1;
+                  const waitMs = typeof waitSec === 'number' && waitSec < 1 ? Math.max(10, Math.round(waitSec * 1000)) : (ms as unknown as (v: string) => number)(`${waitSec}s`);
                   logger.warn(
                     `[ChunkedCursorDispatcher] Telegram 429 rate limit hit for user ${item.userId}. Pausing loop for ${waitSec}s`,
                   );
-                  await this.sleep(ms(`${waitSec}s`));
+                  await this.sleep(waitMs, options?.sleepFn);
                   deliveryAttempt--;
                 } else {
                   lastErrorMsg = res.error ?? 'Digest delivery failed';
@@ -209,10 +221,11 @@ export class ChunkedCursorDispatcher {
                   break;
                 } else if (parsed.isRateLimit) {
                   const waitSec = parsed.retryAfterSeconds ?? 1;
+                  const waitMs = typeof waitSec === 'number' && waitSec < 1 ? Math.max(10, Math.round(waitSec * 1000)) : (ms as unknown as (v: string) => number)(`${waitSec}s`);
                   logger.warn(
                     `[ChunkedCursorDispatcher] Telegram 429 rate limit error for user ${item.userId}. Pausing loop for ${waitSec}s`,
                   );
-                  await this.sleep(ms(`${waitSec}s`));
+                  await this.sleep(waitMs, options?.sleepFn);
                   deliveryAttempt--;
                 } else {
                   lastErrorMsg = parsed.message;
@@ -255,7 +268,11 @@ export class ChunkedCursorDispatcher {
 
           // 3. Atomically persist batch updates in PostgreSQL
           if (batchUpdates.length > 0) {
-            await this.deliverySlotRepo.updateBatchDeliveryStatus(slotId, batchUpdates);
+            await this.executeWithDbRetry(
+              () => this.deliverySlotRepo.updateBatchDeliveryStatus(slotId, batchUpdates),
+              'updateBatchDeliveryStatus',
+              options,
+            );
           }
 
           // 4. Advance cursor to last record in processed items
@@ -273,11 +290,19 @@ export class ChunkedCursorDispatcher {
     const throughputMsgsPerSecond = Number(((totalProcessed / durationMs) * 1000).toFixed(2));
 
     // 5. Check if any pending deliveries remain, if not complete the slot
-    const remainingCheck = await this.deliverySlotRepo.getPendingDeliveriesChunk(slotId, 1);
+    const remainingCheck = await this.executeWithDbRetry(
+      () => this.deliverySlotRepo.getPendingDeliveriesChunk(slotId, 1),
+      'getPendingDeliveriesChunk:remainingCheck',
+      options,
+    );
     const isFullyCompleted = remainingCheck.length === 0;
 
     if (isFullyCompleted) {
-      await this.deliverySlotRepo.completeSlot(slotId);
+      await this.executeWithDbRetry(
+        () => this.deliverySlotRepo.completeSlot(slotId),
+        'completeSlot',
+        options,
+      );
       logger.info(
         `[ChunkedCursorDispatcher] Successfully completed all deliveries for slot ${slot.slotKey}. Duration: ${ms(durationMs)}, Throughput: ${throughputMsgsPerSecond} msgs/sec`,
       );
@@ -308,7 +333,11 @@ export class ChunkedCursorDispatcher {
     options?: DispatcherOptions,
     customSender?: DigestSendHandler,
   ): Promise<SlotDispatchSummary> {
-    const slot = await this.deliverySlotRepo.findSlotById(slotId);
+    const slot = await this.executeWithDbRetry(
+      () => this.deliverySlotRepo.findSlotById(slotId),
+      'findSlotById',
+      options,
+    );
     if (!slot) {
       throw new Error(`DeliverySlot not found for id: ${slotId}`);
     }
@@ -348,7 +377,11 @@ export class ChunkedCursorDispatcher {
     targetSlots?: DeliverySlotEntity[],
   ): Promise<SlotDispatchSummary[]> {
     const unfinishedSlots =
-      targetSlots ?? (await this.deliverySlotRepo.findUnfinishedSlots());
+      targetSlots ?? (await this.executeWithDbRetry(
+        () => this.deliverySlotRepo.findUnfinishedSlots(),
+        'findUnfinishedSlots',
+        options,
+      ));
     if (unfinishedSlots.length === 0) {
       logger.info('[ChunkedCursorDispatcher] No unfinished delivery slots to recover');
       return [];
@@ -374,7 +407,65 @@ export class ChunkedCursorDispatcher {
     return summaries;
   }
 
-  private sleep(sleepMs: number): Promise<void> {
+  /**
+   * Resilient database retry wrapper providing automated backoff and reconnect probes
+   * to survive transient network drops or mid-run database disconnections without batch loss.
+   */
+  private async executeWithDbRetry<T>(
+    operation: () => Promise<T>,
+    operationName: string,
+    options?: DispatcherOptions,
+  ): Promise<T> {
+    const maxAttempts = options?.dbMaxRetryAttempts ?? 3;
+    const baseDelayMs = options?.dbRetryDelayMs ?? 50;
+    let attempt = 0;
+
+    while (true) {
+      try {
+        return await operation();
+      } catch (err: unknown) {
+        attempt++;
+        const errMsg = err instanceof Error ? err.message : String(err);
+        const isDbConnectionIssue =
+          errMsg.toLowerCase().includes('connect') ||
+          errMsg.toLowerCase().includes('database') ||
+          errMsg.toLowerCase().includes('timeout') ||
+          errMsg.toLowerCase().includes('closed') ||
+          errMsg.toLowerCase().includes('econnrefused') ||
+          errMsg.toLowerCase().includes('etimedout') ||
+          errMsg.toLowerCase().includes('terminat') ||
+          errMsg.toLowerCase().includes('drop');
+
+        if (!isDbConnectionIssue || attempt >= maxAttempts) {
+          logger.error(
+            `[ChunkedCursorDispatcher] Database operation '${operationName}' failed permanently after ${attempt} attempts: ${errMsg}`,
+          );
+          throw err;
+        }
+
+        const delay = Math.min(Math.round(baseDelayMs * Math.pow(1.15, attempt - 1)), 3000);
+        logger.warn(
+          `[ChunkedCursorDispatcher] Database connection issue during '${operationName}' (Attempt ${attempt}/${maxAttempts}). Retrying in ${ms(delay)}: ${errMsg}`,
+        );
+
+        if (typeof (this.deliverySlotRepo as any).reconnect === 'function') {
+          try {
+            await (this.deliverySlotRepo as any).reconnect();
+          } catch (recErr: unknown) {
+            const recErrMsg = recErr instanceof Error ? recErr.message : String(recErr);
+            logger.warn(`[ChunkedCursorDispatcher] Database reconnect probe failed: ${recErrMsg}`);
+          }
+        }
+
+        await this.sleep(delay, options?.sleepFn);
+      }
+    }
+  }
+
+  private sleep(sleepMs: number, customSleep?: (msVal: number) => Promise<void>): Promise<void> {
+    if (customSleep) {
+      return customSleep(sleepMs);
+    }
     return new Promise((resolve) => setTimeout(resolve, sleepMs));
   }
 }
