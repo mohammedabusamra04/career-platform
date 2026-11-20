@@ -3,7 +3,11 @@ import { bot } from './bot/bot.js';
 import { connectRedis } from './config/redis.js';
 import redisClient from './config/redis.js';
 import env from './config/env.js';
-import { jobNotificationScheduler } from './config/services.js';
+import { prisma } from './shared/database/prisma.service.js';
+import {
+  jobNotificationScheduler,
+  missedSlotWatchdogService,
+} from './config/services.js';
 import logger from './shared/utils/logger.js';
 
 const server = app.listen(env.port, () => {
@@ -11,8 +15,10 @@ const server = app.listen(env.port, () => {
 });
 
 await connectRedis();
+await prisma.connect();
 
 jobNotificationScheduler.start();
+missedSlotWatchdogService.start();
 
 if (env.telegramBotToken && env.telegramBotToken !== 'your_bot_token') {
   void bot.api
@@ -44,11 +50,12 @@ async function gracefulShutdown(signal: string): Promise<void> {
   logger.info(`Received ${signal}. Starting graceful shutdown...`);
 
   jobNotificationScheduler.stop();
+  missedSlotWatchdogService.stop();
 
   try {
     await bot.stop();
-  } catch {
-    // ignore if bot was not running
+  } catch (err: unknown) {
+    logger.debug(`[Server] Bot stop skipped or already stopped: ${(err as Error).message}`);
   }
 
   server.close(() => {
@@ -59,6 +66,8 @@ async function gracefulShutdown(signal: string): Promise<void> {
     await redisClient.quit();
     logger.info('Redis connection closed.');
   }
+
+  await prisma.disconnect();
 
   process.exit(0);
 }

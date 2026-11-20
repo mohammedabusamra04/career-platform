@@ -12,6 +12,8 @@ export interface AIProvider {
     job: Job,
   ): Promise<JobAnalysisResult>;
 
+  generateText?(prompt: string): Promise<string | undefined>;
+
   hasAvailableSlot(): boolean;
   msUntilAvailable?(): number;
 }

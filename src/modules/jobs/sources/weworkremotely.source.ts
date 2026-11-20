@@ -2,13 +2,14 @@ import type { Job, JobSearchQuery } from '../job.types.js';
 import { JobSourceType } from '../job.types.js';
 import type { JobSource } from './job-source.interface.js';
 import { ExperienceLevel, WorkType } from '../../../shared/types/job.js';
+import logger from '../../../shared/utils/logger.js';
 
 export class WeWorkRemotelyJobSource implements JobSource {
   public readonly type = JobSourceType.WE_WORK_REMOTELY;
   private readonly feedUrl =
     'https://weworkremotely.com/categories/remote-programming-jobs.rss';
 
-  async fetchJobs(query: JobSearchQuery): Promise<Job[]> {
+  async fetchJobs(query?: JobSearchQuery): Promise<Job[]> {
     try {
       const response = await fetch(this.feedUrl, {
         headers: {
@@ -24,18 +25,19 @@ export class WeWorkRemotelyJobSource implements JobSource {
 
       const xml = await response.text();
       return this.parseRss(xml, query);
-    } catch {
+    } catch (err: unknown) {
+      logger.warn(`[WeWorkRemotelyJobSource] Fetch error: ${(err as Error).message}`);
       return [];
     }
   }
 
-  private parseRss(xml: string, query: JobSearchQuery): Job[] {
+  private parseRss(xml: string, query?: JobSearchQuery): Job[] {
     const items: Job[] = [];
     const itemRegex = /<item>([\s\S]*?)<\/item>/gi;
     let match;
 
-    const keywords = [query.jobTitle, ...(query.skills || [])]
-      .filter(Boolean)
+    const keywords = [query?.jobTitle, ...(query?.skills || [])]
+      .filter((k): k is string => Boolean(k))
       .map((k) => k.toLowerCase());
 
     while ((match = itemRegex.exec(xml)) !== null) {
@@ -84,9 +86,9 @@ export class WeWorkRemotelyJobSource implements JobSource {
         location: 'Remote',
         remote: true,
         workType: WorkType.REMOTE,
-        experienceLevel: query.experienceLevel || ExperienceLevel.MID,
+        experienceLevel: query?.experienceLevel || ExperienceLevel.MID,
         description: cleanDescription,
-        skills: query.skills || [],
+        skills: query?.skills || [],
         publicationDate: validPubDate,
         publishedAt: validPubDate,
         scrapedAt: new Date(),

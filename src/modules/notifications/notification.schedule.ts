@@ -1,4 +1,5 @@
 import { DateTime } from 'luxon';
+import logger from '../../shared/utils/logger.js';
 
 export interface DueSlot {
   /** e.g. 2026-10-01-0900 (local date + slot time) */
@@ -114,7 +115,8 @@ export class NotificationScheduleService {
     try {
       const dt = DateTime.now().setZone(timezone);
       return dt.isValid ? timezone : 'Asia/Gaza';
-    } catch {
+    } catch (err: unknown) {
+      logger.warn(`[NotificationSchedule] Invalid timezone ${timezone}: ${(err as Error).message}`);
       return 'Asia/Gaza';
     }
   }

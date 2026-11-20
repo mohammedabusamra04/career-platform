@@ -342,6 +342,15 @@ Rules:
   }
 
   /**
+   * Generates raw text using the key-rotated, circuit-protected fallback chain.
+   * Leveraged by downstream components such as GeminiAmbiguityResolver (TASK-31.2).
+   */
+  public async generateText(prompt: string): Promise<string | undefined> {
+    const response = await this.generateWithFallback(prompt);
+    return response.text;
+  }
+
+  /**
    * Tries each (API key, model) slot in order, before giving up.
    *
    * A slot whose circuit is open (daily quota exhausted, or a recent
@@ -515,6 +524,29 @@ Rules:
           });
         }
 
+        const isInvalidKey =
+          errorMessage.includes('API_KEY_INVALID') ||
+          errorMessage.includes('API key not valid') ||
+          (status === 400 && errorMessage.toLowerCase().includes('api key')) ||
+          status === 401;
+
+        if (isInvalidKey) {
+          logger.warn(
+            `Gemini API key #${slot.keyIndex} is invalid. Opening circuit.`,
+          );
+
+          this.openCircuit(
+            slot,
+            GeminiProvider.DAILY_QUOTA_COOLDOWN_MS,
+            'invalid-api-key',
+          );
+
+          throw new AIProviderError('Gemini API key invalid', {
+            skipped: true,
+            reason: 'invalid-api-key',
+          });
+        }
+
         const isRetryable = status === 503 || status === 429 || status === 500;
 
         if (!isRetryable || attempt === maxRetries) {
@@ -603,8 +635,8 @@ Rules:
 
     try {
       parsed = JSON.parse(cleaned);
-    } catch {
-      throw new AIProviderError('AI returned invalid JSON');
+    } catch (err: unknown) {
+      throw new AIProviderError(`AI returned invalid JSON: ${(err as Error).message}`);
     }
 
     if (
@@ -649,8 +681,8 @@ Rules:
 
     try {
       parsed = JSON.parse(cleaned);
-    } catch {
-      throw new AIProviderError('AI returned invalid JSON for job analysis');
+    } catch (err: unknown) {
+      throw new AIProviderError(`AI returned invalid JSON for job analysis: ${(err as Error).message}`);
     }
 
     if (typeof parsed !== 'object' || parsed === null) {

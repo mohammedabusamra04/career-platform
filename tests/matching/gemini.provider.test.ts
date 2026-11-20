@@ -208,4 +208,16 @@ describe('GeminiProvider', () => {
   it('should throw AIProviderError when no API key is provided', () => {
     expect(() => new GeminiProvider([])).toThrow(AIProviderError);
   });
+
+  it('should generate raw text via generateText (TASK-31.2)', async () => {
+    generateContentMock.mockResolvedValue({
+      text: '{"specialization": "DEVOPS", "confidence": 0.9, "reasoning": "Platform engineering"}',
+    });
+
+    const provider = new GeminiProvider();
+    const text = await provider.generateText('Classify role');
+
+    expect(text).toContain('DEVOPS');
+    expect(generateContentMock).toHaveBeenCalledTimes(1);
+  });
 });

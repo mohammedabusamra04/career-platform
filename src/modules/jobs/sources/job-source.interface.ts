@@ -1,7 +1,8 @@
-import { Job, JobSearchQuery, JobSourceType } from '../job.types.js';
+import type { JobSearchQuery, JobSourceType, RawJobListing } from '../job.types.js';
 
 export interface JobSource {
-  type: JobSourceType;
+  readonly type: JobSourceType;
 
-  fetchJobs(query: JobSearchQuery): Promise<Job[]>;
+  fetchJobs(query?: JobSearchQuery): Promise<RawJobListing[]>;
 }
+

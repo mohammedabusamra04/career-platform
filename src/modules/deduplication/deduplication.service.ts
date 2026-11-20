@@ -2,11 +2,13 @@ import type { Job } from '../jobs/job.types.js';
 import type { Cache } from '../../cache/cache.interface.js';
 import type { DeduplicationResult } from './deduplication.types.js';
 import { FingerprintService } from './fingerprint.service.js';
+import { ListingMergerService, listingMergerService } from './listing-merger.service.js';
 
 export class DeduplicationService {
   constructor(
     private readonly fingerprintService: FingerprintService,
     _cache?: Cache,
+    private readonly mergerService: ListingMergerService = listingMergerService,
   ) {}
 
   async deduplicate(jobs: Job[]): Promise<DeduplicationResult> {
@@ -27,13 +29,10 @@ export class DeduplicationService {
       const existingJob = existingByPrimary || existingBySemantic;
 
       if (existingJob) {
-        if (this.scoreJob(job) > this.scoreJob(existingJob)) {
-          // Replace with higher quality job data
-          const oldFingerprint = this.fingerprintService.generate(existingJob);
-          uniqueJobsByFingerprint.delete(oldFingerprint);
-          uniqueJobsByFingerprint.set(fingerprint, job);
-          seenSemanticKeys.set(semanticKey, fingerprint);
-        }
+        // Intelligent field precedence & rich merger (TASK-28.3)
+        const merged = this.mergerService.mergeJobs(existingJob, job);
+        const activeFingerprint = existingPrimaryForSemantic || fingerprint;
+        uniqueJobsByFingerprint.set(activeFingerprint, merged);
 
         duplicateJobs.push(job);
         continue;
@@ -49,7 +48,7 @@ export class DeduplicationService {
     };
   }
 
-  private scoreJob(job: Job): number {
+  public scoreJob(job: Job): number {
     let score = 0;
 
     if (job.description && job.description.length > 20) score += 2;

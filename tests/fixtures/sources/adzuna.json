@@ -1,0 +1,34 @@
+{
+  "count": 2,
+  "mean_salary": 65000,
+  "results": [
+    {
+      "id": "adzuna-101",
+      "title": "Principal Cloud Security Architect",
+      "company": {
+        "display_name": "CyberDefense UK"
+      },
+      "location": {
+        "display_name": "London, UK",
+        "area": ["UK", "London"]
+      },
+      "redirect_url": "https://www.adzuna.com/land/ad/101",
+      "description": "Lead enterprise cloud security strategies across multi-cloud environments.",
+      "salary_min": 85000,
+      "salary_max": 110000,
+      "contract_time": "full_time"
+    },
+    {
+      "id": "adzuna-102",
+      "title": "Junior Python Developer",
+      "company": {
+        "display_name": ""
+      },
+      "location": {
+        "display_name": ""
+      },
+      "redirect_url": "https://www.adzuna.com/land/ad/102",
+      "description": "Junior position for Python Enthusiasts."
+    }
+  ]
+}

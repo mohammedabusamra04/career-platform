@@ -1,0 +1,183 @@
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DATABASE_URL_UNPOOLED")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum UserStatus {
+  ACTIVE
+  PAUSED
+  BLOCKED
+  DELETED
+}
+
+enum Specialization {
+  BACKEND
+  FRONTEND
+  FULLSTACK
+  MOBILE
+  DEVOPS
+  UIUX
+  DATA
+  QA
+  SECURITY
+  AI_ENGINEER
+}
+
+enum RegionPreference {
+  ARAB
+  INTERNATIONAL
+  BOTH
+}
+
+enum RemoteScope {
+  WORLDWIDE
+  REGION
+  COUNTRY
+  UNKNOWN
+}
+
+enum JobStatus {
+  ACTIVE
+  EXPIRED
+  CLOSED
+}
+
+enum DeliveryStatus {
+  PENDING
+  SENT
+  FAILED
+  BLOCKED
+  SKIPPED_EXPIRED
+}
+
+enum FeedbackType {
+  LIKE
+  DISLIKE
+  NONE
+}
+
+enum ExperienceLevel {
+  JUNIOR
+  MID
+  SENIOR
+  UNKNOWN
+}
+
+enum WorkType {
+  FULL_TIME
+  PART_TIME
+  CONTRACT
+  INTERNSHIP
+  UNKNOWN
+}
+
+model User {
+  id               String            @id @default(uuid())
+  telegramId       BigInt            @unique
+  firstName        String?
+  username         String?
+  status           UserStatus        @default(ACTIVE)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  pausedUntil      DateTime?
+  preference       UserPreference?
+  sentJobs         SentJob[]
+  digestDeliveries DigestDelivery[]
+
+  @@index([status])
+}
+
+model UserPreference {
+  id               String            @id @default(uuid())
+  userId           String            @unique
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  specializations  Specialization[]
+  regionPreference RegionPreference  @default(BOTH)
+  experienceLevel  String?
+  workType         String?
+  preferenceHash   String
+  updatedAt        DateTime          @updatedAt
+
+  @@index([preferenceHash])
+}
+
+model Job {
+  id                      String          @id @default(uuid())
+  deduplicationKey        String          @unique
+  semanticKey             String
+  title                   String
+  company                 String
+  source                  String
+  url                     String
+  applicationUrl          String?
+  location                String?
+  country                 String?
+  remoteScope             RemoteScope     @default(UNKNOWN)
+  primarySpecialization   Specialization
+  secondarySpecialization Specialization?
+  experienceLevel         ExperienceLevel @default(UNKNOWN)
+  workType                WorkType        @default(UNKNOWN)
+  description             String          @db.Text
+  skills                  String[]
+  salaryMin               Float?
+  salaryMax               Float?
+  currency                String?
+  publishedAt             DateTime
+  scrapedAt               DateTime        @default(now())
+  lastSeenAt              DateTime        @default(now())
+  status                  JobStatus       @default(ACTIVE)
+  sentJobs                SentJob[]
+
+  @@index([semanticKey])
+  @@index([status, publishedAt(sort: Desc)])
+  @@index([primarySpecialization, remoteScope, status])
+}
+
+model SentJob {
+  id       String       @id @default(uuid())
+  userId   String
+  user     User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  jobId    String
+  job      Job          @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  sentAt   DateTime     @default(now())
+  feedback FeedbackType @default(NONE)
+
+  @@unique([userId, jobId])
+  @@index([userId, sentAt(sort: Desc)])
+}
+
+model DeliverySlot {
+  id              String           @id @default(uuid())
+  slotKey         String           @unique
+  scheduledTime   DateTime
+  status          DeliveryStatus   @default(PENDING)
+  totalRecipients Int              @default(0)
+  sentCount       Int              @default(0)
+  failedCount     Int              @default(0)
+  startedAt       DateTime?
+  completedAt     DateTime?
+  deliveries      DigestDelivery[]
+
+  @@index([scheduledTime])
+  @@index([status])
+}
+
+model DigestDelivery {
+  id          String         @id @default(uuid())
+  slotId      String
+  slot        DeliverySlot   @relation(fields: [slotId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status      DeliveryStatus @default(PENDING)
+  attempts    Int            @default(0)
+  lastError   String?        @db.Text
+  deliveredAt DateTime?
+
+  @@unique([slotId, userId])
+  @@index([slotId, status])
+}

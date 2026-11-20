@@ -45,7 +45,10 @@ export interface Job {
   currency?: string;
 
   scrapedAt: Date;
+  sourcesSeen?: string[];
 }
+
+export type RawJobListing = Job;
 
 export interface JobSearchQuery {
   jobTitle: string;

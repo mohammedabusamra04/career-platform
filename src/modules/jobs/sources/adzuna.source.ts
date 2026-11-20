@@ -2,6 +2,7 @@ import type { Job, JobSearchQuery } from '../job.types.js';
 import { JobSourceType } from '../job.types.js';
 import type { JobSource } from './job-source.interface.js';
 import { ExperienceLevel, WorkType } from '../../../shared/types/job.js';
+import logger from '../../../shared/utils/logger.js';
 
 interface AdzunaJobItem {
   id?: string;
@@ -68,7 +69,8 @@ export class AdzunaJobSource implements JobSource {
       }
 
       return data.results.map((item) => this.mapToJob(item, query));
-    } catch {
+    } catch (err: unknown) {
+      logger.warn(`[AdzunaJobSource] Fetch error: ${(err as Error).message}`);
       return [];
     }
   }

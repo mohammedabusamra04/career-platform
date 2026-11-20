@@ -1,0 +1,28 @@
+{
+  "status": "OK",
+  "request_id": "req-12345",
+  "data": [
+    {
+      "job_id": "linkedin-jsearch-101",
+      "job_title": "Staff AI Engineer (LLM & Agents)",
+      "employer_name": "Anthropic Partner",
+      "job_apply_link": "https://www.linkedin.com/jobs/view/101",
+      "job_city": "San Francisco",
+      "job_country": "US",
+      "job_is_remote": true,
+      "job_description": "Architect autonomous multi-agent pipelines and fine-tune reasoning models for production workflows.",
+      "job_posted_at_datetime_utc": "2026-10-24T16:00:00.000Z",
+      "job_required_skills": ["Python", "PyTorch", "LangChain", "Vector Databases"]
+    },
+    {
+      "job_id": "linkedin-jsearch-102",
+      "job_title": "React Frontend Developer",
+      "employer_name": "Startup Inc",
+      "job_apply_link": "https://www.linkedin.com/jobs/view/102",
+      "job_city": "",
+      "job_country": "",
+      "job_is_remote": false,
+      "job_description": "Build user-facing web applications using React and Tailwind CSS."
+    }
+  ]
+}

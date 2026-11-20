@@ -1,0 +1,25 @@
+{
+  "totalCount": 2,
+  "jobs": [
+    {
+      "id": "jooble-101",
+      "title": "Lead Software QA Automation Engineer",
+      "location": "Remote, Global",
+      "snippet": "We need an automation expert with Playwright, Cypress, and CI/CD testing experience.",
+      "salary": "$90,000 - $110,000 / year",
+      "source": "jooble.org",
+      "type": "Full-time",
+      "link": "https://jooble.org/desc/101",
+      "company": "QualityFirst Tech",
+      "updated": "2026-10-23T10:00:00.000Z"
+    },
+    {
+      "id": "jooble-102",
+      "title": "Data Analyst Intern",
+      "location": "",
+      "snippet": "Entry level data analyst position.",
+      "link": "https://jooble.org/desc/102",
+      "company": ""
+    }
+  ]
+}

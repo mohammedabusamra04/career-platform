@@ -7,8 +7,19 @@ import type { BotContext } from './context.js';
 import type { PreferenceSession } from './session.js';
 
 import { registerPreferencesHandler } from './handlers/preferences.handler.js';
+import { registerDigestPaginationHandler } from './handlers/digest-pagination.handler.js';
+import { registerDigestFeedbackHandler } from './handlers/digest-feedback.handler.js';
+import { registerJobsHandler } from './handlers/jobs.handler.js';
 import { registerStartHandler } from './handlers/start.handler.js';
+import { registerSpecializationHandler } from './handlers/specialization.handler.js';
+import { registerRegionHandler } from './handlers/region.handler.js';
+import { registerConfirmationHandler } from './handlers/confirmation.handler.js';
+import { registerSettingsHandler } from './handlers/settings.handler.js';
+import { registerPauseResumeHandler } from './handlers/pause-resume.handler.js';
+import { registerStopHandler } from './handlers/stop.handler.js';
+import { registerHelpHandler } from './handlers/help.handler.js';
 import { deduplicateMiddleware } from './middleware/deduplicate.middleware.js';
+import { callbackValidationMiddleware } from './middleware/callback-validation.middleware.js';
 import { registerSubscriptionHandler } from './handlers/subscription.handler.js';
 
 if (!env.telegramBotToken) {
@@ -18,12 +29,15 @@ if (!env.telegramBotToken) {
 export const bot = new Bot<BotContext>(env.telegramBotToken);
 
 bot.use(deduplicateMiddleware);
+bot.use(callbackValidationMiddleware);
 
 bot.use(
   session({
     initial(): PreferenceSession {
       return {
-        step: 'job-title',
+        step: 'specializations',
+        language: 'ar',
+        selectedSpecializations: [],
         preferences: {},
       };
     },
@@ -31,6 +45,16 @@ bot.use(
 );
 
 registerStartHandler(bot);
+registerSpecializationHandler(bot);
+registerRegionHandler(bot);
+registerConfirmationHandler(bot);
+registerDigestPaginationHandler(bot);
+registerDigestFeedbackHandler(bot);
+registerJobsHandler(bot);
+registerSettingsHandler(bot);
+registerPauseResumeHandler(bot);
+registerStopHandler(bot);
+registerHelpHandler(bot);
 registerPreferencesHandler(bot);
 registerSubscriptionHandler(bot);
 

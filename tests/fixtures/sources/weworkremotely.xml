@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>We Work Remotely: Remote Programming Jobs</title>
+    <link>https://weworkremotely.com/categories/remote-programming-jobs</link>
+    <description>The largest remote work community in the world.</description>
+    <language>en-us</language>
+    <item>
+      <title><![CDATA[Shopify: Senior Backend Architect]]></title>
+      <link>https://weworkremotely.com/remote-jobs/shopify-senior-backend-architect</link>
+      <pubDate>Thu, 22 Oct 2026 12:00:00 +0000</pubDate>
+      <description><![CDATA[<p>Shopify is looking for a <strong>Senior Backend Architect</strong> to lead distributed high-scale transactional systems.</p>]]></description>
+      <guid isPermaLink="false">https://weworkremotely.com/remote-jobs/shopify-senior-backend-architect</guid>
+    </item>
+    <item>
+      <title><![CDATA[Lead DevOps Engineer]]></title>
+      <link>https://weworkremotely.com/remote-jobs/lead-devops-engineer</link>
+      <pubDate>Fri, 23 Oct 2026 08:30:00 +0000</pubDate>
+      <description><![CDATA[Manage cloud deployments and CI/CD pipelines across AWS regions.]]></description>
+      <guid isPermaLink="false">https://weworkremotely.com/remote-jobs/lead-devops-engineer</guid>
+    </item>
+  </channel>
+</rss>

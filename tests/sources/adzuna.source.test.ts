@@ -1,12 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { AdzunaJobSource } from '../../src/modules/jobs/sources/adzuna.source.js';
 import { JobSourceType } from '../../src/modules/jobs/job.types.js';
+import { ExperienceLevel, WorkType } from '../../src/shared/types/job.js';
+import { loadSourceJsonFixture } from '../helpers/fixture-loader.js';
 
-describe('AdzunaJobSource', () => {
+describe('AdzunaJobSource (TASK-25.2: Fixture Testing)', () => {
   let source: AdzunaJobSource;
 
   beforeEach(() => {
-    source = new AdzunaJobSource('test_app_id', 'test_app_key');
+    source = new AdzunaJobSource('test_app_id', 'test_app_key', 'gb');
     vi.restoreAllMocks();
   });
 
@@ -14,55 +16,57 @@ describe('AdzunaJobSource', () => {
     expect(source.type).toBe(JobSourceType.ADZUNA);
   });
 
-  it('should return empty array if credentials are missing', async () => {
-    const unauthenticatedSource = new AdzunaJobSource('', '');
-    const jobs = await unauthenticatedSource.fetchJobs({ jobTitle: 'backend' });
-    expect(jobs).toEqual([]);
-  });
-
-  it('should fetch and map Adzuna job listings correctly', async () => {
-    const mockApiResponse = {
-      results: [
-        {
-          id: '12345',
-          title: '<strong>Backend Developer (Remote)</strong>',
-          description: 'Build backend APIs with Node.js and TypeScript',
-          redirect_url: 'https://www.adzuna.com/land/ad/12345',
-          created: '2026-03-10T12:00:00Z',
-          salary_min: 50000,
-          salary_max: 75000,
-          company: {
-            display_name: 'Acme Software',
-          },
-          location: {
-            display_name: 'London, UK',
-            area: ['UK', 'London'],
-          },
-        },
-      ],
-    };
+  it('should parse Adzuna JSON fixture and extract job attributes and salaries', async () => {
+    const fixtureData = loadSourceJsonFixture('adzuna.json');
 
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
-      json: async () => mockApiResponse,
+      json: async () => fixtureData,
     });
 
-    const jobs = await source.fetchJobs({ jobTitle: 'Backend Developer' });
+    const jobs = await source.fetchJobs({
+      jobTitle: 'Cloud Security',
+      experienceLevel: ExperienceLevel.SENIOR,
+    });
 
-    expect(jobs).toHaveLength(1);
-    expect(jobs[0].title).toBe('Backend Developer (Remote)');
-    expect(jobs[0].company).toBe('Acme Software');
-    expect(jobs[0].source).toBe(JobSourceType.ADZUNA);
-    expect(jobs[0].url).toBe('https://www.adzuna.com/land/ad/12345');
-    expect(jobs[0].salaryMin).toBe(50000);
-    expect(jobs[0].salaryMax).toBe(75000);
-    expect(jobs[0].currency).toBe('GBP');
-    expect(jobs[0].remote).toBe(true);
+    expect(jobs).toHaveLength(2);
+
+    // Job 1: Complete fields with salary
+    const job1 = jobs[0];
+    expect(job1).toMatchObject({
+      title: 'Principal Cloud Security Architect',
+      company: 'CyberDefense UK',
+      source: JobSourceType.ADZUNA,
+      applicationUrl: 'https://www.adzuna.com/land/ad/101',
+      url: 'https://www.adzuna.com/land/ad/101',
+      location: 'London, UK',
+      remote: false,
+      workType: WorkType.HYBRID,
+      salaryMin: 85000,
+      salaryMax: 110000,
+      currency: 'GBP',
+    });
+    expect(job1.description).toBe(
+      'Lead enterprise cloud security strategies across multi-cloud environments.',
+    );
+
+    // Job 2: Fallback when company, location, and salary are missing
+    const job2 = jobs[1];
+    expect(job2.title).toBe('Junior Python Developer');
+    expect(job2.company).toBe('Adzuna Employer');
+    expect(job2.location).toBe('United Kingdom');
+    expect(job2.salaryMin).toBeUndefined();
+    expect(job2.salaryMax).toBeUndefined();
   });
 
-  it('should handle API errors without throwing', async () => {
-    global.fetch = vi.fn().mockRejectedValue(new Error('Timeout'));
+  it('should return empty array if app credentials are missing', async () => {
+    const unconfigured = new AdzunaJobSource('', '');
+    const jobs = await unconfigured.fetchJobs({ jobTitle: 'developer' });
+    expect(jobs).toEqual([]);
+  });
 
+  it('should handle API failure gracefully', async () => {
+    global.fetch = vi.fn().mockRejectedValue(new Error('API failure'));
     const jobs = await source.fetchJobs({ jobTitle: 'developer' });
     expect(jobs).toEqual([]);
   });

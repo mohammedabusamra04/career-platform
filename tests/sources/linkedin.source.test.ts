@@ -1,12 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { LinkedinJobSource } from '../../src/modules/jobs/sources/linkedin.source.js';
 import { JobSourceType } from '../../src/modules/jobs/job.types.js';
+import { ExperienceLevel, WorkType } from '../../src/shared/types/job.js';
+import { loadSourceJsonFixture } from '../helpers/fixture-loader.js';
 
-describe('LinkedinJobSource', () => {
+describe('LinkedinJobSource (TASK-25.2: Fixture Testing)', () => {
   let source: LinkedinJobSource;
 
   beforeEach(() => {
-    source = new LinkedinJobSource('rapidapi_key');
+    source = new LinkedinJobSource('test_rapidapi_linkedin_key');
     vi.restoreAllMocks();
   });
 
@@ -14,82 +16,56 @@ describe('LinkedinJobSource', () => {
     expect(source.type).toBe(JobSourceType.LINKEDIN);
   });
 
-  it('should return empty array if RapidAPI key is not configured', async () => {
-    const unauthenticated = new LinkedinJobSource('');
-    const jobs = await unauthenticated.fetchJobs({ jobTitle: 'developer' });
+  it('should parse LinkedIn (JSearch) JSON fixture and extract job listings accurately', async () => {
+    const fixtureData = loadSourceJsonFixture('linkedin.json');
+
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => fixtureData,
+    });
+
+    const jobs = await source.fetchJobs({
+      jobTitle: 'AI Engineer',
+      experienceLevel: ExperienceLevel.SENIOR,
+    });
+
+    expect(jobs).toHaveLength(2);
+
+    // Job 1: Remote AI position with full metadata
+    const job1 = jobs[0];
+    expect(job1).toMatchObject({
+      title: 'Staff AI Engineer (LLM & Agents)',
+      company: 'Anthropic Partner',
+      source: JobSourceType.LINKEDIN,
+      applicationUrl: 'https://www.linkedin.com/jobs/view/101',
+      url: 'https://www.linkedin.com/jobs/view/101',
+      location: 'San Francisco',
+      country: 'US',
+      remote: true,
+      workType: WorkType.REMOTE,
+      experienceLevel: ExperienceLevel.SENIOR,
+      skills: ['Python', 'PyTorch', 'LangChain', 'Vector Databases'],
+    });
+    expect(job1.description).toContain('autonomous multi-agent pipelines');
+    expect(job1.publicationDate.toISOString()).toBe('2026-10-24T16:00:00.000Z');
+
+    // Job 2: On-site job with empty city/country fallback
+    const job2 = jobs[1];
+    expect(job2.title).toBe('React Frontend Developer');
+    expect(job2.company).toBe('Startup Inc');
+    expect(job2.location).toBe('Worldwide');
+    expect(job2.remote).toBe(false);
+  });
+
+  it('should return empty array when apiKey is empty', async () => {
+    const unconfigured = new LinkedinJobSource('');
+    const jobs = await unconfigured.fetchJobs({ jobTitle: 'developer' });
     expect(jobs).toEqual([]);
   });
 
-  it('should parse RapidAPI JSearch response correctly', async () => {
-    const mockApiResponse = {
-      status: 'OK',
-      data: [
-        {
-          job_id: 'abc123',
-          job_title: 'Software Engineer - Backend',
-          employer_name: 'Microsoft',
-          job_apply_link: 'https://careers.microsoft.com/job/abc123',
-          job_city: 'Redmond',
-          job_country: 'US',
-          job_is_remote: false,
-          job_description: 'Backend distributed systems',
-          job_posted_at_datetime_utc: '2026-03-01T12:00:00.000Z',
-          job_required_skills: ['TypeScript', 'Azure'],
-        },
-      ],
-    };
-
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => mockApiResponse,
-    });
-
-    const jobs = await source.fetchJobs({ jobTitle: 'Software Engineer' });
-
-    expect(jobs).toHaveLength(1);
-    expect(jobs[0]).toMatchObject({
-      title: 'Software Engineer - Backend',
-      company: 'Microsoft',
-      source: JobSourceType.LINKEDIN,
-      applicationUrl: 'https://careers.microsoft.com/job/abc123',
-      url: 'https://careers.microsoft.com/job/abc123',
-      location: 'Redmond',
-      country: 'US',
-      skills: ['TypeScript', 'Azure'],
-    });
-  });
-
-  it('should parse RapidAPI JSearch /search-v2 response with data.jobs array', async () => {
-    const mockApiResponse = {
-      status: 'OK',
-      data: {
-        jobs: [
-          {
-            job_id: 'v2_123',
-            job_title: 'Senior Backend Engineer',
-            employer_name: 'Netflix',
-            job_apply_link: 'https://jobs.netflix.com/job/v2_123',
-            job_city: 'Los Gatos',
-            job_is_remote: true,
-          },
-        ],
-      },
-    };
-
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => mockApiResponse,
-    });
-
-    const jobs = await source.fetchJobs({ jobTitle: 'Senior Backend Engineer' });
-
-    expect(jobs).toHaveLength(1);
-    expect(jobs[0]).toMatchObject({
-      title: 'Senior Backend Engineer',
-      company: 'Netflix',
-      source: JobSourceType.LINKEDIN,
-      applicationUrl: 'https://jobs.netflix.com/job/v2_123',
-      remote: true,
-    });
+  it('should handle API failure gracefully', async () => {
+    global.fetch = vi.fn().mockRejectedValue(new Error('Rate limit exceeded'));
+    const jobs = await source.fetchJobs({ jobTitle: 'developer' });
+    expect(jobs).toEqual([]);
   });
 });

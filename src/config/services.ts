@@ -22,6 +22,8 @@ import {
   ForasnaJobSource,
   LinkedinJobSource,
   FirecrawlLinkedInSource,
+  BaeedJobSource,
+  NaukrigulfJobSource,
 } from '../modules/jobs/sources/index.js';
 import type { JobSource } from '../modules/jobs/sources/job-source.interface.js';
 
@@ -44,6 +46,7 @@ import { preferenceService } from '../modules/preferences/preference.service.js'
 import { subscriptionService } from '../modules/subscriptions/subscription.service.js';
 
 import { bot } from '../bot/bot.js';
+import { advisoryLockService } from '../shared/database/advisory-lock.service.js';
 
 export const cache = new RedisAdapter(redisClient);
 
@@ -56,6 +59,8 @@ export const activeJobSources: JobSource[] = [
   new BaytJobSource(),
   new WuzzufJobSource(),
   new ForasnaJobSource(),
+  new BaeedJobSource(),
+  new NaukrigulfJobSource(),
   ...(env.adzunaAppId && env.adzunaAppKey
     ? [new AdzunaJobSource(env.adzunaAppId, env.adzunaAppKey)]
     : []),
@@ -67,13 +72,22 @@ export const activeJobSources: JobSource[] = [
       : []),
 ];
 
+import { PrismaJobRepository } from '../modules/jobs/repositories/prisma-job.repository.js';
+
 export const jobSourceManager = new JobSourceManager(activeJobSources);
 
-export const jobCollectionService = new JobCollectionService(jobSourceManager);
+export const fingerprintService = new FingerprintService();
 
-const fingerprintService = new FingerprintService();
+export const deduplicationService = new DeduplicationService(fingerprintService, cache);
 
-const deduplicationService = new DeduplicationService(fingerprintService, cache);
+export const prismaJobRepository = new PrismaJobRepository();
+
+export const jobCollectionService = new JobCollectionService(
+  jobSourceManager,
+  prismaJobRepository,
+  deduplicationService,
+  fingerprintService,
+);
 
 const aiProvider = new GeminiProvider();
 
@@ -94,6 +108,7 @@ export const jobPipelineService = new JobPipelineService(
   preferenceService,
   matchingService,
   telegramNotificationService,
+  advisoryLockService,
 );
 
 const notificationScheduleService = new NotificationScheduleService();
@@ -104,3 +119,12 @@ export const jobNotificationScheduler = new JobNotificationScheduler(
   subscriptionService,
   preferenceService,
 );
+
+import { ScheduledDigestRunner } from '../modules/delivery/scheduled-digest.runner.js';
+import { MissedSlotWatchdogService } from '../modules/delivery/missed-slot-watchdog.service.js';
+
+export const scheduledDigestRunner = new ScheduledDigestRunner();
+export const missedSlotWatchdogService = new MissedSlotWatchdogService({
+  scheduledRunner: scheduledDigestRunner,
+});
+
