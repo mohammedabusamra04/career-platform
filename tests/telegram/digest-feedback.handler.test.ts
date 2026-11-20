@@ -17,19 +17,17 @@ describe('DigestFeedbackHandler (TASK-43.3)', () => {
   describe('getDigestFeedbackToastMessage', () => {
     it('should return exact Arabic confirmation toast message', () => {
       const toast = getDigestFeedbackToastMessage('ar');
-      expect(toast).toBe('شكراً لك! تم تسجيل رأيك لتحسين الترشيحات القادمة');
+      expect(toast).toBe('تم تسجيل تقييمك! رح نضبطلك الفلتر للجايات 🎯');
     });
 
     it('should return exact English confirmation toast message', () => {
       const toast = getDigestFeedbackToastMessage('en');
-      expect(toast).toBe(
-        'Thank you! Your feedback has been recorded to improve future recommendations',
-      );
+      expect(toast).toBe('Feedback logged! Tuning your stack feed 🎯');
     });
 
     it('should default to Arabic when no language is provided', () => {
       const toast = getDigestFeedbackToastMessage();
-      expect(toast).toBe('شكراً لك! تم تسجيل رأيك لتحسين الترشيحات القادمة');
+      expect(toast).toBe('تم تسجيل تقييمك! رح نضبطلك الفلتر للجايات 🎯');
     });
   });
 
@@ -179,7 +177,7 @@ describe('DigestFeedbackHandler (TASK-43.3)', () => {
       await feedbackCallbackHandler(ctx);
 
       expect(ctx.answerCallbackQuery).toHaveBeenCalledWith({
-        text: 'شكراً لك! تم تسجيل رأيك لتحسين الترشيحات القادمة',
+        text: 'تم تسجيل تقييمك! رح نضبطلك الفلتر للجايات 🎯',
       });
       expect(mockUserRepo.findByTelegramId).toHaveBeenCalledWith(987654321);
       expect(mockSentJobRepo.recordFeedback).toHaveBeenCalledWith(
@@ -200,7 +198,7 @@ describe('DigestFeedbackHandler (TASK-43.3)', () => {
       await feedbackCallbackHandler(ctx);
 
       expect(ctx.answerCallbackQuery).toHaveBeenCalledWith({
-        text: 'Thank you! Your feedback has been recorded to improve future recommendations',
+        text: 'Feedback logged! Tuning your stack feed 🎯',
       });
       expect(mockSentJobRepo.recordFeedback).toHaveBeenCalledWith(
         'user-uuid-100',

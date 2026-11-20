@@ -60,8 +60,8 @@ describe('DigestCardFormatter (TASK-43.1)', () => {
       const low = formatMatchTone(50, 'ar');
 
       expect(high).toContain('تطابق قوي');
-      expect(mid).toContain('تطابق متوسط');
-      expect(low).toContain('تطابق ضعيف');
+      expect(mid).toContain('تطابق جيد');
+      expect(low).toContain('تطابق مبدئي');
 
       // Verify strict requirement: no numerical percentages or % symbol
       expect(high).not.toContain('%');
@@ -77,9 +77,9 @@ describe('DigestCardFormatter (TASK-43.1)', () => {
       const mid = formatMatchTone(70, 'en');
       const low = formatMatchTone(55, 'en');
 
-      expect(high).toContain('Strong Match');
-      expect(mid).toContain('Moderate Match');
-      expect(low).toContain('Weak Match');
+      expect(high).toContain('High Stack Fit');
+      expect(mid).toContain('Solid Fit');
+      expect(low).toContain('Partial Fit');
 
       expect(high).not.toContain('%');
       expect(mid).not.toContain('%');
@@ -92,28 +92,28 @@ describe('DigestCardFormatter (TASK-43.1)', () => {
       expect(formatExperienceLevel('JUNIOR', 'ar')).toContain('مبتدئ');
       expect(formatExperienceLevel('MID', 'ar')).toContain('متوسط');
       expect(formatExperienceLevel('SENIOR', 'ar')).toContain('متقدم');
-      expect(formatExperienceLevel('UNKNOWN', 'ar')).toContain('كافة مستويات الخبرة');
-      expect(formatExperienceLevel(null, 'ar')).toContain('كافة مستويات الخبرة');
+      expect(formatExperienceLevel('UNKNOWN', 'ar')).toContain('مفتوح لكل المستويات');
+      expect(formatExperienceLevel(null, 'ar')).toContain('مفتوح لكل المستويات');
     });
 
     it('should format seniority in English', () => {
-      expect(formatExperienceLevel('JUNIOR', 'en')).toContain('Entry-level');
-      expect(formatExperienceLevel('MID', 'en')).toContain('Mid-level');
-      expect(formatExperienceLevel('SENIOR', 'en')).toContain('Senior');
-      expect(formatExperienceLevel('UNKNOWN', 'en')).toContain('all experience levels');
+      expect(formatExperienceLevel('JUNIOR', 'en')).toContain('Junior / Entry-Level');
+      expect(formatExperienceLevel('MID', 'en')).toContain('Mid-Level');
+      expect(formatExperienceLevel('SENIOR', 'en')).toContain('Senior / Tech Lead');
+      expect(formatExperienceLevel('UNKNOWN', 'en')).toContain('All Experience Levels');
     });
   });
 
   describe('formatRemoteScope', () => {
     it('should format remote and regional scopes in Arabic', () => {
-      expect(formatRemoteScope('WORLDWIDE', null, null, 'ar')).toContain('عالمياً');
+      expect(formatRemoteScope('WORLDWIDE', null, null, 'ar')).toContain('عالمي');
       expect(formatRemoteScope('REGION', null, 'MENA', 'ar')).toContain('إقليمياً (MENA)');
-      expect(formatRemoteScope('COUNTRY', 'Egypt', null, 'ar')).toContain('محلي (Egypt)');
+      expect(formatRemoteScope('COUNTRY', 'Egypt', null, 'ar')).toContain('محلياً (Egypt)');
       expect(formatRemoteScope('UNKNOWN', 'Jordan', null, 'ar')).toContain('حضوري / هجين (Jordan)');
     });
 
     it('should format remote and regional scopes in English', () => {
-      expect(formatRemoteScope('WORLDWIDE', null, null, 'en')).toContain('Worldwide Remote');
+      expect(formatRemoteScope('WORLDWIDE', null, null, 'en')).toContain('Remote (Worldwide)');
       expect(formatRemoteScope('REGION', null, 'EMEA', 'en')).toContain('Regional Remote (EMEA)');
       expect(formatRemoteScope('COUNTRY', 'UAE', null, 'en')).toContain('Remote (UAE)');
       expect(formatRemoteScope('UNKNOWN', 'Saudi Arabia', null, 'en')).toContain('On-site / Hybrid (Saudi Arabia)');
@@ -198,12 +198,12 @@ describe('DigestCardFormatter (TASK-43.1)', () => {
 
       const card = formatJobCard(job, 1, 'ar');
 
-      expect(card).toContain('*1.* 💼 [Backend Node.js Developer](https://acme.com/jobs/node-dev)');
+      expect(card).toContain('*1.* 💻 [Backend Node.js Developer](https://acme.com/jobs/node-dev)');
       expect(card).toContain('🏢 *Acme Corp* | 📍 Riyadh');
-      expect(card).toContain('عمل عن بُعد إقليمياً');
-      expect(card).toContain('مستوى متوسط (Mid-level)');
+      expect(card).toContain('عن بُعد إقليمياً');
+      expect(card).toContain('مستوى متوسط (Mid-Level)');
       expect(card).toContain('تطابق قوي');
-      expect(card).toContain('🔗 [التقديم المباشر](https://acme.com/jobs/node-dev)');
+      expect(card).toContain('🔗 [تقديم مباشر](https://acme.com/jobs/node-dev)');
     });
 
     it('should format a job card without link if url is missing', () => {
@@ -218,22 +218,22 @@ describe('DigestCardFormatter (TASK-43.1)', () => {
 
       const card = formatJobCard(job, 2, 'en');
 
-      expect(card).toContain('*2.* 💼 *Lead Systems Architect*');
+      expect(card).toContain('*2.* 💻 *Lead Systems Architect*');
       expect(card).toContain('🏢 *Stark Industries*');
-      expect(card).toContain('Senior / Lead');
-      expect(card).toContain('Weak Match');
-      expect(card).not.toContain('🔗 [Direct Application]');
+      expect(card).toContain('Senior / Tech Lead');
+      expect(card).toContain('Partial Fit');
+      expect(card).not.toContain('🔗 [Apply Now]');
     });
   });
 
   describe('formatDigestPageMessage', () => {
     it('should return empty state message when no jobs are available', () => {
       const arEmpty = formatDigestPageMessage([], { language: 'ar' });
-      expect(arEmpty).toContain('لا توجد وظائف مطابقة لتفضيلاتك حالياً');
+      expect(arEmpty).toContain('ما في فرص مطابقة حالياً على الرادار');
       expect(arEmpty).toContain('/settings');
 
       const enEmpty = formatDigestPageMessage([], { language: 'en' });
-      expect(enEmpty).toContain('No matching opportunities right now');
+      expect(enEmpty).toContain('No matching builds right now');
       expect(enEmpty).toContain('/settings');
     });
 
@@ -252,11 +252,11 @@ describe('DigestCardFormatter (TASK-43.1)', () => {
         pageSize: 5,
       });
 
-      expect(message).toContain('فرص عمل واعدة مختارة لك بعناية');
+      expect(message).toContain('تجميعة DeployMe (ديبلوي مي)');
       expect(message).toContain('Fullstack Developer 1');
       expect(message).toContain('Fullstack Developer 5');
       expect(message).not.toContain('Fullstack Developer 6');
-      expect(message).toContain('الصفحة 1 من 3');
+      expect(message).toContain('صفحة 1 من 3');
       expect(message).toContain('/jobs');
     });
   });

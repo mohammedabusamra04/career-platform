@@ -9,7 +9,7 @@ export function buildPauseKeyboard(lang: SupportedLanguage = 'ar'): InlineKeyboa
       .text('لمدة يوم (24 ساعة) ⏱️', 'pause_1d')
       .text('لمدة أسبوع (7 أيام) 📅', 'pause_7d')
       .row()
-      .text('حتى أقوم بالاستئناف يدوياً ⏸️', 'pause_indefinite')
+      .text('إيقاف حتى أشغله يدوياً ⏸️', 'pause_indefinite')
       .row()
       .text('إلغاء ❌', 'pause_cancel');
   } else {

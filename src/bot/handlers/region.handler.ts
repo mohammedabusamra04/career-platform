@@ -12,14 +12,14 @@ import logger from '../../shared/utils/logger.js';
 export function getRegionPromptMessage(lang: SupportedLanguage): string {
   if (lang === 'en') {
     return (
-      `📍 **Step 2:** Choose your target geographic market:\n\n` +
-      `Choose whether you want to receive opportunities from the Arab region, international remote roles, or both.`
+      `📍 *Step 2:* Pick your target market scope:\n\n` +
+      `Choose whether you want roles from the Arab/MENA region, global Remote gigs, or both.`
     );
   }
 
   return (
-    `📍 **الخطوة 2:** اختر نطاق السوق الجغرافي المستهدف:\n\n` +
-    `حدد ما إذا كنت تفضل استقبال وظائف السوق العربي، أو الفرص العالمية عن بعد، أو كلاهما معاً.`
+    `📍 *الخطوة 2:* حدد نطاق السوق اللي بتستهدفه:\n\n` +
+    `اختار إذا حابب توصلك فرص السوق العربي، أو فرص الـ Remote العالمية، أو الاثنين مع بعض.`
   );
 }
 

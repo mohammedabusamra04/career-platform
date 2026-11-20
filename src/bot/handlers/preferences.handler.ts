@@ -1,8 +1,9 @@
 import type { Bot } from 'grammy';
 
 import type { BotContext } from '../context.js';
+import type { SupportedLanguage } from '../session.js';
 
-import { confirmationKeyboard } from '../keyboards/confirmation.keyboard.js';
+import { buildConfirmationKeyboard, confirmationKeyboard } from '../keyboards/confirmation.keyboard.js';
 import { experienceKeyboard } from '../keyboards/experience.keyboard.js';
 import { workTypeKeyboard } from '../keyboards/work-type.keyboard.js';
 
@@ -20,12 +21,19 @@ import { subscriptionService } from '../../modules/subscriptions/subscription.se
 
 export function registerPreferencesHandler(bot: Bot<BotContext>): void {
   bot.on('message:text', async (ctx) => {
+    const lang: SupportedLanguage = ctx.session?.language || 'en';
+    const isAr = lang === 'ar';
+
     switch (ctx.session.step) {
       case 'job-title': {
         const jobTitle = normalizeJobTitle(ctx.message.text);
 
         if (!validateJobTitle(jobTitle)) {
-          await ctx.reply('❌ Please enter a valid job title (2-100 characters).');
+          await ctx.reply(
+            isAr
+              ? '❌ اكتب مسمى وظيفي صحيح (بين 2 و 100 حرف).'
+              : '❌ Please enter a valid job title (2–100 characters).',
+          );
 
           return;
         }
@@ -33,9 +41,14 @@ export function registerPreferencesHandler(bot: Bot<BotContext>): void {
         ctx.session.preferences.jobTitle = jobTitle;
         ctx.session.step = 'work-type';
 
-        await ctx.reply('Great! 👍\n\nWhat type of work do you prefer?', {
-          reply_markup: workTypeKeyboard,
-        });
+        await ctx.reply(
+          isAr
+            ? 'تمام! 👍\n\nشو نظام الشغل اللي بتفضله؟'
+            : 'Locked in! 👍\n\nWhat work setup do you prefer?',
+          {
+            reply_markup: workTypeKeyboard,
+          },
+        );
 
         return;
       }
@@ -47,9 +60,13 @@ export function registerPreferencesHandler(bot: Bot<BotContext>): void {
         ctx.session.step = 'skills';
 
         await ctx.reply(
-          '📍 Location saved.\n\n' +
-            'What are your relevant skills?\n\n' +
-            'Example: Node.js, TypeScript, PostgreSQL, Redis',
+          isAr
+            ? '📍 تم حفظ الموقع.\n\n' +
+                'شو أهم المهارات والـ Stack تبعك؟\n\n' +
+                'مثال: Node.js, TypeScript, PostgreSQL, Redis'
+            : '📍 Location saved.\n\n' +
+                'Drop your core tech stack & skills:\n\n' +
+                'Example: Node.js, TypeScript, PostgreSQL, Redis',
         );
 
         return;
@@ -60,7 +77,11 @@ export function registerPreferencesHandler(bot: Bot<BotContext>): void {
 
         if (skills.length === 0) {
           await ctx.reply(
-            '❌ Please enter at least one skill.\n\n' + 'Example: Node.js, TypeScript, PostgreSQL',
+            isAr
+              ? '❌ اكتب مهارة واحدة ع الأقل عشان نقدر نفلترلك الفرص.\n\n' +
+                  'مثال: Node.js, TypeScript, PostgreSQL'
+              : '❌ Please enter at least one skill to filter your feed.\n\n' +
+                  'Example: Node.js, TypeScript, PostgreSQL',
           );
 
           return;
@@ -70,16 +91,27 @@ export function registerPreferencesHandler(bot: Bot<BotContext>): void {
         ctx.session.step = 'confirmation';
 
         const { jobTitle, workType, experienceLevel, location } = ctx.session.preferences;
+        const replyMarkup =
+          typeof buildConfirmationKeyboard === 'function'
+            ? buildConfirmationKeyboard(lang)
+            : confirmationKeyboard;
 
         await ctx.reply(
-          '📋 Please review your preferences:\n\n' +
-            `💼 Job Title: ${jobTitle}\n` +
-            `🏢 Work Type: ${workType}\n` +
-            `📈 Experience Level: ${experienceLevel}\n` +
-            `📍 Location: ${location ?? 'Any'}\n` +
-            `🛠 Skills: ${skills.join(', ')}`,
+          isAr
+            ? '📋 راجع إعدادات الـ Pipeline تبعك قبل التشغيل:\n\n' +
+                `💻 المسمى الوظيفي: ${jobTitle}\n` +
+                `🏢 نظام العمل: ${workType}\n` +
+                `📊 مستوى الخبرة: ${experienceLevel}\n` +
+                `📍 الموقع: ${location ?? 'الكل (Any)'}\n` +
+                `🛠 الـ Stack: ${skills.join(', ')}`
+            : '📋 Review your DeployMe pipeline config:\n\n' +
+                `💻 Role: ${jobTitle}\n` +
+                `🏢 Work Setup: ${workType}\n` +
+                `📊 Seniority: ${experienceLevel}\n` +
+                `📍 Location: ${location ?? 'Any'}\n` +
+                `🛠 Tech Stack: ${skills.join(', ')}`,
           {
-            reply_markup: confirmationKeyboard,
+            reply_markup: replyMarkup,
           },
         );
 
@@ -92,6 +124,9 @@ export function registerPreferencesHandler(bot: Bot<BotContext>): void {
   });
 
   bot.callbackQuery(/^work-type:(.+)$/, async (ctx) => {
+    const lang: SupportedLanguage = ctx.session?.language || 'en';
+    const isAr = lang === 'ar';
+
     if (ctx.session.step !== 'work-type') {
       await ctx.answerCallbackQuery();
 
@@ -102,7 +137,7 @@ export function registerPreferencesHandler(bot: Bot<BotContext>): void {
 
     if (!isValidWorkType(workType)) {
       await ctx.answerCallbackQuery({
-        text: '❌ Invalid work type.',
+        text: isAr ? '❌ خيار غير صالح.' : '❌ Invalid work type.',
         show_alert: true,
       });
 
@@ -114,12 +149,20 @@ export function registerPreferencesHandler(bot: Bot<BotContext>): void {
 
     await ctx.answerCallbackQuery();
 
-    await ctx.reply(`Work type selected: ${workType}\n\n` + 'What is your experience level?', {
-      reply_markup: experienceKeyboard,
-    });
+    await ctx.reply(
+      isAr
+        ? `تم اختيار نظام العمل: ${workType}\n\nشو مستوى خبرتك الحالي؟`
+        : `Work setup: ${workType}\n\nWhat is your seniority level?`,
+      {
+        reply_markup: experienceKeyboard,
+      },
+    );
   });
 
   bot.callbackQuery(/^experience:(.+)$/, async (ctx) => {
+    const lang: SupportedLanguage = ctx.session?.language || 'en';
+    const isAr = lang === 'ar';
+
     if (ctx.session.step !== 'experience-level') {
       await ctx.answerCallbackQuery();
 
@@ -130,7 +173,7 @@ export function registerPreferencesHandler(bot: Bot<BotContext>): void {
 
     if (!isValidExperienceLevel(experienceLevel)) {
       await ctx.answerCallbackQuery({
-        text: '❌ Invalid experience level.',
+        text: isAr ? '❌ مستوى خبرة غير صالح.' : '❌ Invalid experience level.',
         show_alert: true,
       });
 
@@ -143,13 +186,20 @@ export function registerPreferencesHandler(bot: Bot<BotContext>): void {
     await ctx.answerCallbackQuery();
 
     await ctx.reply(
-      `Experience level selected: ${experienceLevel}\n\n` +
-        'What is your preferred location?\n\n' +
-        'You can type a location or "any".',
+      isAr
+        ? `مستوى الخبرة: ${experienceLevel}\n\n` +
+            'وين بتفضل يكون موقع الشغل؟\n\n' +
+            'اكتب اسم الدولة/المدينة أو اكتب "any" لكل الأماكن.'
+        : `Seniority: ${experienceLevel}\n\n` +
+            'What is your preferred location?\n\n' +
+            'Type a city/country or "any" for global.',
     );
   });
 
   bot.callbackQuery('preferences:confirm', async (ctx) => {
+    const lang: SupportedLanguage = ctx.session?.language || 'en';
+    const isAr = lang === 'ar';
+
     if (ctx.session.step !== 'confirmation') {
       await ctx.answerCallbackQuery();
 
@@ -160,7 +210,7 @@ export function registerPreferencesHandler(bot: Bot<BotContext>): void {
 
     if (!userId) {
       await ctx.answerCallbackQuery({
-        text: '❌ Unable to identify your Telegram account.',
+        text: isAr ? '❌ تعذر التعرف على حساب تيليجرام.' : '❌ Unable to identify your Telegram account.',
         show_alert: true,
       });
 
@@ -171,7 +221,7 @@ export function registerPreferencesHandler(bot: Bot<BotContext>): void {
 
     if (!preferences.jobTitle || !preferences.workType || !preferences.experienceLevel) {
       await ctx.answerCallbackQuery({
-        text: '❌ Please complete all required preferences.',
+        text: isAr ? '❌ يرجى إكمال جميع الحقول المطلوبة أولاً.' : '❌ Please complete all required preferences.',
         show_alert: true,
       });
 
@@ -192,27 +242,45 @@ export function registerPreferencesHandler(bot: Bot<BotContext>): void {
     await ctx.answerCallbackQuery();
 
     await ctx.reply(
-      '✅ Your preferences have been saved successfully!\n\n' +
-        '🔔 You are now subscribed to job notifications.',
+      isAr
+        ? '✅ تم حفظ إعداداتك وتشغيل الـ Pipeline بنجاح!\n\n' +
+            '📡 رادار DeployMe صار يراقب السوق — أول ما تنزل فرصة بتطابق الـ Stack تبعك رح نعملك Ping فوراً.'
+        : '✅ Config saved — your DeployMe pipeline is live!\n\n' +
+            "📡 We're now scanning the market and will ping you the moment a role matches your stack.",
     );
   });
 
   bot.callbackQuery('preferences:restart', async (ctx) => {
+    const lang: SupportedLanguage = ctx.session?.language || 'en';
+    const isAr = lang === 'ar';
+
     ctx.session = {
       step: 'job-title',
+      language: lang,
       preferences: {},
     };
 
     await ctx.answerCallbackQuery();
 
-    await ctx.reply("🔄 Let's start again.\n\n" + 'What job are you looking for?');
+    await ctx.reply(
+      isAr
+        ? '🔄 يلا نبدأ من جديد.\n\nشو المسمى الوظيفي اللي بتدور عليه؟'
+        : "🔄 Resetting config.\n\nWhat role are you targeting?",
+    );
   });
 
   bot.callbackQuery('preferences:update', async (ctx) => {
+    const lang: SupportedLanguage = ctx.session?.language || 'en';
+    const isAr = lang === 'ar';
+
     ctx.session.step = 'job-title';
 
     await ctx.answerCallbackQuery();
 
-    await ctx.reply("✏️ Let's update your preferences.\n\n" + 'What job are you looking for?');
+    await ctx.reply(
+      isAr
+        ? '✏️ خلينا نحدّث إعداداتك.\n\nشو المسمى الوظيفي الجديد اللي بتدور عليه؟'
+        : "✏️ Let's update your stack config.\n\nWhat role are you targeting?",
+    );
   });
 }
