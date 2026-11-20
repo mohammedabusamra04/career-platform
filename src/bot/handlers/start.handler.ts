@@ -18,21 +18,25 @@ export interface StartHandlerDependencies {
 const defaultUserRepository = new PrismaUserRepository();
 const defaultPreferenceRepository = new PrismaUserPreferenceRepository();
 
+function escapeMarkdown(text: string): string {
+  return text.replace(/([*_[\]`])/g, '\\$1');
+}
+
 export function getWelcomeMessage(lang: SupportedLanguage, firstName?: string | null): string {
-  const nameDisplay = firstName ? ` ${firstName}` : '';
+  const safeName = firstName ? ` ${escapeMarkdown(firstName)}` : '';
 
   if (lang === 'en') {
     return (
-      `👋 Welcome to **SmartJobsBot**${nameDisplay}!\n\n` +
-      `🎯 We deliver personalized tech jobs curated for your exact domain with zero noise.\n\n` +
-      `**Step 1:** Select between **1 and 3 specializations** that match your career goals:`
+      `👋 Hey${safeName}, welcome to *DeployMe*!\n\n` +
+      `⚡ Ready to ship your career to production? Pick your tech stack, and I'll filter out the noise and ping you with roles tailored to your skills.\n\n` +
+      `*Step 1:* Select between *1 and 3 specializations* that match your stack:`
     );
   }
 
   return (
-    `👋 مرحباً بك في **SmartJobsBot**${nameDisplay}!\n\n` +
-    `🎯 نساعدك في العثور على أفضل الفرص التقنية اليومية المخصصة لمجالك بدون أي إعلانات أو إزعاج.\n\n` +
-    `**الخطوة 1:** اختر من **1 إلى 3 تخصصات** تناسب مسارك المهني:`
+    `👋 أهلاً بك يا${safeName} في *DeployMe (ديبلوي مي)*!\n\n` +
+    `⚡ جاهز تطلع Production؟ حدد تخصصك والـ Stack تبعك، وأنا بفلتر السوق وبعملك Ping بالفرص اللي بتفصّل على مهاراتك بدون أي رغي أو إزعاج.\n\n` +
+    `*الخطوة 1:* اختار من *1 إلى 3 تخصصات* بتطابق الـ Stack تبعك:`
   );
 }
 
@@ -48,7 +52,7 @@ export function registerStartHandler(
     const firstName = ctx.from?.first_name || null;
     const username = ctx.from?.username || null;
 
-    let language: SupportedLanguage = ctx.session?.language || 'ar';
+    const language: SupportedLanguage = ctx.session?.language || 'ar';
     let selectedSpecializations: Specialization[] = [];
 
     if (telegramId) {
@@ -95,7 +99,17 @@ export function registerStartHandler(
   bot.command('start', handleStart);
 
   if (typeof bot.hears === 'function') {
-    bot.hears(['🚀 Start Job Search', 'Start Job Search', 'Start', '/start'], handleStart);
+    bot.hears(
+      [
+        '⚡ ابدأ البحث',
+        '⚡ ابدأ البحث عن فرص (Deploy)',
+        '⚡ Start Job Search',
+        'Start Job Search',
+        'Start',
+        '/start',
+      ],
+      handleStart,
+    );
   }
 
   if (typeof bot.callbackQuery === 'function') {

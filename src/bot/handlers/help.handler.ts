@@ -3,38 +3,38 @@ import type { BotContext } from '../context.js';
 import type { SupportedLanguage } from '../session.js';
 
 export const HELP_MESSAGES = {
-  ar: `📖 *دليل أوامر المنصة الذكية للتوظيف*
+  ar: `📖 *دليل أوامر DeployMe (ديبلوي مي)*
 
-مرحباً بك! إليك قائمة بجميع الأوامر المتاحة وكيفية استخدامها:
+أهلاً بك! هي قائمة بكل الأوامر المتاحة وكيف تتحكم في الـ Pipeline تبعك:
 
-🔹 /start — بدء الاستخدام وضبط التخصصات والمناطق المستهدفة.
-🔹 /jobs — استعراض أحدث الوظائف المطابقة لتفضيلاتك الحالية فوراً.
-🔹 /settings — تعديل تخصصاتك المهنية، النطاق الجغرافي، أو لغة البوت.
-🔹 /pause — إيقاف التنبيهات مؤقتاً (لمدة يوم، أسبوع، أو حتى الاستئناف يدوياً).
-🔹 /resume — استئناف استقبال تنبيهات وإشعارات الوظائف فوراً.
-🔹 /stop — إلغاء الاشتراك وحذف تفضيلاتك وبياناتك الشخصية نهائياً.
-🔹 /help — عرض هذا الدليل الإرشادي في أي وقت.
+🔹 /start — بدء الإعداد وضبط الـ Stack ونطاق السوق المستهدف.
+🔹 /jobs — استعراض أحدث الفرص المطابقة لـ Stack تبعك فوراً.
+🔹 /settings — تعديل تخصصاتك، نطاق السوق، أو لغة البوت.
+🔹 /pause — إيقاف الـ Ping مؤقتاً (يوم، أسبوع، أو حتى تشغله يدوياً).
+🔹 /resume — إعادة تشغيل الـ Pipeline واستقبال الفرص فوراً.
+🔹 /stop — إلغاء الاشتراك وحذف إعداداتك وبياناتك نهائياً.
+🔹 /help — عرض هذا الدليل في أي وقت.
 
-💡 *نصيحة:* تأكد من ضبط تخصصاتك بدقة عبر /settings لتصلك الفرص الأكثر ملاءمة لمهاراتك!`,
+💡 *نصيحة:* حدّث الـ Stack تبعك بدقة من /settings عشان الرادار يفلترلك أقوى الفرص بدون أي ضوضاء!`,
 
-  en: `📖 *AI Career Platform Command Guide*
+  en: `📖 *DeployMe Command Guide*
 
-Welcome! Here is the complete list of available bot commands and their usage:
+Welcome! Here is the full list of commands to control your job pipeline:
 
-🔹 /start — Start onboarding and set up your job preferences.
-🔹 /jobs — Instantly browse latest jobs matching your preferences.
-🔹 /settings — Edit your career specializations, target region, or language.
-🔹 /pause — Temporarily pause job alerts (1 day, 1 week, or indefinitely).
-🔹 /resume — Resume receiving job alerts immediately.
-🔹 /stop — Unsubscribe and delete your preferences and personal data.
-🔹 /help — Display this guide anytime.
+🔹 /start — Launch onboarding and configure your tech stack & market scope.
+🔹 /jobs — Instantly browse active roles matching your stack.
+🔹 /settings — Edit your stack, target region, or bot language.
+🔹 /pause — Temporarily pause job pings (1 day, 1 week, or until resumed).
+🔹 /resume — Bring your pipeline back live immediately.
+🔹 /stop — Unsubscribe and permanently delete your config & data.
+🔹 /help — Display this command guide anytime.
 
-💡 *Tip:* Make sure to fine-tune your preferences in /settings to receive the most relevant opportunities!`,
+💡 *Tip:* Keep your stack fine-tuned in /settings so the radar filters the highest-signal roles for you!`,
 };
 
 export function registerHelpHandler(bot: Bot<BotContext>): void {
   bot.command('help', async (ctx) => {
-    const lang: SupportedLanguage = ctx.session.language ?? 'ar';
+    const lang: SupportedLanguage = ctx.session?.language ?? 'ar';
     await ctx.reply(HELP_MESSAGES[lang], {
       parse_mode: 'Markdown',
     });

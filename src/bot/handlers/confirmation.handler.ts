@@ -38,7 +38,7 @@ const REGION_LABELS = {
     en: '🏢 Arab & Middle East Market Only',
   },
   [RegionPreference.INTERNATIONAL]: {
-    ar: '🌐 السوق الدولي والعمل عن بعد عالمياً',
+    ar: '🌐 السوق الدولي وفرص الـ Remote عالمياً',
     en: '🌐 International & Global Remote Only',
   },
 };
@@ -55,20 +55,20 @@ export function formatSummaryCard(
 
   if (lang === 'en') {
     return (
-      `📋 **Review Your Job Alert Preferences**\n\n` +
-      `🎯 **Specializations:**\n• ${specsList}\n\n` +
-      `📍 **Target Market:**\n• ${regionLabel}\n\n` +
-      `⏰ **Delivery Schedule:**\n• You will receive a daily digest of the best matching tech opportunities every day 🚀\n\n` +
-      `Click **Confirm & Save** to start receiving your alerts!`
+      `📋 *Review Your DeployMe Pipeline Config*\n\n` +
+      `🎯 *Tech Stack / Specializations:*\n• ${specsList}\n\n` +
+      `📍 *Target Market:*\n• ${regionLabel}\n\n` +
+      `⏰ *Delivery Schedule:*\n• You will receive a curated daily digest of matching tech roles every evening ⚡\n\n` +
+      `Hit *Save & Deploy Pipeline* to launch your alerts!`
     );
   }
 
   return (
-    `📋 **ملخص تفضيلات تنبيهات الوظائف**\n\n` +
-    `🎯 **المجالات والتخصصات المختارة:**\n• ${specsList}\n\n` +
-    `📍 **نطاق السوق المستهدف:**\n• ${regionLabel}\n\n` +
-    `⏰ **نظام الإرسال:**\n• سيصلك ملخص يومي شامل بأفضل الفرص التقنية المطابقة يومياً 🚀\n\n` +
-    `اضغط على **تأكيد وحفظ** للبدء في استلام التنبيهات!`
+    `📋 *ملخص إعدادات الـ Pipeline تبعك*\n\n` +
+    `🎯 *التخصصات والـ Stack المختار:*\n• ${specsList}\n\n` +
+    `📍 *نطاق السوق المستهدف:*\n• ${regionLabel}\n\n` +
+    `⏰ *نظام الإرسال:*\n• رح توصلك تجميعة يومية بأفضل الفرص التقنية المطابقة لمجالك كل مساء ⚡\n\n` +
+    `اضغط على *تأكيد وتشغيل الـ Pipeline* عشان نبدأ!`
   );
 }
 
@@ -90,8 +90,8 @@ export function registerConfirmationHandler(
     if (!telegramId || specializations.length === 0) {
       const errorMsg =
         lang === 'en'
-          ? '⚠️ Unable to save preferences. Please run /start to configure your profile.'
-          : '⚠️ تعذر حفظ التفضيلات. يرجى البدء مجدداً عبر الأمر /start لإكمال الإعداد.';
+          ? '⚠️ Unable to save config. Please run /start to configure your stack.'
+          : '⚠️ تعذر حفظ الإعدادات. يرجى البدء مجدداً عبر الأمر /start لإكمال الضبط.';
       await ctx.answerCallbackQuery({ text: errorMsg, show_alert: true });
       return;
     }
@@ -119,26 +119,26 @@ export function registerConfirmationHandler(
       }
 
       await ctx.answerCallbackQuery({
-        text: lang === 'en' ? 'Preferences saved successfully! ✅' : 'تم حفظ التفضيلات بنجاح! ✅',
+        text: lang === 'en' ? 'Pipeline deployed! ✅' : 'تم تشغيل الـ Pipeline بنجاح! ✅',
       });
 
-      // 4. Send rich congratulations & next steps message
+      // 4. Send rich confirmation & next steps message
       const successMessage =
         lang === 'en'
-          ? `🎉 **Congratulations! Your profile is all set!**\n\n` +
-            `✅ Your preferences have been saved.\n` +
-            `📬 We will automatically deliver your personalized job digest every evening at your leisure time.\n\n` +
-            `💡 **Useful Commands:**\n` +
-            `• /jobs - Browse matching jobs instantly\n` +
-            `• /settings - View or modify your preferences anytime\n` +
-            `• /help - Display the command directory`
-          : `🎉 **تهانينا! تم ضبط حسابك بنجاح!**\n\n` +
-            `✅ تم حفظ تفضيلاتك في النظام بنجاح.\n` +
-            `📬 سنرسل لك ملخصاً يومياً بأفضل الفرص التقنية المطابقة لمجالك في ساعة الراحة المسائية.\n\n` +
-            `💡 **أوامر مفيدة يمكنك استخدامها الآن:**\n` +
-            `• /jobs - استكشاف الوظائف المطابقة لمجالك حالياً\n` +
-            `• /settings - عرض أو تعديل تفضيلاتك في أي وقت\n` +
-            `• /help - عرض دليل المساعدة وجميع الأوامر`;
+          ? `⚡ *All set! Your DeployMe pipeline is live!*\n\n` +
+            `✅ Your stack & market preferences are saved.\n` +
+            `📬 We'll ping you automatically every evening with top matching roles.\n\n` +
+            `💡 *Quick Commands:*\n` +
+            `• /jobs - Browse matching roles right now\n` +
+            `• /settings - Adjust your stack or market scope\n` +
+            `• /help - View all available commands`
+          : `⚡ *جاهز للـ Production! تم تشغيل الـ Pipeline بنجاح!*\n\n` +
+            `✅ تم حفظ إعدادات الـ Stack ونطاق السوق في النظام.\n` +
+            `📬 رح نعملك Ping يومياً كل مساء بأقوى الفرص التقنية المطابقة لمجالك.\n\n` +
+            `💡 *أوامر سريعة بتفيدك:*\n` +
+            `• /jobs - تصفح الفرص المطابقة لـ Stack تبعك حالياً\n` +
+            `• /settings - تعديل تخصصاتك أو نطاق السوق في أي وقت\n` +
+            `• /help - عرض دليل الأوامر والمساعدة`;
 
       await ctx.reply(successMessage, {
         parse_mode: 'Markdown',
@@ -147,8 +147,8 @@ export function registerConfirmationHandler(
       // 5. Send searching placeholder message (TASK-40.1 Acceptance Criteria)
       const searchingText =
         lang === 'en'
-          ? 'Searching for the best opportunities matching your profile right now... 🔍'
-          : 'جاري البحث عن أنسب الفرص المتاحة لك الآن... 🔍';
+          ? 'Scanning active roles matching your stack right now... 🔍'
+          : 'بنفحص السوق وبنفلتر أنسب الفرص لـ Stack تبعك هلق... 🔍';
 
       const searchingMsg = await ctx.reply(searchingText, {
         parse_mode: 'Markdown',
@@ -190,8 +190,8 @@ export function registerConfirmationHandler(
         if (searchingMsg && searchingMsg.message_id && ctx.chat) {
           const fallbackText =
             lang === 'en'
-              ? 'Could not load your first digest right now, but your preferences are safely saved! You will receive your digest in the upcoming evening cycle (21:00).'
-              : 'تعذر تحميل الملخص الفوري حالياً، ولكن تم حفظ تفضيلاتك بنجاح! سيصلك ملخصك في الجولة المسائية القادمة (21:00).';
+              ? 'Could not load your instant digest right now, but your pipeline is active! You will receive your digest in the upcoming evening cycle (21:00).'
+              : 'تعذر تحميل التجميعة الفورية حالياً، بس الـ Pipeline شغال تمام! رح توصلك تجميعتك في الجولة المسائية القادمة (21:00).';
 
           try {
             await ctx.api.editMessageText(ctx.chat.id, searchingMsg.message_id, fallbackText);
@@ -206,7 +206,7 @@ export function registerConfirmationHandler(
         text:
           lang === 'en'
             ? '⚠️ An error occurred while saving your preferences. Please try again.'
-            : '⚠️ حدث خطأ أثناء حفظ تفضيلاتك. يرجى المحاولة مرة أخرى.',
+            : '⚠️ حدث خطأ أثناء حفظ إعداداتك. يرجى المحاولة مرة أخرى.',
         show_alert: true,
       });
     }
