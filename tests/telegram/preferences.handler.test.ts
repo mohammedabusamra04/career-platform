@@ -57,7 +57,7 @@ describe('registerPreferencesHandler', () => {
     expect(mockCtx.session.step).toBe('work-type');
     expect(mockCtx.session.preferences.jobTitle).toBe('Backend Developer');
     expect(mockCtx.reply).toHaveBeenCalledWith(
-      expect.stringContaining('What type of work do you prefer?'),
+      expect.stringContaining('What work setup do you prefer?'),
       expect.any(Object),
     );
   });
@@ -117,7 +117,7 @@ describe('registerPreferencesHandler', () => {
     expect(mockCtx.session.step).toBe('confirmation');
     expect(mockCtx.session.preferences.skills).toEqual(['Node.js', 'TypeScript', 'Redis']);
     expect(mockCtx.reply).toHaveBeenCalledWith(
-      expect.stringContaining('Please review your preferences'),
+      expect.stringContaining('Review your DeployMe pipeline config'),
       expect.any(Object),
     );
   });
@@ -162,7 +162,7 @@ describe('registerPreferencesHandler', () => {
     expect(preferenceService.savePreferences).toHaveBeenCalledWith(123456, mockSavedPreferences);
     expect(subscriptionService.subscribe).toHaveBeenCalledWith(123456);
     expect(mockCtx.reply).toHaveBeenCalledWith(
-      expect.stringContaining('Your preferences have been saved successfully!'),
+      expect.stringContaining('Config saved — your DeployMe pipeline is live!'),
     );
   });
 });

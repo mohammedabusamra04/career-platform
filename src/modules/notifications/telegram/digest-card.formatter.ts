@@ -1,10 +1,10 @@
 /**
- * Digest Card Formatter (TASK-43.1)
+ * Digest Card Formatter (TASK-43.1) - DeployMe Identity
  *
  * Formats job recommendation cards for Telegram digests:
  * - 5 jobs per page, max 4 pages (20 jobs total).
- * - Human-centric, hopeful, and encouraging phrasing instead of cold percentage numbers.
- * - Bilingual support for Arabic and English.
+ * - Developer-centric, witty, and encouraging phrasing (DeployMe persona).
+ * - Bilingual support for Arabic (primary) and English.
  * - Direct application hyperlinks with link preview suppression (`disable_web_page_preview: true`).
  */
 
@@ -86,32 +86,31 @@ export function sanitizeApplicationUrl(rawUrl?: string | null): string {
 }
 
 /**
- * Translates match strength into concise descriptive badges (Strong, Moderate, Weak)
- * without displaying mechanical numerical percentages or long cluttered text.
+ * Translates match strength into concise developer-friendly badges
+ * without displaying mechanical numerical percentages.
  */
 export function formatMatchTone(score: number = 70, lang: 'ar' | 'en' = 'ar'): string {
   if (lang === 'en') {
     if (score >= 80) {
-      return '🎯 Strong Match';
+      return '🎯 High Stack Fit';
     }
     if (score >= 65) {
-      return '⚖️ Moderate Match';
+      return '⚡ Solid Fit';
     }
-    return '🌱 Weak Match';
+    return '🌱 Partial Fit';
   }
 
-  // Concise Arabic match tiers: Strong, Moderate, Weak
   if (score >= 80) {
-    return '🎯 تطابق قوي';
+    return '🎯 تطابق قوي مع الـ Stack';
   }
   if (score >= 65) {
-    return '⚖️ تطابق متوسط';
+    return '⚡ تطابق جيد';
   }
-  return '🌱 تطابق ضعيف';
+  return '🌱 تطابق مبدئي';
 }
 
 /**
- * Formats seniority experience level in clean, human-friendly terms.
+ * Formats seniority experience level in clean, dev-friendly terms.
  */
 export function formatExperienceLevel(
   level?: string | null,
@@ -122,13 +121,13 @@ export function formatExperienceLevel(
   if (lang === 'en') {
     switch (norm) {
       case 'JUNIOR':
-        return 'Entry-level (Junior)';
+        return 'Junior / Entry-Level';
       case 'MID':
-        return 'Mid-level';
+        return 'Mid-Level';
       case 'SENIOR':
-        return 'Senior / Lead';
+        return 'Senior / Tech Lead';
       default:
-        return 'Open to all experience levels';
+        return 'All Experience Levels';
     }
   }
 
@@ -136,11 +135,11 @@ export function formatExperienceLevel(
     case 'JUNIOR':
       return 'مستوى مبتدئ (Junior)';
     case 'MID':
-      return 'مستوى متوسط (Mid-level)';
+      return 'مستوى متوسط (Mid-Level)';
     case 'SENIOR':
       return 'مستوى متقدم / خبير (Senior)';
     default:
-      return 'متاح لكافة مستويات الخبرة';
+      return 'مفتوح لكل المستويات';
   }
 }
 
@@ -159,7 +158,7 @@ export function formatRemoteScope(
   if (lang === 'en') {
     switch (norm) {
       case 'WORLDWIDE':
-        return '🌍 Worldwide Remote';
+        return '🌍 Remote (Worldwide)';
       case 'REGION':
         return displayLocation
           ? `🌐 Regional Remote (${displayLocation})`
@@ -167,7 +166,7 @@ export function formatRemoteScope(
       case 'COUNTRY':
         return displayLocation
           ? `📍 Remote (${displayLocation})`
-          : '📍 In-country Remote';
+          : '📍 In-Country Remote';
       default:
         return displayLocation
           ? `🏢 On-site / Hybrid (${displayLocation})`
@@ -177,19 +176,19 @@ export function formatRemoteScope(
 
   switch (norm) {
     case 'WORLDWIDE':
-      return '🌍 عمل عن بُعد (عالمياً)';
+      return '🌍 عن بُعد (عالمي - Remote)';
     case 'REGION':
       return displayLocation
-        ? `🌐 عمل عن بُعد إقليمياً (${displayLocation})`
-        : '🌐 عمل عن بُعد إقليمياً';
+        ? `🌐 عن بُعد إقليمياً (${displayLocation})`
+        : '🌐 عن بُعد إقليمياً';
     case 'COUNTRY':
       return displayLocation
-        ? `📍 عمل عن بُعد محلي (${displayLocation})`
-        : '📍 عمل عن بُعد محلي';
+        ? `📍 عن بُعد محلياً (${displayLocation})`
+        : '📍 عن بُعد محلياً';
     default:
       return displayLocation
-        ? `🏢 عمل حضوري / هجين (${displayLocation})`
-        : '🏢 عمل حضوري أو مرن';
+        ? `🏢 حضوري / هجين (${displayLocation})`
+        : '🏢 حضوري أو مرن';
   }
 }
 
@@ -233,7 +232,7 @@ export function formatJobCard(
   const safeCompany = escapeTelegramMarkdown(job.company || 'Company');
   const targetUrl = sanitizeApplicationUrl(job.applicationUrl || job.url);
 
-  const applyText = lang === 'en' ? 'Direct Application' : 'التقديم المباشر';
+  const applyText = lang === 'en' ? 'Apply Now' : 'تقديم مباشر';
   const titleLink = targetUrl ? `[${safeTitle}](${targetUrl})` : `*${safeTitle}*`;
   const directLinkLine = targetUrl ? `🔗 [${applyText}](${targetUrl})` : '';
 
@@ -248,9 +247,9 @@ export function formatJobCard(
   const matchToneLine = formatMatchTone(job.score ?? 70, lang);
 
   const lines = [
-    `*${indexOnPage}.* 💼 ${titleLink}`,
+    `*${indexOnPage}.* 💻 ${titleLink}`,
     companyAndLocation,
-    `🌐 ${escapeTelegramMarkdown(remoteLine)}`,
+    `${escapeTelegramMarkdown(remoteLine)}`,
     `📊 ${escapeTelegramMarkdown(experienceLine)}`,
     `${escapeTelegramMarkdown(matchToneLine)}`,
   ];
@@ -279,26 +278,26 @@ export function formatDigestPageMessage(
   if (pagination.totalDigestJobs === 0) {
     if (lang === 'en') {
       return (
-        `🔍 **No matching opportunities right now**\n\n` +
-        `We are actively tracking new openings that suit your domain and will notify you as soon as fresh opportunities arrive.\n\n` +
-        `💡 You can review or adjust your preferences anytime via /settings`
+        `📡 *No matching builds right now*\n\n` +
+        `Our pipeline is scanning the market 24/7. The moment a role matches your stack, we'll ping you right away.\n\n` +
+        `⚙️ Want to broaden your filters? Adjust your stack anytime via /settings`
       );
     }
     return (
-      `🔍 **لا توجد وظائف مطابقة لتفضيلاتك حالياً**\n\n` +
-      `نواصل البحث باستمرار في كبرى المنصات وسنرسل لك أحدث الفرص فور رصدها.\n\n` +
-      `💡 يمكنك مراجعة أو توسيع نطاق تفضيلاتك في أي وقت عبر /settings`
+      `📡 *ما في فرص مطابقة حالياً على الرادار*\n\n` +
+      `الـ Pipeline تبعنا شغال 24/7 وبيراقب السوق؛ أول ما تنزل فرصة بتفصّل على الـ Stack تبعك رح نعملك Ping فوراً.\n\n` +
+      `⚙️ حابب توسع نطاق البحث أو تعدل مهاراتك؟ اضبط إعداداتك من /settings`
     );
   }
 
   // Header
   const headerText =
     lang === 'en'
-      ? `✨ **Your Handpicked Job Opportunities**\n` +
-        `Here are promising roles tailored for your profile and career growth:\n` +
+      ? `📬 *DeployMe Daily Build*\n` +
+        `Top stack-matched roles ready for your next career deploy:\n` +
         `────────────────────\n\n`
-      : `✨ **فرص عمل واعدة مختارة لك بعناية**\n` +
-        `إليك مجموعة مميزة من الفرص التي تناسب تطلعاتك ومسارك المهني:\n` +
+      : `📬 *تجميعة DeployMe (ديبلوي مي)*\n` +
+        `هاي أنسب الفرص اللي لقطناها وبتطابق الـ Stack تبعك — جاهز تطلع Production؟\n` +
         `────────────────────\n\n`;
 
   // Cards
@@ -313,11 +312,11 @@ export function formatDigestPageMessage(
   const footerText =
     lang === 'en'
       ? `\n\n────────────────────\n` +
-        `📄 **Page ${pagination.currentPage} of ${pagination.totalPages}** • Showing ${pagination.pagedJobs.length} opportunities\n` +
-        `💡 Click the title or direct link to apply. Use /jobs to explore the full shared database.`
+        `📄 *Page ${pagination.currentPage} of ${pagination.totalPages}* • Showing ${pagination.pagedJobs.length} roles\n` +
+        `⚡ Tap any role title to apply directly, or browse the full feed via /jobs`
       : `\n\n────────────────────\n` +
-        `📄 **الصفحة ${pagination.currentPage} من ${pagination.totalPages}** • تم استعراض ${pagination.pagedJobs.length} فرص مميزة\n` +
-        `💡 اضغط على عنوان الوظيفة للتقديم المباشر. يمكنك دائماً استكشاف كافة الفرص المتاحة عبر الأمر /jobs`;
+        `📄 *صفحة ${pagination.currentPage} من ${pagination.totalPages}* • معروض ${pagination.pagedJobs.length} فرص\n` +
+        `⚡ اضغط على اسم الوظيفة للتقديم المباشر، أو تصفح كل الفرص المتاحة عبر /jobs`;
 
   return `${headerText}${cardsText}${footerText}`;
 }
@@ -338,4 +337,3 @@ export function getTelegramDigestSendOptions(): {
     },
   };
 }
-

@@ -50,8 +50,8 @@ export function registerJobsHandler(
       const user = await userRepo.findByTelegramId(telegramId);
       if (!user) {
         const notConfiguredMsg = isArabic
-          ? '⚠️ لم تقم بتهيئة ملفك المهني بعد! يرجى إرسال الأمر /start للبدء وضبط مجالاتك.'
-          : '⚠️ You have not set up your profile yet! Please send /start to choose your specializations.';
+          ? '⚠️ لسا ما ضبطت الـ Stack تبعك! ابعت /start عشان تختار تخصصاتك ونشغّلك الرادار.'
+          : "⚠️ Your stack isn't configured yet! Send /start to pick your specializations.";
         await ctx.reply(notConfiguredMsg);
         return;
       }
@@ -92,8 +92,8 @@ export function registerJobsHandler(
     } catch (err: unknown) {
       logger.error(`[JobsHandler] Error executing /jobs: ${(err as Error).message}`);
       const errorMsg = isArabic
-        ? '⚠️ تعذر تحميل الوظائف حالياً. يرجى المحاولة بعد قليل.'
-        : '⚠️ Unable to load jobs right now. Please try again shortly.';
+        ? '⚠️ تعذر سحب الفرص حالياً، جرّب كمان شوي.'
+        : "⚠️ Couldn't fetch roles right now. Try again shortly.";
       await ctx.reply(errorMsg);
     }
   });
@@ -180,11 +180,11 @@ export function registerJobsHandler(
     const toastText =
       requestedSort === 'LATEST'
         ? isArabic
-          ? '⏱️ تم الترتيب حسب: الأحدث نشراً'
-          : '⏱️ Sorted by: Latest Published'
+          ? '⏱️ الترتيب: الأحدث نزولاً'
+          : '⏱️ Sorted by: Latest First'
         : isArabic
-          ? '🎯 تم الترتيب حسب: الأكثر مطابقة'
-          : '🎯 Sorted by: Best Match';
+          ? '🎯 الترتيب: الأنسب للـ Stack'
+          : '🎯 Sorted by: Best Stack Fit';
 
     try {
       await ctx.answerCallbackQuery({ text: toastText });
@@ -235,4 +235,3 @@ export function registerJobsHandler(
     }
   });
 }
-

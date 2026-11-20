@@ -15,36 +15,44 @@ const defaultUserRepository = new PrismaUserRepository();
 
 export const PAUSE_MESSAGES = {
   prompt: {
-    ar: '⏸️ *إيقاف التنبيهات مؤقتاً*\n\nيمكنك إيقاف إرسال إشعارات الوظائف مؤقتاً إذا كنت في إجازة أو مشغولاً.\nاختر المدة المناسبة:',
-    en: '⏸️ *Pause Job Alerts*\n\nYou can temporarily pause job alerts during vacations or busy periods.\nSelect a duration:',
+    ar: '⏸️ *إيقاف الـ Pipeline مؤقتاً*\n\nبدك تاخد بريك أو مشغول هالفترة؟ بتقدر توقف الـ Ping مؤقتاً وترجعه وقت ما بدك.\nاختار المدة:',
+    en: '⏸️ *Pause DeployMe Pipeline*\n\nTaking a break or heads-down coding? Temporarily pause job pings and resume anytime.\nSelect a duration:',
   },
   paused1d: {
-    ar: 'تم إيقاف التنبيهات مؤقتاً لمدة 24 ساعة ⏱️\nستعود الإشعارات تلقائياً غداً، أو يمكنك كتابة /resume في أي وقت للاستئناف.',
-    en: 'Job alerts paused for 24 hours ⏱️\nAlerts will resume automatically tomorrow, or type /resume anytime to unpause.',
+    ar: 'تم إيقاف الـ Pipeline مؤقتاً لمدة 24 ساعة ⏱️\nرح يرجع يشتغل لحاله بكرة، أو ابعت /resume بأي وقت لتشغله فوراً.',
+    en: 'Pipeline paused for 24 hours ⏱️\nPings will auto-resume tomorrow, or send /resume anytime to bring it back live.',
   },
   paused7d: {
-    ar: 'تم إيقاف التنبيهات مؤقتاً لمدة أسبوع (7 أيام) 📅\nستعود الإشعارات تلقائياً بعد 7 أيام، أو يمكنك كتابة /resume في أي وقت للاستئناف.',
-    en: 'Job alerts paused for 1 week 📅\nAlerts will resume automatically after 7 days, or type /resume anytime to unpause.',
+    ar: 'تم إيقاف الـ Pipeline مؤقتاً لمدة أسبوع (7 أيام) 📅\nرح يرجع يشتغل لحاله بعد 7 أيام، أو ابعت /resume بأي وقت لتشغله فوراً.',
+    en: 'Pipeline paused for 1 week 📅\nPings will auto-resume in 7 days, or send /resume anytime to bring it back live.',
   },
   pausedIndefinite: {
-    ar: 'تم إيقاف التنبيهات مؤقتاً حتى تقوم بالاستئناف يدوياً ⏸️\nلإعادة تفعيل التنبيهات في أي وقت، اكتب: /resume',
-    en: 'Job alerts paused indefinitely ⏸️\nTo resume receiving notifications anytime, send /resume.',
+    ar: 'تم إيقاف الـ Pipeline مؤقتاً حتى تشغله يدوياً ⏸️\nلما تكون جاهز ترجع تستقبل فرص، ابعت: /resume',
+    en: 'Pipeline paused until manually resumed ⏸️\nWhenever you are ready for job pings again, send /resume.',
   },
   cancel: {
-    ar: 'تم إلغاء الإيقاف المؤقت، تنبيهات الوظائف لا تزال نشطة ومفعّلة 🔔',
-    en: 'Pause cancelled. Your job alerts remain active 🔔',
+    ar: 'تم إلغاء الإيقاف المؤقت — رادار DeployMe لسا شغال Live 📡',
+    en: 'Pause cancelled — your DeployMe pipeline is still live 📡',
   },
   resumed: {
-    ar: 'تم استئناف إشعارات الوظائف بنجاح 🚀\nسنقوم بإرسال أحدث الفرص المطابقة لتفضيلاتك بانتظام.',
-    en: 'Job alerts have been resumed successfully 🚀\nYou will receive matching job opportunities regularly.',
+    ar: 'رجعنا Live! تم استئناف الـ Pipeline بنجاح ⚡\nرح نكمل نفلتر السوق ونعملك Ping بأقوى الفرص المطابقة لـ Stack تبعك.',
+    en: 'Back live! Your DeployMe pipeline has been resumed ⚡\nWe will keep scanning and ping you with roles matching your stack.',
   },
   alreadyActive: {
-    ar: 'إشعاراتك مفعّلة ونشطة بالفعل 🔔\nستصلك الفرص المطابقة بانتظام دون انقطاع.',
-    en: 'Your job alerts are already active 🔔\nYou are set to receive matching opportunities without interruption.',
+    ar: 'رادار DeployMe شغال Live أصلاً 📡\nالـ Pipeline مفعّل ورح توصلك الفرص المطابقة أول بأول.',
+    en: 'Your DeployMe pipeline is already live 📡\nYou are all set to receive matching job pings.',
   },
   notRegistered: {
-    ar: 'لم يتم العثور على حساب مسجل. يرجى كتابة /start للبدء وضبط تفضيلاتك 🚀',
-    en: 'No registered profile found. Please type /start to set up your preferences 🚀',
+    ar: 'لسا ما ضبطت حسابك على DeployMe! ابعت /start عشان تختار الـ Stack تبعك ونشغّلك الرادار ⚡',
+    en: 'No stack config found yet! Send /start to set up your DeployMe pipeline ⚡',
+  },
+  errorSave: {
+    ar: '⚠️ صار خطأ تقني أثناء حفظ الإعداد. جرّب كمان شوي.',
+    en: '⚠️ Something went wrong saving your setting. Please try again shortly.',
+  },
+  errorResume: {
+    ar: '⚠️ تعذر تشغيل الـ Pipeline حالياً. جرّب كمان شوي.',
+    en: '⚠️ Could not resume your pipeline right now. Please try again shortly.',
   },
 };
 
@@ -58,7 +66,7 @@ export function registerPauseResumeHandler(
     const telegramId = ctx.from?.id;
     if (!telegramId) return;
 
-    const lang: SupportedLanguage = ctx.session.language ?? 'ar';
+    const lang: SupportedLanguage = ctx.session?.language ?? 'ar';
     const user = await userRepository.findByTelegramId(telegramId);
 
     if (!user) {
@@ -77,7 +85,7 @@ export function registerPauseResumeHandler(
     const telegramId = ctx.from?.id;
     if (!telegramId) return;
 
-    const lang: SupportedLanguage = ctx.session.language ?? 'ar';
+    const lang: SupportedLanguage = ctx.session?.language ?? 'ar';
     const pausedUntil = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
     try {
@@ -87,7 +95,7 @@ export function registerPauseResumeHandler(
       await ctx.editMessageText(PAUSE_MESSAGES.paused1d[lang]);
     } catch (error) {
       logger.error(`[PauseResumeHandler] Failed to pause user ${telegramId} for 24h: ${error instanceof Error ? error.message : String(error)}`);
-      await ctx.reply('حدث خطأ أثناء حفظ التفضيل. يرجى المحاولة لاحقاً.');
+      await ctx.reply(PAUSE_MESSAGES.errorSave[lang]);
     }
 
     await ctx.answerCallbackQuery();
@@ -97,7 +105,7 @@ export function registerPauseResumeHandler(
     const telegramId = ctx.from?.id;
     if (!telegramId) return;
 
-    const lang: SupportedLanguage = ctx.session.language ?? 'ar';
+    const lang: SupportedLanguage = ctx.session?.language ?? 'ar';
     const pausedUntil = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
     try {
@@ -107,7 +115,7 @@ export function registerPauseResumeHandler(
       await ctx.editMessageText(PAUSE_MESSAGES.paused7d[lang]);
     } catch (error) {
       logger.error(`[PauseResumeHandler] Failed to pause user ${telegramId} for 7d: ${error instanceof Error ? error.message : String(error)}`);
-      await ctx.reply('حدث خطأ أثناء حفظ التفضيل. يرجى المحاولة لاحقاً.');
+      await ctx.reply(PAUSE_MESSAGES.errorSave[lang]);
     }
 
     await ctx.answerCallbackQuery();
@@ -117,7 +125,7 @@ export function registerPauseResumeHandler(
     const telegramId = ctx.from?.id;
     if (!telegramId) return;
 
-    const lang: SupportedLanguage = ctx.session.language ?? 'ar';
+    const lang: SupportedLanguage = ctx.session?.language ?? 'ar';
 
     try {
       await userRepository.updateStatus(telegramId, UserStatus.PAUSED, null);
@@ -126,14 +134,14 @@ export function registerPauseResumeHandler(
       await ctx.editMessageText(PAUSE_MESSAGES.pausedIndefinite[lang]);
     } catch (error) {
       logger.error(`[PauseResumeHandler] Failed to pause user ${telegramId} indefinitely: ${error instanceof Error ? error.message : String(error)}`);
-      await ctx.reply('حدث خطأ أثناء حفظ التفضيل. يرجى المحاولة لاحقاً.');
+      await ctx.reply(PAUSE_MESSAGES.errorSave[lang]);
     }
 
     await ctx.answerCallbackQuery();
   });
 
   bot.callbackQuery('pause_cancel', async (ctx) => {
-    const lang: SupportedLanguage = ctx.session.language ?? 'ar';
+    const lang: SupportedLanguage = ctx.session?.language ?? 'ar';
     await ctx.editMessageText(PAUSE_MESSAGES.cancel[lang]);
     await ctx.answerCallbackQuery();
   });
@@ -142,7 +150,7 @@ export function registerPauseResumeHandler(
     const telegramId = ctx.from?.id;
     if (!telegramId) return;
 
-    const lang: SupportedLanguage = ctx.session.language ?? 'ar';
+    const lang: SupportedLanguage = ctx.session?.language ?? 'ar';
     const user = await userRepository.findByTelegramId(telegramId);
 
     if (!user) {
@@ -157,7 +165,7 @@ export function registerPauseResumeHandler(
         await ctx.reply(PAUSE_MESSAGES.resumed[lang]);
       } catch (error) {
         logger.error(`[PauseResumeHandler] Failed to resume user ${telegramId}: ${error instanceof Error ? error.message : String(error)}`);
-        await ctx.reply('حدث خطأ أثناء استئناف التنبيهات. يرجى المحاولة لاحقاً.');
+        await ctx.reply(PAUSE_MESSAGES.errorResume[lang]);
       }
     } else {
       await ctx.reply(PAUSE_MESSAGES.alreadyActive[lang]);

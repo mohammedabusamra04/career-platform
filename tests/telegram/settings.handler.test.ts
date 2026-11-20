@@ -86,8 +86,8 @@ describe('TASK-36.1: /settings Interactive Preference Editor (#105)', () => {
         'ar',
       );
 
-      expect(dashboard).toContain('إعدادات تنبيهات الوظائف الخاصة بك');
-      expect(dashboard).toContain('نشط ومفعل');
+      expect(dashboard).toContain('DeployMe');
+      expect(dashboard).toContain('Live');
       expect(dashboard).toContain('BACKEND, FULLSTACK');
       expect(dashboard).toContain('السوق العربي والدولي معاً');
     });
@@ -100,7 +100,7 @@ describe('TASK-36.1: /settings Interactive Preference Editor (#105)', () => {
         'en',
       );
 
-      expect(dashboard).toContain('Your Career Alert Settings');
+      expect(dashboard).toContain('DeployMe');
       expect(dashboard).toContain('Paused');
       expect(dashboard).toContain('AI_ENGINEER');
       expect(dashboard).toContain('International & Global Remote Only');
@@ -142,7 +142,7 @@ describe('TASK-36.1: /settings Interactive Preference Editor (#105)', () => {
       expect(mockCtx.session.selectedRegion).toBe(RegionPreference.ARAB);
 
       expect(mockCtx.reply).toHaveBeenCalledWith(
-        expect.stringContaining('إعدادات تنبيهات الوظائف'),
+        expect.stringContaining('DeployMe'),
         expect.objectContaining({
           parse_mode: 'Markdown',
           reply_markup: expect.anything(),
@@ -162,7 +162,7 @@ describe('TASK-36.1: /settings Interactive Preference Editor (#105)', () => {
       await settingsCommandHandler!(mockCtx);
 
       expect(mockCtx.reply).toHaveBeenCalledWith(
-        expect.stringContaining('Profile not found. Please type /start'),
+        expect.stringContaining('Send /start'),
       );
     });
   });
@@ -187,7 +187,7 @@ describe('TASK-36.1: /settings Interactive Preference Editor (#105)', () => {
       expect(mockCtx.session.step).toBe('specializations');
       expect(mockCtx.answerCallbackQuery).toHaveBeenCalled();
       expect(mockCtx.editMessageText).toHaveBeenCalledWith(
-        expect.stringContaining('SmartJobsBot'),
+        expect.stringContaining('DeployMe'),
         expect.objectContaining({
           parse_mode: 'Markdown',
           reply_markup: expect.anything(),
@@ -247,7 +247,7 @@ describe('TASK-36.1: /settings Interactive Preference Editor (#105)', () => {
       expect(mockCtx.session.language).toBe('en');
       expect(mockCtx.answerCallbackQuery).toHaveBeenCalled();
       expect(mockCtx.editMessageText).toHaveBeenCalledWith(
-        expect.stringContaining('Your Career Alert Settings'),
+        expect.stringContaining('DeployMe'),
         expect.anything(),
       );
     });

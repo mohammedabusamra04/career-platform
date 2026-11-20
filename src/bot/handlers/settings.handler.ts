@@ -34,7 +34,7 @@ const REGION_LABELS = {
     en: '🏢 Arab & Middle East Market Only',
   },
   [RegionPreference.INTERNATIONAL]: {
-    ar: '🌐 السوق الدولي والعمل عن بعد عالمياً',
+    ar: '🌐 السوق الدولي وفرص الـ Remote عالمياً',
     en: '🌐 International & Global Remote Only',
   },
 };
@@ -56,25 +56,25 @@ export function formatSettingsDashboard(
         ? '⏸️ Paused'
         : '⏸️ متوقف مؤقتاً'
       : lang === 'en'
-        ? '✅ Active'
-        : '✅ نشط ومفعل';
+        ? '✅ Live'
+        : '✅ شغال (Live)';
 
   if (lang === 'en') {
     return (
-      `⚙️ **Your Career Alert Settings**\n\n` +
-      `👤 **Account Status:** ${statusLabel}\n` +
-      `🎯 **Active Specializations:**\n• ${specsList}\n\n` +
-      `📍 **Target Region:**\n• ${regionLabel}\n\n` +
-      `💡 Choose what you would like to customize below:`
+      `⚙️ *DeployMe Pipeline Settings*\n\n` +
+      `📡 *Pipeline Status:* ${statusLabel}\n` +
+      `🎯 *Active Stack:*\n• ${specsList}\n\n` +
+      `📍 *Market Scope:*\n• ${regionLabel}\n\n` +
+      `💡 Pick what you'd like to update below:`
     );
   }
 
   return (
-    `⚙️ **إعدادات تنبيهات الوظائف الخاصة بك**\n\n` +
-    `👤 **حالة الحساب:** ${statusLabel}\n` +
-    `🎯 **التخصصات المفعلة:**\n• ${specsList}\n\n` +
-    `📍 **نطاق السوق المستهدف:**\n• ${regionLabel}\n\n` +
-    `💡 اختر ما ترغب في تعديله من الخيارات أدناه:`
+    `⚙️ *إعدادات الـ Pipeline في DeployMe*\n\n` +
+    `📡 *حالة الرادار:* ${statusLabel}\n` +
+    `🎯 *الـ Stack المفعّل:*\n• ${specsList}\n\n` +
+    `📍 *نطاق السوق:*\n• ${regionLabel}\n\n` +
+    `💡 اختار شو حابب تعدّل من الأزرار تحت:`
   );
 }
 
@@ -98,8 +98,8 @@ export function registerSettingsHandler(
       if (!user) {
         const notFoundMsg =
           lang === 'en'
-            ? '⚠️ Profile not found. Please type /start to set up your preferences.'
-            : '⚠️ لم يتم العثور على حسابك. يرجى إرسال /start لضبط تفضيلاتك لأول مرة.';
+            ? "⚠️ Stack config not found. Send /start to set up your DeployMe pipeline."
+            : '⚠️ لسا ما عملت إعداد لحسابك على DeployMe! ابعت /start عشان تضبط الـ Stack تبعك.';
         await ctx.reply(notFoundMsg);
         return;
       }

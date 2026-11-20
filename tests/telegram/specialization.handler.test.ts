@@ -175,7 +175,7 @@ describe('TASK-34.2: Inline Button Multi-Selection with Toggle State (#102)', ()
       expect(mockCtx.session.selectedSpecializations).toEqual([Specialization.MOBILE]);
       expect(mockCtx.answerCallbackQuery).toHaveBeenCalled();
       expect(mockCtx.editMessageText).toHaveBeenCalledWith(
-        expect.stringContaining('Welcome to **SmartJobsBot** Khaled!'),
+        expect.stringContaining('DeployMe'),
         expect.objectContaining({
           parse_mode: 'Markdown',
           reply_markup: expect.anything(),
@@ -202,7 +202,7 @@ describe('TASK-34.2: Inline Button Multi-Selection with Toggle State (#102)', ()
 
       expect(mockCtx.session.language).toBe('ar');
       expect(mockCtx.editMessageText).toHaveBeenCalledWith(
-        expect.stringContaining('مرحباً بك في **SmartJobsBot** سارة!'),
+        expect.stringContaining('DeployMe'),
         expect.anything(),
       );
     });

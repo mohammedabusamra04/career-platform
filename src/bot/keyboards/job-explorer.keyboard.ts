@@ -50,11 +50,11 @@ export function buildJobExplorerKeyboard(options: JobExplorerKeyboardOptions): I
   const sortToggleLabel =
     sort === 'BEST_MATCH'
       ? isArabic
-        ? '🔄 التبديل إلى: الأحدث ⏱️'
-        : '🔄 Switch to: Latest ⏱️'
+        ? '⏱️ عرض: الأحدث نزولاً'
+        : '⏱️ Sort: Latest First'
       : isArabic
-        ? '🔄 التبديل إلى: الأنسب 🎯'
-        : '🔄 Switch to: Best Match 🎯';
+        ? '🎯 عرض: الأنسب للـ Stack'
+        : '🎯 Sort: Best Stack Fit';
 
   keyboard.text(sortToggleLabel, `jobs:sort:${nextSort}`).row();
 
@@ -86,7 +86,7 @@ export function buildJobExplorerEmptyKeyboard(language: SupportedLanguage = 'ar'
   const keyboard = new InlineKeyboard();
   const isArabic = language === 'ar';
 
-  const editSpecsLabel = isArabic ? 'تعديل التخصصات 🛠️' : 'Edit Specializations 🛠️';
+  const editSpecsLabel = isArabic ? 'تعديل الـ Stack 🛠️' : 'Edit Stack 🛠️';
   const expandRegionLabel = isArabic ? 'توسيع نطاق السوق 🌍' : 'Expand Target Region 🌍';
 
   keyboard.text(editSpecsLabel, 'settings_edit_specs').row();
@@ -94,4 +94,3 @@ export function buildJobExplorerEmptyKeyboard(language: SupportedLanguage = 'ar'
 
   return keyboard;
 }
-

@@ -11,16 +11,16 @@ import logger from '../../shared/utils/logger.js';
 
 export const SPECIALIZATION_MESSAGES = {
   maxReached: {
-    ar: 'الحد الأقصى هو 3 تخصصات فقط ⚠️',
-    en: 'Maximum 3 specializations allowed ⚠️',
+    ar: 'الحد الأقصى 3 تخصصات للـ Stack تبعك ⚠️',
+    en: 'Max 3 specializations allowed ⚠️',
   },
   minRequired: {
-    ar: 'يرجى اختيار تخصص واحد على الأقل للمتابعة 📌',
-    en: 'Please select at least 1 specialization to continue 📌',
+    ar: 'اختار تخصص واحد ع الأقل عشان نكمل 📌',
+    en: 'Pick at least 1 specialization to continue 📌',
   },
   stepConfirmed: {
-    ar: 'تم اختيار التخصصات بنجاح ✅',
-    en: 'Specializations selected successfully ✅',
+    ar: 'تم تثبيت الـ Stack بنجاح ✅',
+    en: 'Stack locked in ✅',
   },
 } as const;
 
@@ -32,8 +32,12 @@ export function registerSpecializationHandler(bot: Bot<BotContext>): void {
   // 1. Specialization Toggle: spec_toggle:<SPECIALIZATION>
   bot.callbackQuery(/^spec_toggle:(.+)$/, async (ctx) => {
     const rawSpec = ctx.match[1];
+    const lang: SupportedLanguage = ctx.session?.language || 'ar';
+
     if (!isApprovedSpecialization(rawSpec)) {
-      await ctx.answerCallbackQuery({ text: 'Unknown specialization' });
+      await ctx.answerCallbackQuery({
+        text: lang === 'ar' ? 'تخصص غير معروف' : 'Unknown specialization',
+      });
       return;
     }
 
@@ -48,9 +52,7 @@ export function registerSpecializationHandler(bot: Bot<BotContext>): void {
       };
     }
 
-    const lang: SupportedLanguage = ctx.session.language || 'ar';
     const currentList: Specialization[] = ctx.session.selectedSpecializations || [];
-
     const isAlreadySelected = currentList.includes(spec);
 
     if (isAlreadySelected) {

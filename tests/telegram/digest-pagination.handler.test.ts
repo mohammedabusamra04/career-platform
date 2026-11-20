@@ -161,7 +161,7 @@ describe('DigestPaginationHandler (TASK-43.2)', () => {
 
       expect(ctx.editMessageText).toHaveBeenCalledTimes(1);
       expect(ctx.editMessageText).toHaveBeenCalledWith(
-        expect.stringContaining('الصفحة 2 من 3'),
+        expect.stringContaining('صفحة 2 من 3'),
         expect.objectContaining({
           parse_mode: 'Markdown',
           link_preview_options: { is_disabled: true },

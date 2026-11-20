@@ -82,18 +82,18 @@ describe('TASK-35.2: Interactive Summary Review & Transactional Preference Save 
   describe('formatSummaryCard', () => {
     it('formats summary card in Arabic with delivery note without fixed hour constraint', () => {
       const card = formatSummaryCard([Specialization.BACKEND, Specialization.DEVOPS], RegionPreference.BOTH, 'ar');
-      expect(card).toContain('ملخص تفضيلات تنبيهات الوظائف');
+      expect(card).toContain('ملخص إعدادات الـ Pipeline تبعك');
       expect(card).toContain('BACKEND, DEVOPS');
       expect(card).toContain('السوق العربي والدولي معاً');
-      expect(card).toContain('ملخص يومي شامل بأفضل الفرص التقنية المطابقة يومياً 🚀');
+      expect(card).toContain('رح توصلك تجميعة يومية بأفضل الفرص التقنية المطابقة لمجالك كل مساء ⚡');
     });
 
     it('formats summary card in English', () => {
       const card = formatSummaryCard([Specialization.AI_ENGINEER], RegionPreference.INTERNATIONAL, 'en');
-      expect(card).toContain('Review Your Job Alert Preferences');
+      expect(card).toContain('Review Your DeployMe Pipeline Config');
       expect(card).toContain('AI_ENGINEER');
       expect(card).toContain('International & Global Remote Only');
-      expect(card).toContain('daily digest of the best matching tech opportunities every day 🚀');
+      expect(card).toContain('curated daily digest of matching tech roles every evening ⚡');
     });
   });
 
@@ -138,13 +138,13 @@ describe('TASK-35.2: Interactive Summary Review & Transactional Preference Save 
 
       expect(mockCtx.answerCallbackQuery).toHaveBeenCalledWith(
         expect.objectContaining({
-          text: expect.stringContaining('تم حفظ التفضيلات بنجاح!'),
+          text: expect.stringContaining('تم تشغيل الـ Pipeline بنجاح!'),
         }),
       );
 
       // Verify success message sent
       expect(mockCtx.reply).toHaveBeenCalledWith(
-        expect.stringContaining('تهانينا! تم ضبط حسابك بنجاح!'),
+        expect.stringContaining('تم تشغيل الـ Pipeline بنجاح!'),
         expect.objectContaining({
           parse_mode: 'Markdown',
         }),
@@ -187,7 +187,7 @@ describe('TASK-35.2: Interactive Summary Review & Transactional Preference Save 
       });
 
       expect(mockCtx.reply).toHaveBeenCalledWith(
-        expect.stringContaining('Congratulations! Your profile is all set!'),
+        expect.stringContaining('Your DeployMe pipeline is live!'),
         expect.anything(),
       );
     });
@@ -211,7 +211,7 @@ describe('TASK-35.2: Interactive Summary Review & Transactional Preference Save 
 
       expect(mockPrefRepo.savePreferences).not.toHaveBeenCalled();
       expect(mockCtx.answerCallbackQuery).toHaveBeenCalledWith({
-        text: expect.stringContaining('تعذر حفظ التفضيلات'),
+        text: expect.stringContaining('تعذر حفظ الإعدادات'),
         show_alert: true,
       });
     });
@@ -287,7 +287,7 @@ describe('TASK-35.2: Interactive Summary Review & Transactional Preference Save 
 
       // Verify searching placeholder sent
       expect(mockCtx.reply).toHaveBeenCalledWith(
-        expect.stringContaining('جاري البحث عن أنسب الفرص'),
+        expect.stringContaining('بنفحص السوق'),
         expect.objectContaining({ parse_mode: 'Markdown' }),
       );
 
@@ -371,7 +371,7 @@ describe('TASK-35.2: Interactive Summary Review & Transactional Preference Save 
       expect(mockCtx.api.editMessageText).toHaveBeenCalledWith(
         778899,
         102,
-        expect.stringContaining('تعذر تحميل الملخص الفوري حالياً'),
+        expect.stringContaining('تعذر تحميل التجميعة الفورية'),
       );
     });
   });
@@ -399,7 +399,7 @@ describe('TASK-35.2: Interactive Summary Review & Transactional Preference Save 
       expect(mockCtx.session.step).toBe('specializations');
       expect(mockCtx.answerCallbackQuery).toHaveBeenCalled();
       expect(mockCtx.editMessageText).toHaveBeenCalledWith(
-        expect.stringContaining('SmartJobsBot'),
+        expect.stringContaining('DeployMe'),
         expect.objectContaining({
           parse_mode: 'Markdown',
           reply_markup: expect.anything(),

@@ -4,6 +4,7 @@ import type { SupportedLanguage } from '../session.js';
 
 export interface RegionOption {
   key: RegionPreference;
+  icon: string;
   labelAr: string;
   labelEn: string;
 }
@@ -11,25 +12,28 @@ export interface RegionOption {
 export const REGION_OPTIONS: RegionOption[] = [
   {
     key: RegionPreference.BOTH,
-    labelAr: '🌍 السوق العربي والدولي معاً (موصى به)',
-    labelEn: '🌍 Arab & International Markets (Recommended)',
+    icon: '🌍',
+    labelAr: 'السوق العربي + الدولي معاً (الأفضل)',
+    labelEn: 'Arab + Global Markets (Recommended)',
   },
   {
     key: RegionPreference.ARAB,
-    labelAr: '🏢 السوق العربي وفرص الشرق الأوسط',
-    labelEn: '🏢 Arab & Middle East Market Only',
+    icon: '🏢',
+    labelAr: 'السوق العربي والشرق الأوسط فقط',
+    labelEn: 'Arab & MENA Market Only',
   },
   {
     key: RegionPreference.INTERNATIONAL,
-    labelAr: '🌐 السوق الدولي والعمل عن بعد عالمياً',
-    labelEn: '🌐 International & Global Remote Only',
+    icon: '🌐',
+    labelAr: 'السوق الدولي وفرص الـ Remote فقط',
+    labelEn: 'International & Global Remote Only',
   },
 ];
 
 /**
  * Builds the inline keyboard for selecting the target job market / region preference.
- * Highlights the currently selected option with a checkmark (✅).
- * Includes "Back / رجوع" and "Next / التالي" navigation controls.
+ * Replaces the default option icon with a checkmark (✅) when selected for a clean UI.
+ * Includes "Back / السابق" and "Next / التالي" navigation controls.
  */
 export function buildRegionKeyboard(
   selectedRegion: RegionPreference = RegionPreference.BOTH,
@@ -40,7 +44,8 @@ export function buildRegionKeyboard(
   for (const option of REGION_OPTIONS) {
     const isSelected = selectedRegion === option.key;
     const baseLabel = lang === 'ar' ? option.labelAr : option.labelEn;
-    const label = `${isSelected ? '✅ ' : ''}${baseLabel}`;
+    const prefix = isSelected ? '✅' : option.icon;
+    const label = `${prefix} ${baseLabel}`;
 
     keyboard.text(label, `region_select:${option.key}`).row();
   }
@@ -53,4 +58,3 @@ export function buildRegionKeyboard(
 
   return keyboard;
 }
-
