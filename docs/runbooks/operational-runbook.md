@@ -77,3 +77,4 @@ npm run db:migrate:v1:reconcile
 - **Telegram Dispatch Pacing:** Hard token-bucket rate limit bounded to $\le 25\text{ msgs/sec}$.
 - **Historical Deduplication Window:** 4 hours (`ms('4h')`) suppressing repeated deliveries.
 - **Explorer SLA:** `<300ms` direct PostgreSQL keyset pagination querying using composite index `(primarySpecialization, remoteScope, status)`.
+

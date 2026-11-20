@@ -95,3 +95,4 @@ This guide outlines protocol levels, escalation procedures, and remediation play
    The platform automatically rotates across 11 configured Gemini keys and 2 model tiers (`gemini-2.5-flash` $\rightarrow$ `gemini-1.5-pro`).
 2. **Graceful Deterministic Fallback:**
    If all 22 slots fail, `AmbiguityResolver` degrades gracefully to deterministic title-first matching with confidence score `0.5`, ensuring zero user requests are dropped or halted.
+

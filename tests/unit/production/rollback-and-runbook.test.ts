@@ -125,3 +125,4 @@ describe('TASK-49.2: RollbackManager Unit Tests (#137)', () => {
     });
   });
 });
+

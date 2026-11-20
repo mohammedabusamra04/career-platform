@@ -65,3 +65,4 @@ Because PostgreSQL is hosted on Neon (Lakebase Postgres), database state can be 
 When performing a rollback:
 - **User Preference Hashes:** Checked and recomputed deterministically using `PreferenceHasher.hash()`.
 - **Sent Jobs History:** The `SentJob` historical table remains intact across code rollbacks, preventing repeat recommendations or duplicate deliveries to users within the deduplication window (`HISTORICAL_SENT_WINDOW = ms('4h')`).
+

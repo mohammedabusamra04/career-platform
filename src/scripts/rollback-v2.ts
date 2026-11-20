@@ -80,3 +80,4 @@ main().catch((err: unknown) => {
   logger.error(`[Rollback CLI] Fatal error: ${(err as Error).message}`);
   process.exit(1);
 });
+
