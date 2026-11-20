@@ -103,7 +103,7 @@ describe('JobsHandler (TASK-44.1)', () => {
       await commandHandler(ctx);
 
       expect(ctx.reply).toHaveBeenCalledWith(
-        expect.stringContaining('لم تقم بتهيئة ملفك المهني بعد! يرجى إرسال الأمر /start'),
+        expect.stringContaining('لسا ما ضبطت الـ Stack تبعك! ابعت /start'),
       );
       expect(mockExplorerService.getJobsForUser).not.toHaveBeenCalled();
     });
@@ -235,7 +235,7 @@ describe('JobsHandler (TASK-44.1)', () => {
 
       expect(ctx.answerCallbackQuery).toHaveBeenCalledWith(
         expect.objectContaining({
-          text: '⏱️ تم الترتيب حسب: الأحدث نشراً',
+          text: '⏱️ الترتيب: الأحدث نزولاً',
         }),
       );
       expect(sessionObj.jobsSort).toBe('LATEST');
@@ -264,7 +264,7 @@ describe('JobsHandler (TASK-44.1)', () => {
 
       expect(ctx.answerCallbackQuery).toHaveBeenCalledWith(
         expect.objectContaining({
-          text: '🎯 Sorted by: Best Match',
+          text: '🎯 Sorted by: Best Stack Fit',
         }),
       );
       expect(sessionObj.jobsSort).toBe('BEST_MATCH');

@@ -48,13 +48,13 @@ describe('TASK-35.1: Region Preference Selection (Arab, International, Both) (#1
     it('returns prompt in Arabic when language is ar', () => {
       const msg = getRegionPromptMessage('ar');
       expect(msg).toContain('الخطوة 2:');
-      expect(msg).toContain('السوق الجغرافي');
+      expect(msg).toContain('نطاق السوق');
     });
 
     it('returns prompt in English when language is en', () => {
       const msg = getRegionPromptMessage('en');
       expect(msg).toContain('Step 2:');
-      expect(msg).toContain('geographic market');
+      expect(msg).toContain('target market');
     });
   });
 
@@ -115,7 +115,7 @@ describe('TASK-35.1: Region Preference Selection (Arab, International, Both) (#1
       expect(mockCtx.session.step).toBe('specializations');
       expect(mockCtx.answerCallbackQuery).toHaveBeenCalled();
       expect(mockCtx.editMessageText).toHaveBeenCalledWith(
-        expect.stringContaining('SmartJobsBot'),
+        expect.stringContaining('DeployMe'),
         expect.objectContaining({
           parse_mode: 'Markdown',
           reply_markup: expect.anything(),
@@ -146,7 +146,7 @@ describe('TASK-35.1: Region Preference Selection (Arab, International, Both) (#1
       expect(mockCtx.session.selectedRegion).toBe(RegionPreference.BOTH);
       expect(mockCtx.answerCallbackQuery).toHaveBeenCalled();
       expect(mockCtx.reply).toHaveBeenCalledWith(
-        expect.stringContaining('ملخص تفضيلات تنبيهات الوظائف'),
+        expect.stringContaining('ملخص إعدادات الـ Pipeline'),
         expect.objectContaining({
           parse_mode: 'Markdown',
           reply_markup: expect.anything(),
@@ -174,7 +174,7 @@ describe('TASK-35.1: Region Preference Selection (Arab, International, Both) (#1
       expect(mockCtx.session.step).toBe('confirmation');
       expect(mockCtx.session.selectedRegion).toBe(RegionPreference.INTERNATIONAL);
       expect(mockCtx.reply).toHaveBeenCalledWith(
-        expect.stringContaining('Review Your Job Alert Preferences'),
+        expect.stringContaining('Review Your DeployMe Pipeline Config'),
         expect.objectContaining({
           parse_mode: 'Markdown',
           reply_markup: expect.anything(),
