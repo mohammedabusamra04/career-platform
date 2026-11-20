@@ -110,6 +110,12 @@ export class PrismaService extends PrismaClient {
     }
   }
 
+  public async reconnect(): Promise<void> {
+    logger.info('[PrismaService] Reconnecting to PostgreSQL database...');
+    await this.disconnect();
+    await this.connect();
+  }
+
   public async ping(): Promise<boolean> {
     try {
       await this.$queryRawUnsafe('SELECT 1');
