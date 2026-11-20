@@ -30,9 +30,30 @@ declare global {
   var __prisma_singleton__: PrismaService | undefined;
 }
 
+export interface DatabasePoolMetrics {
+  total: number;
+  active: number;
+  idle: number;
+  maxPoolSize: number;
+}
+
+export interface DatabaseHealthSnapshot {
+  status: 'connected' | 'disconnected';
+  pool: DatabasePoolMetrics;
+}
+
 export class PrismaService extends PrismaClient {
   private static instance: PrismaService | null = null;
   private isConnected = false;
+  private healthSnapshot: DatabaseHealthSnapshot = {
+    status: 'connected',
+    pool: {
+      total: 1,
+      active: 1,
+      idle: 0,
+      maxPoolSize: env.databasePoolSize,
+    },
+  };
 
   public constructor(customUrl?: string) {
     const url = customUrl ?? buildDatabaseUrl(env.databaseUrl, env.databasePoolSize, 10);
@@ -89,6 +110,12 @@ export class PrismaService extends PrismaClient {
     }
   }
 
+  public async reconnect(): Promise<void> {
+    logger.info('[PrismaService] Reconnecting to PostgreSQL database...');
+    await this.disconnect();
+    await this.connect();
+  }
+
   public async ping(): Promise<boolean> {
     try {
       await this.$queryRawUnsafe('SELECT 1');
@@ -97,6 +124,56 @@ export class PrismaService extends PrismaClient {
       logger.warn(`[PrismaService] Ping probe failed: ${(err as Error).message}`);
       return false;
     }
+  }
+
+  public async getPoolMetrics(): Promise<DatabasePoolMetrics> {
+    try {
+      if (typeof this.$queryRaw === 'function') {
+        const rows = await this.$queryRaw<Array<{ total: number; active: number; idle: number }>>`
+          SELECT 
+            count(*)::int AS total,
+            count(*) FILTER (WHERE state = 'active')::int AS active,
+            count(*) FILTER (WHERE state = 'idle')::int AS idle
+          FROM pg_stat_activity
+          WHERE datname = current_database();
+        `;
+        if (rows && rows.length > 0 && rows[0]) {
+          return {
+            total: Number(rows[0].total) || 0,
+            active: Number(rows[0].active) || 0,
+            idle: Number(rows[0].idle) || 0,
+            maxPoolSize: env.databasePoolSize,
+          };
+        }
+      }
+    } catch (err: unknown) {
+      logger.warn(
+        `[PrismaService] Live connection pool query failed: ${
+          err instanceof Error ? err.message : String(err)
+        }`,
+      );
+    }
+
+    const metrics = {
+      total: this.isConnected ? 1 : 0,
+      active: this.isConnected ? 1 : 0,
+      idle: 0,
+      maxPoolSize: env.databasePoolSize,
+    };
+    this.healthSnapshot.pool = metrics;
+    return metrics;
+  }
+
+  public getHealthSnapshot(): DatabaseHealthSnapshot {
+    return {
+      status: this.healthSnapshot.status,
+      pool: { ...this.healthSnapshot.pool, maxPoolSize: env.databasePoolSize },
+    };
+  }
+
+  public setHealthSnapshot(snapshot: Partial<DatabaseHealthSnapshot>): void {
+    if (snapshot.status) this.healthSnapshot.status = snapshot.status;
+    if (snapshot.pool) this.healthSnapshot.pool = { ...this.healthSnapshot.pool, ...snapshot.pool };
   }
 
   public static async resetInstanceForTesting(): Promise<void> {

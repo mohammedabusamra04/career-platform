@@ -3,8 +3,9 @@ import { prisma as defaultPrisma } from './prisma.service.js';
 import env from '../../config/env.js';
 import logger from '../utils/logger.js';
 
-export const JOB_COLLECTION_ADVISORY_LOCK_ID = 824401;
-export const DIGEST_DELIVERY_ADVISORY_LOCK_ID = env.digestDeliveryLockId;
+export const JOB_COLLECTION_ADVISORY_LOCK_ID = env.jobCollectionLockId ?? 824401;
+export const DIGEST_DELIVERY_ADVISORY_LOCK_ID = env.digestDeliveryLockId ?? 824402;
+export const JOB_PIPELINE_ADVISORY_LOCK_ID = env.jobPipelineLockId ?? 824403;
 
 export interface IAdvisoryLockService {
   tryAcquire(lockId: number): Promise<boolean>;

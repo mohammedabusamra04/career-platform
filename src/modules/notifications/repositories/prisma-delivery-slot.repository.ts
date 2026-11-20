@@ -25,6 +25,12 @@ export function generateSlotKey(scheduledTime: Date): string {
 export class PrismaDeliverySlotRepository implements IDeliverySlotRepository {
   constructor(private readonly db: PrismaClient = defaultPrisma) {}
 
+  public async reconnect(): Promise<void> {
+    if (typeof (this.db as any).reconnect === 'function') {
+      await (this.db as any).reconnect();
+    }
+  }
+
   public async getOrCreateSlot(
     scheduledTime: Date,
     totalEligibleUsers: number = 0,

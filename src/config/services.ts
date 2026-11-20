@@ -46,6 +46,7 @@ import { preferenceService } from '../modules/preferences/preference.service.js'
 import { subscriptionService } from '../modules/subscriptions/subscription.service.js';
 
 import { bot } from '../bot/bot.js';
+import { advisoryLockService } from '../shared/database/advisory-lock.service.js';
 
 export const cache = new RedisAdapter(redisClient);
 
@@ -107,6 +108,7 @@ export const jobPipelineService = new JobPipelineService(
   preferenceService,
   matchingService,
   telegramNotificationService,
+  advisoryLockService,
 );
 
 const notificationScheduleService = new NotificationScheduleService();
