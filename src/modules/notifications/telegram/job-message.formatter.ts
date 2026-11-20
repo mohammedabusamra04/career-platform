@@ -1,19 +1,49 @@
 import type { MatchedJob } from '../../matching/matching.service.js';
 
-export function formatJobMessage(matchedJob: MatchedJob): string {
+export function formatJobMessage(
+  matchedJob: MatchedJob,
+  lang: 'ar' | 'en' = 'ar',
+): string {
   const { job, score } = matchedJob;
 
-  const location = job.location ? `🌍 ${job.location}` : '';
-  const country = job.country ? `📍 ${job.country}` : '';
+  const targetUrl =
+    (job as { applicationUrl?: string | null; url?: string | null }).applicationUrl ||
+    (job as { url?: string | null }).url ||
+    '';
 
-  return `💼 ${job.title}
+  if (lang === 'en') {
+    const locationParts = [
+      job.location ? `🌍 ${job.location}` : '',
+      job.country ? `📍 ${job.country}` : '',
+    ].filter(Boolean);
 
-🏢 Company: ${job.company}
+    const lines = [
+      `⚡ DeployMe Ping — ${score}% Stack Fit`,
+      ``,
+      `💻 ${job.title}`,
+      `🏢 Company: ${job.company}`,
+      locationParts.length > 0 ? locationParts.join(' • ') : '',
+      job.source ? `🌐 Source: ${job.source}` : '',
+      targetUrl ? `🔗 Apply Now: ${targetUrl}` : '',
+    ].filter((line, idx, arr) => line !== '' || arr[idx - 1] !== '');
 
-${location}
-${country}
+    return lines.join('\n').trim();
+  }
 
-🌐 Source: ${job.source}
+  const locationParts = [
+    job.location ? `🌍 ${job.location}` : '',
+    job.country ? `📍 ${job.country}` : '',
+  ].filter(Boolean);
 
-🎯 Match: ${score}%`;
+  const lines = [
+    `⚡ Ping جديد من DeployMe — تطابق ${score}%`,
+    ``,
+    `💻 ${job.title}`,
+    `🏢 الشركة: ${job.company}`,
+    locationParts.length > 0 ? locationParts.join(' • ') : '',
+    job.source ? `🌐 المصدر: ${job.source}` : '',
+    targetUrl ? `🔗 التقديم المباشر: ${targetUrl}` : '',
+  ].filter((line, idx, arr) => line !== '' || arr[idx - 1] !== '');
+
+  return lines.join('\n').trim();
 }

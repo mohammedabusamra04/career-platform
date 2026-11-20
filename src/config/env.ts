@@ -30,6 +30,7 @@ export const envSchema = z.object({
         message: 'DATABASE_URL must be a valid PostgreSQL connection string starting with postgresql:// or postgres://',
       },
     ),
+  DATABASE_URL_UNPOOLED: z.string().optional(),
   DATABASE_POOL_SIZE: z.coerce.number().int().positive().default(20),
   GEMINI_API_KEY: z.string().optional().default(''),
   GEMINI_API_KEYS: z.string().optional().default(''),
@@ -78,6 +79,7 @@ const env = {
   telegramBotToken: rawValidated.TELEGRAM_BOT_TOKEN,
   redisUrl: rawValidated.REDIS_URL,
   databaseUrl: rawValidated.DATABASE_URL,
+  databaseUrlUnpooled: rawValidated.DATABASE_URL_UNPOOLED || rawValidated.DATABASE_URL,
   databasePoolSize: rawValidated.DATABASE_POOL_SIZE,
   /** @deprecated use geminiApiKeys — kept for any code still reading the single key. */
   geminiApiKey: rawValidated.GEMINI_API_KEY,

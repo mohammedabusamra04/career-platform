@@ -15,16 +15,13 @@ export interface DigestFeedbackHandlerDependencies {
 const defaultUserRepository = new PrismaUserRepository();
 
 /**
- * Returns the confirmation toast message based on user language.
- *
- * Arabic: "شكراً لك! تم تسجيل رأيك لتحسين الترشيحات القادمة"
- * English: "Thank you! Your feedback has been recorded to improve future recommendations"
+ * Returns the confirmation toast message based on user language (DeployMe tone).
  */
 export function getDigestFeedbackToastMessage(lang: SupportedLanguage = 'ar'): string {
   if (lang === 'en') {
-    return 'Thank you! Your feedback has been recorded to improve future recommendations';
+    return 'Feedback logged! Tuning your stack feed 🎯';
   }
-  return 'شكراً لك! تم تسجيل رأيك لتحسين الترشيحات القادمة';
+  return 'تم تسجيل تقييمك! رح نضبطلك الفلتر للجايات 🎯';
 }
 
 /**

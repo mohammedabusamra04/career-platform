@@ -93,7 +93,7 @@ describe('TASK-34.1: Welcome & State Initialization on /start (#101)', () => {
 
     // Verify welcome message and keyboard
     expect(mockCtx.reply).toHaveBeenCalledWith(
-      expect.stringContaining('مرحباً بك في **SmartJobsBot** Ahmad!'),
+      expect.stringContaining('DeployMe'),
       expect.objectContaining({
         parse_mode: 'Markdown',
         reply_markup: expect.anything(),
@@ -142,12 +142,12 @@ describe('TASK-34.1: Welcome & State Initialization on /start (#101)', () => {
 
   it('supports English welcome greeting when language is en', () => {
     const enGreeting = getWelcomeMessage('en', 'John');
-    expect(enGreeting).toContain('Welcome to **SmartJobsBot** John!');
-    expect(enGreeting).toContain('**Step 1:** Select between');
+    expect(enGreeting).toContain('DeployMe');
+    expect(enGreeting).toContain('Select between');
 
     const arGreeting = getWelcomeMessage('ar', 'علي');
-    expect(arGreeting).toContain('مرحباً بك في **SmartJobsBot** علي!');
-    expect(arGreeting).toContain('**الخطوة 1:** اختر من');
+    expect(arGreeting).toContain('DeployMe');
+    expect(arGreeting).toContain('اختار من');
   });
 
   it('ensures idempotency on repeated /start commands without error', async () => {

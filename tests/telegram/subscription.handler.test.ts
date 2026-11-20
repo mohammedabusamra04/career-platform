@@ -37,6 +37,7 @@ describe('SubscriptionHandler', () => {
   it('should subscribe the user', async () => {
     const ctx: TestContext = {
       from: { id: 123 },
+      session: { language: 'en' } as any,
       reply: vi.fn(),
     };
 
@@ -48,14 +49,15 @@ describe('SubscriptionHandler', () => {
 
     expect(subscriptionService.subscribe).toHaveBeenCalledWith(123);
     expect(ctx.reply).toHaveBeenCalledWith(
-      '✅ You are now subscribed to job alerts.\n\n' +
-        'You will receive matched job opportunities automatically.',
+      '✅ Subscribed — your DeployMe pipeline is now live!\n\n' +
+        '📡 You will automatically receive job pings tailored to your stack.',
     );
   });
 
   it('should unsubscribe the user', async () => {
     const ctx: TestContext = {
       from: { id: 123 },
+      session: { language: 'en' } as any,
       reply: vi.fn(),
     };
 
@@ -67,8 +69,8 @@ describe('SubscriptionHandler', () => {
 
     expect(subscriptionService.unsubscribe).toHaveBeenCalledWith(123);
     expect(ctx.reply).toHaveBeenCalledWith(
-      '🔕 You have been unsubscribed from job alerts.\n\n' +
-        'You will no longer receive automated job notifications.',
+      '🔕 Unsubscribed from DeployMe job pings.\n\n' +
+        'Automated pipeline alerts are now off. Send /subscribe anytime to re-enable.',
     );
   });
 
@@ -77,6 +79,7 @@ describe('SubscriptionHandler', () => {
 
     const ctx: TestContext = {
       from: { id: 123 },
+      session: { language: 'en' } as any,
       reply: vi.fn(),
     };
 
@@ -88,8 +91,10 @@ describe('SubscriptionHandler', () => {
 
     expect(subscriptionService.isSubscribed).toHaveBeenCalledWith(123);
     expect(ctx.reply).toHaveBeenCalledWith(
-      '🔔 You are currently subscribed to job alerts.\n\n' +
-        'Use /unsubscribe to stop receiving notifications.',
+      '📡 *Pipeline Status:* Live ✅\n\n' +
+        'Your DeployMe radar is actively scanning roles for your stack.\n' +
+        'Use /pause to take a break or /unsubscribe to turn off alerts.',
+      { parse_mode: 'Markdown' },
     );
   });
 
@@ -98,6 +103,7 @@ describe('SubscriptionHandler', () => {
 
     const ctx: TestContext = {
       from: { id: 123 },
+      session: { language: 'en' } as any,
       reply: vi.fn(),
     };
 
@@ -109,13 +115,16 @@ describe('SubscriptionHandler', () => {
 
     expect(subscriptionService.isSubscribed).toHaveBeenCalledWith(123);
     expect(ctx.reply).toHaveBeenCalledWith(
-      '🔕 You are currently unsubscribed from job alerts.\n\n' +
-        'Use /subscribe to start receiving notifications.',
+      '🔕 *Pipeline Status:* Inactive\n\n' +
+        'You are currently unsubscribed from job pings.\n' +
+        'Send /subscribe to activate your radar and receive matching roles.',
+      { parse_mode: 'Markdown' },
     );
   });
 
   it('should handle missing user id when subscribing', async () => {
     const ctx: TestContext = {
+      session: { language: 'en' } as any,
       reply: vi.fn(),
     };
 

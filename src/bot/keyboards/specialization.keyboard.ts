@@ -22,7 +22,7 @@ export const SPECIALIZATION_OPTIONS: SpecializationOption[] = [
 
 /**
  * Builds a 2-column inline keyboard for 10 approved specializations with toggle state.
- * Includes a language toggle button and a "Next / التالي" submission button.
+ * Includes a neutral language toggle button and a "Confirm Stack" submission button.
  */
 export function buildSpecializationKeyboard(
   selected: Specialization[] = [],
@@ -36,25 +36,24 @@ export function buildSpecializationKeyboard(
     const right = SPECIALIZATION_OPTIONS[i + 1];
 
     const leftChecked = selected.includes(left.key);
-    const leftLabel = `${leftChecked ? '✅ ' : ''}${left.label}`;
+    const leftLabel = `${leftChecked ? '✅' : '▫️'} ${left.label}`;
     keyboard.text(leftLabel, `spec_toggle:${left.key}`);
 
     if (right) {
       const rightChecked = selected.includes(right.key);
-      const rightLabel = `${rightChecked ? '✅ ' : ''}${right.label}`;
+      const rightLabel = `${rightChecked ? '✅' : '▫️'} ${right.label}`;
       keyboard.text(rightLabel, `spec_toggle:${right.key}`);
     }
 
     keyboard.row();
   }
 
-  // Row for Language Switcher and Next action
-  const langSwitchLabel = lang === 'ar' ? 'English 🇺🇸' : 'العربية 🇸🇦';
-  const nextLabel = lang === 'ar' ? 'التالي ⬅️' : 'Next ➡️';
+  // Row for Language Switcher and Submit action
+  const langSwitchLabel = lang === 'ar' ? '🌐 English' : '🌐 العربية';
+  const nextLabel = lang === 'ar' ? 'تأكيد الـ Stack ⬅️' : 'Confirm Stack ➡️';
 
   keyboard.text(langSwitchLabel, 'toggle_language');
   keyboard.text(nextLabel, 'spec_submit');
 
   return keyboard;
 }
-

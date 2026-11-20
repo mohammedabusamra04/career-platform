@@ -55,16 +55,16 @@ describe('TransparentExplanationBuilder (TASK-38.2)', () => {
       );
 
       expect(reasons).toHaveLength(5);
-      expect(reasons[0]).toContain('تطابق تام مع تخصصك الأساسي');
+      expect(reasons[0]).toContain('تطابق صريح مع تخصصك الأساسي');
       expect(reasons[0]).toContain('الواجهات الخلفية');
       expect(reasons[0]).toContain('+50');
-      expect(reasons[1]).toContain('مستوى الخبرة متطابق تماماً');
+      expect(reasons[1]).toContain('مستوى الخبرة مفصّل على بروفايلك');
       expect(reasons[1]).toContain('+15');
-      expect(reasons[2]).toContain('عمل عن بُعد متاح عالمياً من أي مكان');
+      expect(reasons[2]).toContain('شغل Remote عالمي');
       expect(reasons[2]).toContain('+15');
-      expect(reasons[3]).toContain('فرصة جديدة طازجة (نُشرت اليوم)');
+      expect(reasons[3]).toContain('فرصة جديدة — لسه نازلة اليوم');
       expect(reasons[3]).toContain('+10');
-      expect(reasons[4]).toContain('تقديم مباشر عبر نظام توظيف الشركة المعتمد (ATS)');
+      expect(reasons[4]).toContain('تقديم مباشر على ATS الشركة');
       expect(reasons[4]).toContain('+5');
     });
 
@@ -96,10 +96,10 @@ describe('TransparentExplanationBuilder (TASK-38.2)', () => {
       );
 
       expect(reasons).toHaveLength(4);
-      expect(reasons[0]).toContain('تطابق مع تخصصك الثانوي (+30)');
-      expect(reasons[1]).toContain('مناسبة لكافة مستويات الخبرة (+10)');
-      expect(reasons[2]).toContain('وظيفة مناسبة وموجهة للمنطقة العربية (+15)');
-      expect(reasons[3]).toContain('نُشرت حديثاً (منذ 2 يومين) (+8)');
+      expect(reasons[0]).toContain('بتطابق تخصصك الثانوي (+30)');
+      expect(reasons[1]).toContain('مفتوحة لكل مستويات الخبرة (+10)');
+      expect(reasons[2]).toContain('فرصة موجهة للمنطقة العربية والشرق الأوسط (+15)');
+      expect(reasons[3]).toContain('نازلة قريب (منذ 2 يومين) (+8)');
     });
 
     it('handles zero or minimal scores without error', () => {
@@ -147,12 +147,12 @@ describe('TransparentExplanationBuilder (TASK-38.2)', () => {
       );
 
       expect(reasons).toHaveLength(5);
-      expect(reasons[0]).toContain('Exact match with your primary specialization');
+      expect(reasons[0]).toContain('Direct hit on your primary stack');
       expect(reasons[0]).toContain('AI / Machine Learning');
-      expect(reasons[1]).toContain('Experience level matches your profile exactly');
-      expect(reasons[2]).toContain('Worldwide remote');
-      expect(reasons[3]).toContain('Fresh opportunity (published today)');
-      expect(reasons[4]).toContain('Direct application via company ATS');
+      expect(reasons[1]).toContain('Seniority level matches your profile');
+      expect(reasons[2]).toContain('Worldwide Remote');
+      expect(reasons[3]).toContain('Fresh build — posted today');
+      expect(reasons[4]).toContain('Direct company ATS link');
     });
   });
 
@@ -187,11 +187,11 @@ describe('TransparentExplanationBuilder (TASK-38.2)', () => {
         'ar',
       );
 
-      expect(report).toContain('🎯 **نسبة التوافق: 85% (85/100)**');
-      expect(report).toContain('• 🎯 تطابق تام مع تخصصك الأساسي');
-      expect(report).toContain('• 💼 مستوى الخبرة متطابق تماماً مع ملفك');
-      expect(report).toContain('• 🌍 عمل عن بُعد متاح عالمياً');
-      expect(report).toContain('• 📅 نُشرت منذ 5 أيام (+5)');
+      expect(report).toContain('🎯 *نسبة تطابق الـ Stack: 85% (85/100)*');
+      expect(report).toContain('• 🎯 تطابق صريح مع تخصصك الأساسي');
+      expect(report).toContain('• 💻 مستوى الخبرة مفصّل على بروفايلك');
+      expect(report).toContain('• 🌍 شغل Remote عالمي');
+      expect(report).toContain('• 📅 نازلة من 5 أيام (+5)');
     });
 
     it('formats a short one-line summary', () => {
@@ -210,12 +210,12 @@ describe('TransparentExplanationBuilder (TASK-38.2)', () => {
       };
 
       const summaryAr = builder.formatShortSummary(result, {}, 'ar');
-      expect(summaryAr).toContain('[توافق 90%]');
-      expect(summaryAr).toContain('تطابق تام مع تخصصك الأساسي');
+      expect(summaryAr).toContain('[تطابق 90%]');
+      expect(summaryAr).toContain('تطابق صريح مع تخصصك الأساسي');
 
       const summaryEn = builder.formatShortSummary(result, {}, 'en');
-      expect(summaryEn).toContain('[90% Match]');
-      expect(summaryEn).toContain('Exact match with your primary specialization');
+      expect(summaryEn).toContain('[90% Fit]');
+      expect(summaryEn).toContain('Direct hit on your primary');
     });
 
     it('exports singleton transparentExplanationBuilder instance', () => {
