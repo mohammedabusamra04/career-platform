@@ -99,6 +99,37 @@ type UserOutcome =
   | 'skipped'
   | 'error';
 
+/**
+ * Enforces fair source diversity so that no single source (e.g. Jooble or Adzuna)
+ * monopolizes the digest, ensuring balanced representation across all platforms.
+ */
+export function balanceMatchesBySource(
+  matches: MatchedJob[],
+  maxTotal: number = MAX_DIGEST_TOTAL_JOBS,
+  maxPerSource: number = 4,
+): MatchedJob[] {
+  const selected: MatchedJob[] = [];
+  const sourceCount = new Map<string, number>();
+  const remaining: MatchedJob[] = [];
+
+  for (const match of matches) {
+    const source = match.job.source || 'other';
+    const count = sourceCount.get(source) || 0;
+    if (count < maxPerSource && selected.length < maxTotal) {
+      selected.push(match);
+      sourceCount.set(source, count + 1);
+    } else {
+      remaining.push(match);
+    }
+  }
+
+  while (selected.length < maxTotal && remaining.length > 0) {
+    selected.push(remaining.shift()!);
+  }
+
+  return selected;
+}
+
 export class JobPipelineService {
   private lastStats:
     | LastPipelineStats
@@ -514,7 +545,11 @@ export class JobPipelineService {
           continue;
         }
 
-        const jobsToNotify = unsentMatches.slice(0, MAX_DIGEST_TOTAL_JOBS);
+        const jobsToNotify = balanceMatchesBySource(
+          unsentMatches,
+          MAX_DIGEST_TOTAL_JOBS,
+          4,
+        );
 
         logger.info(
           `Sending ${jobsToNotify.length} of ${unsentMatches.length} new matched jobs to user ${userId}.`,

@@ -47,7 +47,7 @@ export class AdzunaJobSource implements JobSource {
       this.appId,
     )}&app_key=${encodeURIComponent(
       this.appKey,
-    )}&what=${encodeURIComponent(searchTerm)}&content-type=application/json&results_per_page=20`;
+    )}&what=${encodeURIComponent(searchTerm)}&content-type=application/json&results_per_page=20&max_days_old=3`;
 
     try {
       const response = await fetch(url, {

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { JobPipelineService } from '../../src/modules/jobs/job.pipeline.service.js';
+import { JobPipelineService, balanceMatchesBySource } from '../../src/modules/jobs/job.pipeline.service.js';
 import type { Job } from '../../src/modules/jobs/job.types.js';
 import { JobSourceType } from '../../src/modules/jobs/job.types.js';
 import { WorkType, ExperienceLevel } from '../../src/shared/types/job.js';
@@ -205,5 +205,41 @@ describe('JobPipelineService', () => {
     await service.runForUser(123);
 
     expect(notificationService.sendJobs).toHaveBeenCalledWith(123, []);
+  });
+
+  describe('balanceMatchesBySource', () => {
+    it('should balance jobs across sources without allowing any single source to monopolize', () => {
+      const createDummyMatch = (source: string, idx: number, score: number): MatchedJob => ({
+        job: {
+          ...testJob,
+          title: `${source} Job ${idx}`,
+          source,
+          url: `https://example.com/${source}/${idx}`,
+        },
+        score,
+        reason: 'test',
+      });
+
+      // 10 from Jooble, 10 from Adzuna, 2 from Remotive, 2 from WeWorkRemotely
+      const matches: MatchedJob[] = [
+        ...Array.from({ length: 10 }, (_, i) => createDummyMatch('jooble', i, 90)),
+        ...Array.from({ length: 10 }, (_, i) => createDummyMatch('adzuna', i, 88)),
+        ...Array.from({ length: 2 }, (_, i) => createDummyMatch('remotive', i, 85)),
+        ...Array.from({ length: 2 }, (_, i) => createDummyMatch('we_work_remotely', i, 84)),
+      ];
+
+      const balanced = balanceMatchesBySource(matches, 10, 3);
+      expect(balanced).toHaveLength(10);
+
+      const joobleCount = balanced.filter((m) => m.job.source === 'jooble').length;
+      const adzunaCount = balanced.filter((m) => m.job.source === 'adzuna').length;
+      const remotiveCount = balanced.filter((m) => m.job.source === 'remotive').length;
+      const wwrCount = balanced.filter((m) => m.job.source === 'we_work_remotely').length;
+
+      expect(joobleCount).toBeLessThanOrEqual(4);
+      expect(adzunaCount).toBeLessThanOrEqual(4);
+      expect(remotiveCount).toBe(2);
+      expect(wwrCount).toBe(2);
+    });
   });
 });

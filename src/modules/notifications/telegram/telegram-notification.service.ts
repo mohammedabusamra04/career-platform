@@ -39,6 +39,34 @@ function buildApplyInlineKeyboard(
   return rows;
 }
 
+function formatSourceBadge(source?: string): string {
+  switch (source) {
+    case 'remotive':
+      return 'Remotive';
+    case 'we_work_remotely':
+      return 'WeWorkRemotely';
+    case 'arbeitnow':
+      return 'Arbeitnow';
+    case 'baeed':
+      return 'منصة بعيد';
+    case 'mostaqel':
+      return 'مستقل';
+    case 'tanqeeb':
+      return 'تنقيب';
+    case 'wuzzuf':
+      return 'Wuzzuf';
+    case 'adzuna':
+      return 'Adzuna';
+    case 'jooble':
+      return 'Jooble';
+    case 'linkedin':
+    case 'firecrawl_linkedin':
+      return 'LinkedIn';
+    default:
+      return source ? String(source) : 'فرصة مباشرة';
+  }
+}
+
 export class TelegramNotificationService implements NotificationService {
   constructor(private readonly api: TelegramApi) {}
 
@@ -97,13 +125,17 @@ export class TelegramNotificationService implements NotificationService {
 
       const locationPart = [job.location, job.country].filter(Boolean).join(' • ');
       const safeLocation = locationPart ? ` | 📍 ${escapeTelegramMarkdown(locationPart)}` : '';
+      const sourceBadge = formatSourceBadge(job.source);
+      const safeSource = escapeTelegramMarkdown(sourceBadge);
       const titleLine = targetUrl
         ? `*${itemIndex}.* 💻 [${safeTitle}](${targetUrl})`
         : `*${itemIndex}.* 💻 *${safeTitle}*`;
 
+      const directApply = targetUrl ? `\n   🔗 [تقديم مباشر](${targetUrl})` : '';
+
       return {
         index: itemIndex,
-        text: `${titleLine}\n   🏢 ${safeCompany}${safeLocation}\n   ${tone}`,
+        text: `${titleLine}\n   🏢 *${safeCompany}*${safeLocation}\n   🌐 ${safeSource} • ${tone}${directApply}`,
         url: targetUrl,
       };
     });

@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
   JoobleJobSource,
   isItemFresh,
+  isJobAgeFresh,
   isValidSpecificLink,
   isJobLinkActive,
   EXPIRED_JOB_PHRASES,
@@ -144,6 +145,34 @@ describe('JoobleJobSource (Freshness & Link Verification)', () => {
           return {
             ok: true,
             json: async () => ({ totalCount: 4, jobs: itemsWithBadLinks }),
+          };
+        }
+        return { ok: true, status: 200, text: async () => '<html>Active</html>' };
+      });
+
+      const jobs = await source.fetchJobs({ jobTitle: 'Dev' });
+      expect(jobs).toEqual([]);
+    });
+
+    it('should drop items whose link has jobAge query param exceeding maxAgeDays', async () => {
+      vi.spyOn(Date, 'now').mockReturnValue(mockNow);
+
+      expect(isJobAgeFresh('https://jooble.org/desc/123?jobAge=110', 7)).toBe(false);
+      expect(isJobAgeFresh('https://jooble.org/desc/123?jobAge=2', 7)).toBe(true);
+
+      const oldJobAgeItem = {
+        id: 'old-jobage',
+        title: 'Old JobAge Dev',
+        link: 'https://jooble.org/desc/old?jobAge=110&ckey=dev',
+        company: 'Old Corp',
+        updated: '2026-11-20T10:00:00.000Z',
+      };
+
+      global.fetch = vi.fn().mockImplementation(async (_url: string, init?: RequestInit) => {
+        if (init?.method === 'POST') {
+          return {
+            ok: true,
+            json: async () => ({ totalCount: 1, jobs: [oldJobAgeItem] }),
           };
         }
         return { ok: true, status: 200, text: async () => '<html>Active</html>' };

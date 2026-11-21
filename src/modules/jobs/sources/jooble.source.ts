@@ -77,6 +77,29 @@ export function isValidSpecificLink(link?: string): boolean {
 }
 
 /**
+ * Validates that an item's URL parameters (e.g. jobAge) do not exceed the allowed maximum age.
+ */
+export function isJobAgeFresh(
+  url?: string,
+  maxAgeDays: number = DEFAULT_MAX_AGE_DAYS,
+): boolean {
+  if (!url || typeof url !== 'string') return true;
+  try {
+    const parsed = new URL(url);
+    const ageParam = parsed.searchParams.get('jobAge');
+    if (ageParam !== null) {
+      const ageDays = parseInt(ageParam, 10);
+      if (!Number.isNaN(ageDays) && ageDays > maxAgeDays) {
+        return false;
+      }
+    }
+  } catch {
+    return true;
+  }
+  return true;
+}
+
+/**
  * Checks whether an application URL is active and not an HTTP 404/410 or soft-404 expired page.
  * Network/rate-limit errors or timeouts fail gracefully (returns true) so the pipeline and circuit breaker
  * are not tripped unnecessarily.
@@ -233,6 +256,9 @@ export class JoobleJobSource implements JobSource {
           return false;
         }
         if (!isValidSpecificLink(item.link)) {
+          return false;
+        }
+        if (this.maxAgeDays > 0 && !isJobAgeFresh(item.link, this.maxAgeDays)) {
           return false;
         }
         return true;

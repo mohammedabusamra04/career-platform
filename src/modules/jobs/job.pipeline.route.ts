@@ -14,7 +14,7 @@ router.post(
   requirePipelineAuth,
   validateBody(pipelineTriggerBodySchema),
   (req, res, next): void => {
-    const isAsync = req.query.async === 'true' || req.headers['x-async'] === 'true';
+    const isAsync = req.query?.async === 'true' || req.headers?.['x-async'] === 'true';
 
     if (isAsync) {
       res.success({
