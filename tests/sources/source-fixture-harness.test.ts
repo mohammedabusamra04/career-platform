@@ -124,7 +124,7 @@ describe('Job Source Fixture Testing & Mock Harness (TASK-25.2)', () => {
       json: async () => fixture,
     });
 
-    const source = new JoobleJobSource('key');
+    const source = new JoobleJobSource('key', { maxAgeDays: 0, verifyLinks: false });
     const jobs = await source.fetchJobs({ jobTitle: 'QA' });
 
     expect(jobs).toHaveLength(2);
