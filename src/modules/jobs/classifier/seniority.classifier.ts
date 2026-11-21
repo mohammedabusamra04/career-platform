@@ -13,7 +13,7 @@ import { ExperienceLevel } from '@prisma/client';
 export class SeniorityClassifier {
   // Senior / Leadership keywords
   private static readonly SENIOR_TITLE_REGEX =
-    /\b(?:senior|sr\.?|lead|staff|principal|architect|head of|director|vp|chief|expert|distinguished)\b|(?:\b(?:tech|team)\s+lead\b)|(?:خبير|أول|سينيور|قائد\s+فريق|رئيس\s+(?:قسم|فريق)?|معماري|مهندس\s+رئيسي)/i;
+    /\b(?:senior|sr\.?|lead|staff|principal|architect|head of|director|vp|chief|expert|distinguished|manager|management|supervisor)\b|(?:\b(?:tech|team)\s+lead\b)|(?:خبير|أول|سينيور|قائد\s+فريق|رئيس\s+(?:قسم|فريق)?|معماري|مهندس\s+رئيسي|مدير|إدارة)/i;
 
   // Junior / Entry-level keywords
   private static readonly JUNIOR_TITLE_REGEX =

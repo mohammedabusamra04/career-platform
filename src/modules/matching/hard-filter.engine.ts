@@ -207,8 +207,8 @@ export class HardFilterEngine {
     const jobTitle = (job.title || '').trim();
     const jobLevel = (job.experienceLevel || '').trim().toUpperCase();
 
-    const isSeniorTitle =
-      /\b(?:senior|sr\.?|lead|staff|principal|architect|head\s+of|director|vp|chief|expert)\b|(?:سينيور|خبير|قائد|رئيس|معماري)/i.test(
+    const isLeadershipOrSeniorTitle =
+      /\b(?:senior|sr\.?|lead|staff|principal|architect|head\s+of|director|vp|chief|expert|manager|management|supervisor|team\s*lead)\b|(?:سينيور|خبير|قائد|رئيس|معماري|مدير|إدارة|مشرف)/i.test(
         jobTitle,
       );
 
@@ -218,27 +218,27 @@ export class HardFilterEngine {
       );
 
     if (normCandidate === 'JUNIOR') {
-      // Junior candidates MUST NOT receive senior/lead roles
-      if (jobLevel === 'SENIOR' || isSeniorTitle) {
-        return false;
-      }
-      return true;
-    }
-
-    if (normCandidate === 'SENIOR') {
-      // Senior candidates MUST NOT receive junior/intern roles
-      if (jobLevel === 'JUNIOR' || isJuniorTitle) {
+      // Junior candidates MUST NOT receive senior, mid-level, or leadership/manager roles
+      if (jobLevel === 'SENIOR' || jobLevel === 'MID' || isLeadershipOrSeniorTitle) {
         return false;
       }
       return true;
     }
 
     if (normCandidate === 'MID') {
-      // Mid-level candidates: exclude pure intern/trainee
-      if (
-        /\b(?:intern|internship|trainee|apprentice)\b/i.test(jobTitle) ||
-        /\b(?:متدرب)\b/i.test(jobTitle)
-      ) {
+      // Mid-level candidates: exclude senior/leadership and pure junior/intern
+      if (jobLevel === 'SENIOR' || isLeadershipOrSeniorTitle) {
+        return false;
+      }
+      if (jobLevel === 'JUNIOR' || isJuniorTitle) {
+        return false;
+      }
+      return true;
+    }
+
+    if (normCandidate === 'SENIOR') {
+      // Senior candidates MUST NOT receive junior or mid roles
+      if (jobLevel === 'JUNIOR' || jobLevel === 'MID' || isJuniorTitle) {
         return false;
       }
       return true;

@@ -246,7 +246,7 @@ describe('TASK-37.1: Specialization & Region Incompatibility Exclusion (#109)', 
   });
 
   describe('Experience Level Filtering', () => {
-    it('strictly rejects senior/lead jobs for junior candidates', () => {
+    it('strictly rejects senior, mid-level, manager, and lead jobs for junior candidates', () => {
       const seniorJob: FilterableJob = {
         title: 'Senior Backend Engineer',
         primarySpecialization: Specialization.BACKEND,
@@ -256,8 +256,18 @@ describe('TASK-37.1: Specialization & Region Incompatibility Exclusion (#109)', 
         title: 'Lead Architect',
         primarySpecialization: Specialization.BACKEND,
       };
+      const managerJob: FilterableJob = {
+        title: 'Lending Manager (Front End) - Remote',
+        primarySpecialization: Specialization.FRONTEND,
+        experienceLevel: 'MID',
+      };
+      const midJob: FilterableJob = {
+        title: 'Backend Developer',
+        primarySpecialization: Specialization.BACKEND,
+        experienceLevel: 'MID',
+      };
       const juniorPreferences: CandidatePreferences = {
-        specializations: [Specialization.BACKEND],
+        specializations: [Specialization.BACKEND, Specialization.FRONTEND],
         regionPreference: RegionPreference.BOTH,
         experienceLevel: 'JUNIOR',
       };
@@ -269,6 +279,14 @@ describe('TASK-37.1: Specialization & Region Incompatibility Exclusion (#109)', 
       const res2 = engine.evaluate(leadJob, juniorPreferences);
       expect(res2.passed).toBe(false);
       expect(res2.exclusionReason).toBe('EXPERIENCE_INCOMPATIBLE');
+
+      const res3 = engine.evaluate(managerJob, juniorPreferences);
+      expect(res3.passed).toBe(false);
+      expect(res3.exclusionReason).toBe('EXPERIENCE_INCOMPATIBLE');
+
+      const res4 = engine.evaluate(midJob, juniorPreferences);
+      expect(res4.passed).toBe(false);
+      expect(res4.exclusionReason).toBe('EXPERIENCE_INCOMPATIBLE');
     });
 
     it('accepts junior or open/unspecified level jobs for junior candidates', () => {

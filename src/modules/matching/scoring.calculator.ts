@@ -111,32 +111,12 @@ export class DeterministicScoringCalculator {
       return 10;
     }
 
-    const normCandidate = candidateLevel.trim().toUpperCase();
-    const normJob = (job.experienceLevel || '').trim().toUpperCase();
-    const jobTitle = (job.title || '').trim();
-
-    const isSeniorTitle =
-      /\b(?:senior|sr\.?|lead|staff|principal|architect|head\s+of|director|vp|chief|expert)\b|(?:سينيور|خبير|قائد|رئيس|معماري)/i.test(
-        jobTitle,
-      );
-
-    // Severe mismatch: Junior candidate with Senior job
-    if (normCandidate === 'JUNIOR' && (normJob === 'SENIOR' || isSeniorTitle)) {
-      return -50;
-    }
-
-    // Severe mismatch: Senior candidate with Junior job
-    const isJuniorTitle =
-      /\b(?:junior|jr\.?|intern|internship|trainee|apprentice|fresh\s+grad)\b|(?:مبتدئ|جونيور|متدرب|حديث\s+التخرج)/i.test(
-        jobTitle,
-      );
-    if (normCandidate === 'SENIOR' && (normJob === 'JUNIOR' || isJuniorTitle)) {
-      return -50;
-    }
-
     if (!job.experienceLevel) {
       return 10;
     }
+
+    const normCandidate = candidateLevel.trim().toUpperCase();
+    const normJob = job.experienceLevel.trim().toUpperCase();
 
     if (normCandidate === normJob) {
       return 15;
