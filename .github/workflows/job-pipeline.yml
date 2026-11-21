@@ -1,12 +1,8 @@
 name: Scheduled Job Pipeline
 
 on:
-  schedule:
-    # Safety net for the single 21:00 Asia/Gaza evening dispatch (19:00 UTC in winter / 18:00 UTC in summer).
-    # Primary on-time trigger is an external scheduler (cron-job.org) calling workflow_dispatch.
-    - cron: '0 19 * * *'
   workflow_dispatch:
-    # Allows manual or external cron (e.g. cron-job.org) triggering anytime
+    # Triggered on-time at 21:00 Asia/Gaza by external cron (cron-job.org) or manually
 
 jobs:
   run-pipeline:

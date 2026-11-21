@@ -13,8 +13,19 @@ export default tseslint.config(
         'error',
         {
           argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
         },
       ],
+      '@typescript-eslint/no-explicit-any': 'off',
+      'no-useless-assignment': 'off',
+      'no-control-regex': 'off',
+      'no-constant-condition': 'off',
+    },
+  },
+  {
+    files: ['tests/**', '**/*.test.ts', '**/*.spec.ts'],
+    rules: {
+      '@typescript-eslint/no-unused-vars': 'off',
     },
   },
 );

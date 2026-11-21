@@ -377,14 +377,14 @@ export class FirstDigestService {
       if (lang === 'en') {
         return (
           `🔍 **No jobs currently match your criteria**\n\n` +
-          `Your preferences have been saved successfully! You will automatically receive your personalized digest in the next evening slot (${runTime}) as soon as matching opportunities are collected.\n\n` +
+          `Your preferences have been saved successfully! You will automatically receive your personalized digest in the upcoming evening digest as soon as matching opportunities are collected.\n\n` +
           `💡 You can broaden your search or adjust your settings anytime via /settings`
         );
       }
 
       return (
         `🔍 **لا توجد وظائف مطابقة تماماً لتخصصك حالياً**\n\n` +
-        `لقد تم حفظ تفضيلاتك بنجاح! سيقوم البوت بإشعارك تلقائياً في الملخص المسائي القادم (${runTime}) فور رصد فرص جديدة تناسب مجالك.\n\n` +
+        `لقد تم حفظ تفضيلاتك بنجاح! سيقوم البوت بإشعارك تلقائياً في الملخص المسائي فور رصد فرص جديدة تناسب مجالك.\n\n` +
         `💡 يمكنك توسيع نطاق البحث أو مراجعة إعداداتك عبر الأمر /settings`
       );
     }

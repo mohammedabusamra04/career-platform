@@ -210,7 +210,7 @@ describe('FirstDigestService (TASK-40.1)', () => {
       });
 
       expect(msgAr).toContain('لا توجد وظائف مطابقة تماماً لتخصصك حالياً');
-      expect(msgAr).toContain('الملخص المسائي القادم (21:00)');
+      expect(msgAr).toContain('الملخص المسائي');
       expect(msgAr).toContain('/settings');
       expect(msgAr).not.toContain('✨'); // No star emoji
 
@@ -220,7 +220,7 @@ describe('FirstDigestService (TASK-40.1)', () => {
       });
 
       expect(msgEn).toContain('No jobs currently match your criteria');
-      expect(msgEn).toContain('evening slot (21:00)');
+      expect(msgEn).toContain('evening digest');
       expect(msgEn).toContain('/settings');
       expect(msgEn).not.toContain('✨'); // No star emoji
     });
