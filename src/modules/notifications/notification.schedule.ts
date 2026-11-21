@@ -15,7 +15,7 @@ export class NotificationScheduleService {
     now: Date = new Date(),
   ): Date {
     const validZone = this.getValidTimezone(timezone);
-    const validTimes = notificationTimes.length > 0 ? notificationTimes : ['09:00', '21:00'];
+    const validTimes = notificationTimes.length > 0 ? notificationTimes : ['21:00'];
     const current = DateTime.fromJSDate(now).setZone(validZone);
 
     const candidates = validTimes
@@ -23,7 +23,7 @@ export class NotificationScheduleService {
         const [hour, minute] = time.split(':').map(Number);
 
         let notification = current.startOf('day').set({
-          hour: Number.isNaN(hour) ? 9 : hour,
+          hour: Number.isNaN(hour) ? 21 : hour,
           minute: Number.isNaN(minute) ? 0 : minute,
           second: 0,
           millisecond: 0,
@@ -46,7 +46,7 @@ export class NotificationScheduleService {
     now: Date = new Date(),
   ): boolean {
     const validZone = this.getValidTimezone(timezone);
-    const validTimes = notificationTimes.length > 0 ? notificationTimes : ['09:00', '21:00'];
+    const validTimes = notificationTimes.length > 0 ? notificationTimes : ['21:00'];
     const current = DateTime.fromJSDate(now).setZone(validZone);
     const currentTime = current.toFormat('HH:mm');
 

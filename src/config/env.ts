@@ -35,7 +35,7 @@ export const envSchema = z.object({
   GEMINI_API_KEY: z.string().optional().default(''),
   GEMINI_API_KEYS: z.string().optional().default(''),
   PIPELINE_API_SECRET: z.string().optional().default(''),
-  JOB_RUN_TIME_1: z.string().default('09:00'),
+  JOB_RUN_TIME_1: z.string().default('21:00'),
   JOB_RUN_TIME_2: z.string().default('21:00'),
   DAILY_DIGEST_TIME: z.string().default('21:00'),
   JOB_COLLECTION_LOCK_ID: z.coerce.number().int().default(824401),

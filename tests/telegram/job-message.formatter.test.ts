@@ -16,7 +16,7 @@ describe('formatJobMessage', () => {
     scrapedAt: new Date(),
   };
 
-  it('should format message with title, company, location, source, and match score in Arabic', () => {
+  it('should format message with title, company, location, source, and qualitative match tone in Arabic without numeric percentage', () => {
     const formatted = formatJobMessage({
       job: dummyJob,
       score: 92,
@@ -27,10 +27,11 @@ describe('formatJobMessage', () => {
     expect(formatted).toContain('🏢 الشركة: Stripe');
     expect(formatted).toContain('🌍 Remote');
     expect(formatted).toContain('🌐 المصدر: arbeitnow');
-    expect(formatted).toContain('⚡ Ping جديد من DeployMe — تطابق 92%');
+    expect(formatted).toContain('⚡ Ping جديد من DeployMe — 🎯 تطابق قوي مع الـ Stack');
+    expect(formatted).not.toContain('92%');
   });
 
-  it('should format message with title, company, location, source, and match score in English', () => {
+  it('should format message with title, company, location, source, and qualitative match tone in English without numeric percentage', () => {
     const formatted = formatJobMessage({
       job: dummyJob,
       score: 92,
@@ -41,6 +42,7 @@ describe('formatJobMessage', () => {
     expect(formatted).toContain('🏢 Company: Stripe');
     expect(formatted).toContain('🌍 Remote');
     expect(formatted).toContain('🌐 Source: arbeitnow');
-    expect(formatted).toContain('⚡ DeployMe Ping — 92% Stack Fit');
+    expect(formatted).toContain('⚡ DeployMe Ping — 🎯 High Stack Fit');
+    expect(formatted).not.toContain('92%');
   });
 });

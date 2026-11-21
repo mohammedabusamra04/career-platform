@@ -2,13 +2,11 @@ name: Scheduled Job Pipeline
 
 on:
   schedule:
-    # Safety net only. GitHub's scheduler can fire hours late, so we trigger hourly
-    # (off the top of the hour) and the pipeline script catches up on any 09:00/21:00
-    # Asia/Gaza slot that was not sent yet. The on-time trigger is an external
-    # scheduler calling workflow_dispatch.
-    - cron: '17 * * * *'
+    # Safety net for the single 21:00 Asia/Gaza evening dispatch (19:00 UTC in winter / 18:00 UTC in summer).
+    # Primary on-time trigger is an external scheduler (cron-job.org) calling workflow_dispatch.
+    - cron: '0 19 * * *'
   workflow_dispatch:
-    # Allows manual triggering from GitHub Actions tab anytime
+    # Allows manual or external cron (e.g. cron-job.org) triggering anytime
 
 jobs:
   run-pipeline:
@@ -35,9 +33,12 @@ jobs:
           PORT: 3000
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           REDIS_URL: ${{ secrets.REDIS_URL }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DATABASE_URL_UNPOOLED: ${{ secrets.DATABASE_URL_UNPOOLED }}
           GEMINI_API_KEYS: ${{ secrets.GEMINI_API_KEYS }}
-          JOB_RUN_TIME_1: ${{ secrets.JOB_RUN_TIME_1 || '09:00' }}
+          JOB_RUN_TIME_1: ${{ secrets.JOB_RUN_TIME_1 || '21:00' }}
           JOB_RUN_TIME_2: ${{ secrets.JOB_RUN_TIME_2 || '21:00' }}
+          DAILY_DIGEST_TIME: ${{ secrets.DAILY_DIGEST_TIME || '21:00' }}
           TIMEZONE: ${{ secrets.TIMEZONE || 'Asia/Gaza' }}
           ADZUNA_APP_ID: ${{ secrets.ADZUNA_APP_ID }}
           ADZUNA_APP_KEY: ${{ secrets.ADZUNA_APP_KEY }}

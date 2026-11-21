@@ -51,6 +51,49 @@ describe('TelegramNotificationService', () => {
     );
   });
 
+  it('should send a single digest message capped at 20 jobs with apply inline buttons, qualitative match tone, and disabled link previews', async () => {
+    const manyJobs = Array.from({ length: 25 }, (_, i) => ({
+      job: {
+        ...dummyJob,
+        title: `Backend Role ${i + 1}`,
+        applicationUrl: `https://example.com/apply/${i + 1}`,
+        url: `https://example.com/apply/${i + 1}`,
+      },
+      score: 85,
+      reason: 'Strong match',
+    }));
+
+    await service.sendJobs(123456, manyJobs);
+
+    expect(api.sendMessage).toHaveBeenCalledTimes(1);
+    const [, messageText, options] = api.sendMessage.mock.calls[0];
+    expect(messageText).toContain('Backend Role 1');
+    expect(messageText).toContain('Backend Role 20');
+    expect(messageText).not.toContain('Backend Role 21');
+    expect(messageText).toContain('تطابق قوي');
+    expect(messageText).not.toContain('85%');
+    expect(messageText).toContain('/jobs');
+    expect(options).toEqual(
+      expect.objectContaining({
+        parse_mode: 'Markdown',
+        disable_web_page_preview: true,
+        link_preview_options: { is_disabled: true },
+        reply_markup: {
+          inline_keyboard: expect.arrayContaining([
+            [
+              { text: '⚡ قدّم #1', url: 'https://example.com/apply/1' },
+              { text: '⚡ قدّم #2', url: 'https://example.com/apply/2' },
+            ],
+            [
+              { text: '⚡ قدّم #19', url: 'https://example.com/apply/19' },
+              { text: '⚡ قدّم #20', url: 'https://example.com/apply/20' },
+            ],
+          ]),
+        },
+      }),
+    );
+  });
+
   it('should handle Telegram API error safely without throwing', async () => {
     api.sendMessage.mockRejectedValue(new Error('Telegram API unavailable'));
     await expect(

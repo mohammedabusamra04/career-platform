@@ -14,6 +14,7 @@ import type {
 } from './job.types.js';
 
 import type { MatchedJob } from '../matching/matching.service.js';
+import { MAX_DIGEST_TOTAL_JOBS } from '../notifications/telegram/digest-card.formatter.js';
 
 import type { UserPreferences } from '../preferences/preference.types.js';
 
@@ -513,20 +514,22 @@ export class JobPipelineService {
           continue;
         }
 
+        const jobsToNotify = unsentMatches.slice(0, MAX_DIGEST_TOTAL_JOBS);
+
         logger.info(
-          `Sending ${unsentMatches.length} new matched jobs to user ${userId}.`,
+          `Sending ${jobsToNotify.length} of ${unsentMatches.length} new matched jobs to user ${userId}.`,
         );
 
         await this.notificationService.sendJobs(
           userId,
-          unsentMatches,
+          jobsToNotify,
         );
 
         /*
-         * Record sent jobs in Redis.
+         * Record only notified jobs in Redis so overflow jobs remain available in /jobs.
          */
         await Promise.all(
-          unsentMatches.map(
+          jobsToNotify.map(
             async (match) => {
               const fingerprint =
                 this.fingerprintService.generate(
@@ -747,13 +750,15 @@ export class JobPipelineService {
         return 'no_match';
       }
 
+      const jobsToNotify = unsentMatches.slice(0, MAX_DIGEST_TOTAL_JOBS);
+
       await this.notificationService.sendJobs(
         userId,
-        unsentMatches,
+        jobsToNotify,
       );
 
       await Promise.all(
-        unsentMatches.map(
+        jobsToNotify.map(
           async (match) => {
             const fingerprint =
               this.fingerprintService.generate(

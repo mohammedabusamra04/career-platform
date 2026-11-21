@@ -1,4 +1,5 @@
 import type { MatchedJob } from '../../matching/matching.service.js';
+import { formatMatchTone } from './digest-card.formatter.js';
 
 export function formatJobMessage(
   matchedJob: MatchedJob,
@@ -11,6 +12,8 @@ export function formatJobMessage(
     (job as { url?: string | null }).url ||
     '';
 
+  const matchTone = formatMatchTone(score, lang);
+
   if (lang === 'en') {
     const locationParts = [
       job.location ? `🌍 ${job.location}` : '',
@@ -18,7 +21,7 @@ export function formatJobMessage(
     ].filter(Boolean);
 
     const lines = [
-      `⚡ DeployMe Ping — ${score}% Stack Fit`,
+      `⚡ DeployMe Ping — ${matchTone}`,
       ``,
       `💻 ${job.title}`,
       `🏢 Company: ${job.company}`,
@@ -36,7 +39,7 @@ export function formatJobMessage(
   ].filter(Boolean);
 
   const lines = [
-    `⚡ Ping جديد من DeployMe — تطابق ${score}%`,
+    `⚡ Ping جديد من DeployMe — ${matchTone}`,
     ``,
     `💻 ${job.title}`,
     `🏢 الشركة: ${job.company}`,
