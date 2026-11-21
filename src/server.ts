@@ -21,19 +21,34 @@ jobNotificationScheduler.start();
 missedSlotWatchdogService.start();
 
 if (env.telegramBotToken && env.telegramBotToken !== 'your_bot_token') {
-  void bot.api
-    .setMyCommands([
-      { command: 'start', description: '🚀 Start configuring job preferences' },
-      { command: 'subscription', description: '🔔 Check subscription status' },
-      { command: 'subscribe', description: '✅ Enable job notifications' },
-      { command: 'unsubscribe', description: '🔕 Disable job notifications' },
-    ])
+  const defaultCommands = [
+    { command: 'start', description: '⚡ Start & configure your Stack and market scope' },
+    { command: 'jobs', description: 'Browse active roles matching your Stack' },
+    { command: 'settings', description: 'Edit your Stack, target region, or bot language' },
+    { command: 'pause', description: 'Temporarily pause job pings' },
+    { command: 'resume', description: 'Resume your job pipeline immediately' },
+    { command: 'stop', description: 'Unsubscribe and delete your data permanently' },
+    { command: 'help', description: 'Display the DeployMe command guide' },
+  ];
 
-    .catch((err) => {
-      logger.warn(
-        `Failed to set Telegram bot commands: ${err instanceof Error ? err.message : String(err)}`,
-      );
-    });
+  const arabicCommands = [
+    { command: 'start', description: '⚡ بدء الإعداد وضبط الـ Stack ونطاق السوق' },
+    { command: 'jobs', description: 'استعراض أحدث الفرص المطابقة للـ Stack فوراً' },
+    { command: 'settings', description: 'تعديل التخصص، نطاق السوق، أو لغة البوت' },
+    { command: 'pause', description: 'إيقاف التنبيهات مؤقتاً' },
+    { command: 'resume', description: 'إعادة تشغيل الـ Pipeline واستقبال الفرص فوراً' },
+    { command: 'stop', description: 'إلغاء الاشتراك وحذف بياناتك نهائياً' },
+    { command: 'help', description: 'عرض دليل أوامر DeployMe' },
+  ];
+
+  void Promise.all([
+    bot.api.setMyCommands(defaultCommands),
+    bot.api.setMyCommands(arabicCommands, { language_code: 'ar' }),
+  ]).catch((err) => {
+    logger.warn(
+      `Failed to set Telegram bot commands: ${err instanceof Error ? err.message : String(err)}`,
+    );
+  });
 
   bot
     .start({

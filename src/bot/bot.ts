@@ -20,7 +20,6 @@ import { registerStopHandler } from './handlers/stop.handler.js';
 import { registerHelpHandler } from './handlers/help.handler.js';
 import { deduplicateMiddleware } from './middleware/deduplicate.middleware.js';
 import { callbackValidationMiddleware } from './middleware/callback-validation.middleware.js';
-import { registerSubscriptionHandler } from './handlers/subscription.handler.js';
 
 if (!env.telegramBotToken) {
   throw new Error('TELEGRAM_BOT_TOKEN is not configured');
@@ -56,7 +55,6 @@ registerPauseResumeHandler(bot);
 registerStopHandler(bot);
 registerHelpHandler(bot);
 registerPreferencesHandler(bot);
-registerSubscriptionHandler(bot);
 
 bot.catch((error) => {
   logger.error(`Telegram bot error: ${error.message}`);
