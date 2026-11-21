@@ -75,21 +75,21 @@ export class TransparentExplanationBuilder {
       const specLabel = primarySpec ? SPECIALIZATION_ARABIC_NAMES[primarySpec] || primarySpec : '';
       reasons.push(
         specLabel
-          ? `🎯 تطابق صريح مع تخصصك الأساسي: ${specLabel} (+50)`
-          : `🎯 تطابق صريح مع تخصصك الأساسي (+50)`,
+          ? `🎯 تطابق صريح مع تخصصك الأساسي: ${specLabel}`
+          : `🎯 تطابق صريح مع تخصصك الأساسي`,
       );
     } else if (breakdown.specializationScore === 30) {
-      reasons.push(`🎯 بتطابق تخصصك الثانوي (+30)`);
+      reasons.push(`🎯 بتطابق تخصصك الثانوي`);
     }
 
     // 2. Experience Level explanation
     if (breakdown.levelScore === 15) {
-      reasons.push(`💻 مستوى الخبرة مفصّل على بروفايلك (+15)`);
+      reasons.push(`💻 مستوى الخبرة مفصّل على بروفايلك`);
     } else if (breakdown.levelScore === 10) {
       if (!context?.preferences?.experienceLevel || context?.preferences?.experienceLevel === 'ANY') {
-        reasons.push(`💻 مفتوحة لكل مستويات الخبرة (+10)`);
+        reasons.push(`💻 مفتوحة لكل مستويات الخبرة`);
       } else {
-        reasons.push(`💻 مستوى الخبرة مرن وغير مقيد (+10)`);
+        reasons.push(`💻 مستوى الخبرة مرن وغير مقيد`);
       }
     }
 
@@ -97,28 +97,28 @@ export class TransparentExplanationBuilder {
     if (breakdown.regionScore === 15) {
       const scope = (context?.job?.remoteScope || '').toUpperCase();
       if (scope === 'WORLDWIDE') {
-        reasons.push(`🌍 شغل Remote عالمي — اشتغل من أي مكان (+15)`);
+        reasons.push(`🌍 شغل Remote عالمي — اشتغل من أي مكان`);
       } else if (context?.job && hardFilterEngine.isArabMarketJob(context.job)) {
-        reasons.push(`📍 فرصة موجهة للمنطقة العربية والشرق الأوسط (+15)`);
+        reasons.push(`📍 فرصة موجهة للمنطقة العربية والشرق الأوسط`);
       } else {
-        reasons.push(`🌐 بتطابق تفضيلاتك الجغرافية ونطاق الـ Remote (+15)`);
+        reasons.push(`🌐 بتطابق تفضيلاتك الجغرافية ونطاق الـ Remote`);
       }
     }
 
     // 4. Freshness explanation
     if (breakdown.freshnessScore === 10) {
-      reasons.push(`⚡ فرصة جديدة — لسه نازلة اليوم (+10)`);
+      reasons.push(`⚡ فرصة جديدة — لسه نازلة اليوم`);
     } else if (breakdown.freshnessScore >= 7) {
       const days = 10 - breakdown.freshnessScore;
-      reasons.push(`⏱️ نازلة قريب (منذ ${days} ${days === 1 ? 'يوم' : days === 2 ? 'يومين' : 'أيام'}) (+${breakdown.freshnessScore})`);
+      reasons.push(`⏱️ نازلة قريب (منذ ${days} ${days === 1 ? 'يوم' : days === 2 ? 'يومين' : 'أيام'})`);
     } else if (breakdown.freshnessScore > 0) {
       const days = 10 - breakdown.freshnessScore;
-      reasons.push(`📅 نازلة من ${days} أيام (+${breakdown.freshnessScore})`);
+      reasons.push(`📅 نازلة من ${days} أيام`);
     }
 
     // 5. Direct ATS source explanation
     if (breakdown.atsScore === 5) {
-      reasons.push(`🏢 تقديم مباشر على ATS الشركة بدون وسطاء (+5)`);
+      reasons.push(`🏢 تقديم مباشر على موقع الشركة الرسمي بدون وسطاء`);
     }
 
     return reasons;
@@ -142,43 +142,43 @@ export class TransparentExplanationBuilder {
       const specLabel = primarySpec ? SPECIALIZATION_ENGLISH_NAMES[primarySpec] || primarySpec : '';
       reasons.push(
         specLabel
-          ? `🎯 Direct hit on your primary stack: ${specLabel} (+50)`
-          : `🎯 Direct hit on your primary specialization (+50)`,
+          ? `🎯 Direct hit on your primary stack: ${specLabel}`
+          : `🎯 Direct hit on your primary specialization`,
       );
     } else if (breakdown.specializationScore === 30) {
-      reasons.push(`🎯 Matches your secondary specialization (+30)`);
+      reasons.push(`🎯 Matches your secondary specialization`);
     }
 
     // 2. Experience Level explanation
     if (breakdown.levelScore === 15) {
-      reasons.push(`💻 Seniority level matches your profile (+15)`);
+      reasons.push(`💻 Seniority level matches your profile`);
     } else if (breakdown.levelScore === 10) {
-      reasons.push(`💻 Flexible / open seniority level (+10)`);
+      reasons.push(`💻 Flexible / open seniority level`);
     }
 
     // 3. Region / Remote Scope explanation
     if (breakdown.regionScore === 15) {
       const scope = (context?.job?.remoteScope || '').toUpperCase();
       if (scope === 'WORLDWIDE') {
-        reasons.push(`🌍 Worldwide Remote — work from anywhere (+15)`);
+        reasons.push(`🌍 Worldwide Remote — work from anywhere`);
       } else if (context?.job && hardFilterEngine.isArabMarketJob(context.job)) {
-        reasons.push(`📍 Targeted for the Arab / MENA tech market (+15)`);
+        reasons.push(`📍 Targeted for the Arab / MENA tech market`);
       } else {
-        reasons.push(`🌐 Fits your remote & location preferences (+15)`);
+        reasons.push(`🌐 Fits your remote & location preferences`);
       }
     }
 
     // 4. Freshness explanation
     if (breakdown.freshnessScore === 10) {
-      reasons.push(`⚡ Fresh build — posted today (+10)`);
+      reasons.push(`⚡ Fresh build — posted today`);
     } else if (breakdown.freshnessScore > 0) {
       const days = 10 - breakdown.freshnessScore;
-      reasons.push(`⏱️ Posted ${days} ${days === 1 ? 'day' : 'days'} ago (+${breakdown.freshnessScore})`);
+      reasons.push(`⏱️ Posted ${days} ${days === 1 ? 'day' : 'days'} ago`);
     }
 
     // 5. Direct ATS source explanation
     if (breakdown.atsScore === 5) {
-      reasons.push(`🏢 Direct company ATS link — no middlemen (+5)`);
+      reasons.push(`🏢 Direct company ATS link — no middlemen`);
     }
 
     return reasons;
@@ -197,15 +197,14 @@ export class TransparentExplanationBuilder {
   ): string {
     const reasons = this.buildReasons(result.breakdown, context, language);
 
-    if (language === 'en') {
-      const header = `🎯 *Stack Fit Score: ${result.score}% (${result.score}/100)*`;
-      if (reasons.length === 0) {
-        return header;
-      }
-      return `${header}\n${reasons.map((r) => `• ${r}`).join('\n')}`;
-    }
+    const badge =
+      result.score >= 80
+        ? language === 'en' ? '🎯 High Stack Fit' : '🎯 *تطابق قوي مع الـ Stack*'
+        : result.score >= 65
+          ? language === 'en' ? '⚡ Solid Match' : '⚡ *تطابق جيد مع الـ Stack*'
+          : language === 'en' ? '🌱 Partial Match' : '🌱 *تطابق مبدئي مع الـ Stack*';
 
-    const header = `🎯 *نسبة تطابق الـ Stack: ${result.score}% (${result.score}/100)*`;
+    const header = badge;
     if (reasons.length === 0) {
       return header;
     }
@@ -226,10 +225,14 @@ export class TransparentExplanationBuilder {
     const reasons = this.buildReasons(result.breakdown, context, language);
     const topReason = reasons[0] || (language === 'en' ? 'General stack fit' : 'تطابق عام');
 
-    if (language === 'en') {
-      return `[${result.score}% Fit] ${topReason}`;
-    }
-    return `[تطابق ${result.score}%] ${topReason}`;
+    const badge =
+      result.score >= 80
+        ? language === 'en' ? 'High Fit' : 'تطابق قوي'
+        : result.score >= 65
+          ? language === 'en' ? 'Solid Match' : 'تطابق جيد'
+          : language === 'en' ? 'Partial Match' : 'تطابق مبدئي';
+
+    return `[${badge}] ${topReason}`;
   }
 }
 

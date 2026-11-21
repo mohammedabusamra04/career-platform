@@ -10,10 +10,12 @@ export function buildSettingsKeyboard(lang: SupportedLanguage = 'ar'): InlineKey
 
   const editSpecsLabel = lang === 'ar' ? 'تعديل الـ Stack 🛠️' : 'Edit Stack 🛠️';
   const editRegionLabel = lang === 'ar' ? 'تعديل نطاق السوق 🌍' : 'Edit Market Scope 🌍';
+  const editExpLabel = lang === 'ar' ? 'تحديد مستوى الخبرة 📊' : 'Experience Level 📊';
   const switchLangLabel = lang === 'ar' ? '🌐 English' : '🌐 العربية';
 
   keyboard.text(editSpecsLabel, 'settings_edit_specs').row();
   keyboard.text(editRegionLabel, 'settings_edit_region').row();
+  keyboard.text(editExpLabel, 'settings_edit_experience').row();
   keyboard.text(switchLangLabel, 'settings_toggle_lang');
 
   return keyboard;

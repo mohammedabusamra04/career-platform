@@ -370,7 +370,6 @@ export class FirstDigestService {
     digest: FirstDigestResult,
     options?: { singleDailyRunTime?: string; language?: 'ar' | 'en' },
   ): string {
-    const runTime = options?.singleDailyRunTime || '21:00';
     const lang = options?.language || 'ar';
 
     if (!digest.hasMatches || digest.jobs.length === 0) {
@@ -399,7 +398,6 @@ export class FirstDigestService {
         .map((item, idx) => {
           const safeTitle = escapeMarkdown(item.title);
           const safeCompany = escapeMarkdown(item.company);
-          const link = item.url ? `[Apply Here](${item.url})` : '';
           const remoteInfo =
             item.remoteScope === 'WORLDWIDE'
               ? '🌍 Worldwide Remote'
@@ -407,19 +405,24 @@ export class FirstDigestService {
                 ? `📍 ${item.country}`
                 : '🏢 Flexible';
 
-          return (
-            `*${idx + 1}\\. ${safeTitle}*\n` +
-            `🏢 *Company:* ${safeCompany}\n` +
-            `🌐 *Work Scope:* ${remoteInfo}\n` +
-            `${item.explanationEn}\n` +
-            `🔗 ${link}\n`
-          );
+          const titleLine = item.url
+            ? `*${idx + 1}.* 💻 [${safeTitle}](${item.url})`
+            : `*${idx + 1}.* 💻 *${safeTitle}*`;
+
+          return [
+            titleLine,
+            `🏢 *Company:* ${safeCompany} • ${remoteInfo}`,
+            item.explanationEn,
+            item.url ? `🔗 [Apply Here](${item.url})` : '',
+          ]
+            .filter(Boolean)
+            .join('\n');
         })
-        .join('\n────────────────────\n\n');
+        .join('\n\n────────────────────\n\n');
 
       const footer =
-        `\n────────────────────\n` +
-        `📬 **Note:** You will receive your daily updated digest once every evening at your leisure time (${runTime}).`;
+        `\n\n────────────────────\n` +
+        `📬 **Note:** You will receive your daily updated digest once every evening at your leisure time.`;
 
       return `${header}${jobCards}${footer}`;
     }
@@ -433,7 +436,6 @@ export class FirstDigestService {
       .map((item, idx) => {
         const safeTitle = escapeMarkdown(item.title);
         const safeCompany = escapeMarkdown(item.company);
-        const link = item.url ? `[التقديم من هنا](${item.url})` : '';
         const remoteInfo =
           item.remoteScope === 'WORLDWIDE'
             ? '🌍 عن بُعد (عالمياً)'
@@ -441,19 +443,24 @@ export class FirstDigestService {
               ? `📍 ${item.country}`
               : '🏢 مرن';
 
-        return (
-          `*${idx + 1}\\. ${safeTitle}*\n` +
-          `🏢 *الشركة:* ${safeCompany}\n` +
-          `🌐 *نطاق العمل:* ${remoteInfo}\n` +
-          `${item.explanationAr}\n` +
-          `🔗 ${link}\n`
-        );
+        const titleLine = item.url
+          ? `*${idx + 1}.* 💻 [${safeTitle}](${item.url})`
+          : `*${idx + 1}.* 💻 *${safeTitle}*`;
+
+        return [
+          titleLine,
+          `🏢 *الشركة:* ${safeCompany} • ${remoteInfo}`,
+          item.explanationAr,
+          item.url ? `🔗 [اضغط هنا للتقديم المباشر](${item.url})` : '',
+        ]
+          .filter(Boolean)
+          .join('\n');
       })
-      .join('\n────────────────────\n\n');
+      .join('\n\n────────────────────\n\n');
 
     const footer =
-      `\n────────────────────\n` +
-      `📬 **ملاحظة:** سنرسل لك ملخصك المحدث تلقائياً مرة واحدة يومياً في ساعة الراحة المسائية (${runTime}).`;
+      `\n\n────────────────────\n` +
+      `📬 **ملاحظة:** سنرسل لك ملخصك المحدث تلقائياً مرة واحدة يومياً في ساعة الراحة المسائية.`;
 
     return `${header}${jobCards}${footer}`;
   }

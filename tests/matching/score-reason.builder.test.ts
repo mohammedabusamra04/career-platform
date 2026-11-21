@@ -57,15 +57,15 @@ describe('TransparentExplanationBuilder (TASK-38.2)', () => {
       expect(reasons).toHaveLength(5);
       expect(reasons[0]).toContain('تطابق صريح مع تخصصك الأساسي');
       expect(reasons[0]).toContain('الواجهات الخلفية');
-      expect(reasons[0]).toContain('+50');
+      expect(reasons[0]).not.toContain('+50');
       expect(reasons[1]).toContain('مستوى الخبرة مفصّل على بروفايلك');
-      expect(reasons[1]).toContain('+15');
+      expect(reasons[1]).not.toContain('+15');
       expect(reasons[2]).toContain('شغل Remote عالمي');
-      expect(reasons[2]).toContain('+15');
+      expect(reasons[2]).not.toContain('+15');
       expect(reasons[3]).toContain('فرصة جديدة — لسه نازلة اليوم');
-      expect(reasons[3]).toContain('+10');
-      expect(reasons[4]).toContain('تقديم مباشر على ATS الشركة');
-      expect(reasons[4]).toContain('+5');
+      expect(reasons[3]).not.toContain('+10');
+      expect(reasons[4]).toContain('تقديم مباشر على موقع الشركة الرسمي');
+      expect(reasons[4]).not.toContain('+5');
     });
 
     it('generates appropriate explanation for secondary match and Arab market job', () => {
@@ -96,10 +96,10 @@ describe('TransparentExplanationBuilder (TASK-38.2)', () => {
       );
 
       expect(reasons).toHaveLength(4);
-      expect(reasons[0]).toContain('بتطابق تخصصك الثانوي (+30)');
-      expect(reasons[1]).toContain('مفتوحة لكل مستويات الخبرة (+10)');
-      expect(reasons[2]).toContain('فرصة موجهة للمنطقة العربية والشرق الأوسط (+15)');
-      expect(reasons[3]).toContain('نازلة قريب (منذ 2 يومين) (+8)');
+      expect(reasons[0]).toContain('بتطابق تخصصك الثانوي');
+      expect(reasons[1]).toContain('مفتوحة لكل مستويات الخبرة');
+      expect(reasons[2]).toContain('فرصة موجهة للمنطقة العربية والشرق الأوسط');
+      expect(reasons[3]).toContain('نازلة قريب (منذ 2 يومين)');
     });
 
     it('handles zero or minimal scores without error', () => {
@@ -187,11 +187,11 @@ describe('TransparentExplanationBuilder (TASK-38.2)', () => {
         'ar',
       );
 
-      expect(report).toContain('🎯 *نسبة تطابق الـ Stack: 85% (85/100)*');
+      expect(report).toContain('🎯 *تطابق قوي مع الـ Stack*');
       expect(report).toContain('• 🎯 تطابق صريح مع تخصصك الأساسي');
       expect(report).toContain('• 💻 مستوى الخبرة مفصّل على بروفايلك');
       expect(report).toContain('• 🌍 شغل Remote عالمي');
-      expect(report).toContain('• 📅 نازلة من 5 أيام (+5)');
+      expect(report).toContain('• 📅 نازلة من 5 أيام');
     });
 
     it('formats a short one-line summary', () => {
@@ -210,11 +210,11 @@ describe('TransparentExplanationBuilder (TASK-38.2)', () => {
       };
 
       const summaryAr = builder.formatShortSummary(result, {}, 'ar');
-      expect(summaryAr).toContain('[تطابق 90%]');
+      expect(summaryAr).toContain('[تطابق قوي]');
       expect(summaryAr).toContain('تطابق صريح مع تخصصك الأساسي');
 
       const summaryEn = builder.formatShortSummary(result, {}, 'en');
-      expect(summaryEn).toContain('[90% Fit]');
+      expect(summaryEn).toContain('[High Fit]');
       expect(summaryEn).toContain('Direct hit on your primary');
     });
 
