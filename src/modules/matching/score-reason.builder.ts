@@ -199,12 +199,12 @@ export class TransparentExplanationBuilder {
 
     const badge =
       result.score >= 80
-        ? language === 'en' ? '🎯 High Stack Fit' : '🎯 *تطابق قوي مع الـ Stack*'
+        ? language === 'en' ? '🎯 High Stack Fit' : '🎯 تطابق قوي مع الـ Stack'
         : result.score >= 65
-          ? language === 'en' ? '⚡ Solid Match' : '⚡ *تطابق جيد مع الـ Stack*'
-          : language === 'en' ? '🌱 Partial Match' : '🌱 *تطابق مبدئي مع الـ Stack*';
+          ? language === 'en' ? '⚡ Solid Match' : '⚡ تطابق جيد مع الـ Stack'
+          : language === 'en' ? '🌱 Partial Match' : '🌱 تطابق مبدئي مع الـ Stack';
 
-    const header = badge;
+    const header = `*${badge}*`;
     if (reasons.length === 0) {
       return header;
     }

@@ -187,7 +187,7 @@ describe('TransparentExplanationBuilder (TASK-38.2)', () => {
         'ar',
       );
 
-      expect(report).toContain('🎯 *تطابق قوي مع الـ Stack*');
+      expect(report).toContain('*🎯 تطابق قوي مع الـ Stack*');
       expect(report).toContain('• 🎯 تطابق صريح مع تخصصك الأساسي');
       expect(report).toContain('• 💻 مستوى الخبرة مفصّل على بروفايلك');
       expect(report).toContain('• 🌍 شغل Remote عالمي');

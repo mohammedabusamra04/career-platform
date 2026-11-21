@@ -30,6 +30,10 @@ export function buildSpecializationKeyboard(
 ): InlineKeyboard {
   const keyboard = new InlineKeyboard();
 
+  // Top row: Language Switcher prominently positioned at the top for immediate accessibility
+  const langSwitchLabel = lang === 'ar' ? '🌐 English' : '🌐 العربية';
+  keyboard.text(langSwitchLabel, 'toggle_language').row();
+
   // Add 10 specializations in 2 columns
   for (let i = 0; i < SPECIALIZATION_OPTIONS.length; i += 2) {
     const left = SPECIALIZATION_OPTIONS[i];
@@ -48,11 +52,8 @@ export function buildSpecializationKeyboard(
     keyboard.row();
   }
 
-  // Row for Language Switcher and Submit action
-  const langSwitchLabel = lang === 'ar' ? '🌐 English' : '🌐 العربية';
+  // Bottom row: Submit action
   const nextLabel = lang === 'ar' ? 'تأكيد الـ Stack ⬅️' : 'Confirm Stack ➡️';
-
-  keyboard.text(langSwitchLabel, 'toggle_language');
   keyboard.text(nextLabel, 'spec_submit');
 
   return keyboard;

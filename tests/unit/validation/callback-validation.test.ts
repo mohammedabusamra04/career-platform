@@ -39,6 +39,10 @@ describe('TASK-45.1: Telegram Callback Query Zod Boundary Validation', () => {
         'region_select:BOTH',
         'spec_toggle:backend',
         'spec_toggle:ai-machine-learning',
+        'settings_exp:JUNIOR',
+        'settings_exp:MID',
+        'settings_exp:SENIOR',
+        'settings_exp:ALL',
       ];
 
       for (const cb of validParameterized) {
