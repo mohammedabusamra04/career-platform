@@ -104,7 +104,7 @@ export class FirstDigestService {
     const startTime = Date.now();
 
     // 1. Fetch active jobs from PostgreSQL filtered by candidate specializations
-    const activeJobs = await this.db.job.findMany({
+    let activeJobs = await this.db.job.findMany({
       where: {
         status: 'ACTIVE',
         OR: [
@@ -133,6 +133,56 @@ export class FirstDigestService {
       },
       take: 250,
     });
+
+    // If shared pool currently has 0 active jobs for this stack (e.g. fresh environment or first subscriber),
+    // trigger an on-demand collection from configured sources so user receives matches immediately!
+    if (activeJobs.length === 0 && process.env.NODE_ENV !== 'test') {
+      try {
+        const { jobCollectionService } = await import('../../config/services.js');
+        if (jobCollectionService) {
+          logger.info(
+            `[FirstDigestService] Database pool has 0 active jobs for [${preferences.specializations.join(', ')}]. Triggering immediate on-demand collection...`,
+          );
+          await jobCollectionService.collectJobs({
+            jobTitle: preferences.specializations[0],
+            experienceLevel: (preferences.experienceLevel as any) || undefined,
+          });
+
+          // Re-query database after collection
+          activeJobs = await this.db.job.findMany({
+            where: {
+              status: 'ACTIVE',
+              OR: [
+                { primarySpecialization: { in: preferences.specializations } },
+                { secondarySpecialization: { in: preferences.specializations } },
+              ],
+            },
+            select: {
+              id: true,
+              title: true,
+              company: true,
+              source: true,
+              url: true,
+              applicationUrl: true,
+              location: true,
+              country: true,
+              remoteScope: true,
+              primarySpecialization: true,
+              secondarySpecialization: true,
+              experienceLevel: true,
+              workType: true,
+              publishedAt: true,
+            },
+            orderBy: {
+              publishedAt: 'desc',
+            },
+            take: 250,
+          });
+        }
+      } catch (err: unknown) {
+        logger.warn(`[FirstDigestService] On-demand fallback collection failed: ${(err as Error).message}`);
+      }
+    }
 
     if (activeJobs.length === 0) {
       return {

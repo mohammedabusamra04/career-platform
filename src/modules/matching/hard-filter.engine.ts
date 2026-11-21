@@ -59,16 +59,19 @@ export interface FilterableJob {
   location?: string | null;
   workType?: WorkType | string | null;
   source?: string | null;
+  experienceLevel?: string | null;
 }
 
 export interface CandidatePreferences {
   specializations: Specialization[];
   regionPreference: RegionPreference;
+  experienceLevel?: string | null;
 }
 
 export type ExclusionReason =
   | 'SPECIALIZATION_MISMATCH'
   | 'REGION_INCOMPATIBLE'
+  | 'EXPERIENCE_INCOMPATIBLE'
   | 'HISTORICAL_DELIVERY';
 
 export interface HardFilterEvaluation {
@@ -182,6 +185,69 @@ export class HardFilterEngine {
   }
 
   /**
+   * Evaluates experience level compatibility:
+   * - If candidate has no experience preference, or 'ALL' / 'ANY': allows all roles.
+   * - If candidate is 'JUNIOR': strictly excludes 'SENIOR', 'LEAD', 'PRINCIPAL', 'STAFF', 'DIRECTOR', 'VP', etc.
+   * - If candidate is 'SENIOR': strictly excludes 'JUNIOR', 'INTERN', 'ENTRY-LEVEL'.
+   * - If candidate is 'MID': excludes pure intern / trainee roles.
+   */
+  public isExperienceCompatible(
+    job: FilterableJob,
+    candidateLevel?: string | null,
+  ): boolean {
+    if (!candidateLevel) {
+      return true;
+    }
+
+    const normCandidate = candidateLevel.trim().toUpperCase();
+    if (normCandidate === 'ALL' || normCandidate === 'ANY') {
+      return true;
+    }
+
+    const jobTitle = (job.title || '').trim();
+    const jobLevel = (job.experienceLevel || '').trim().toUpperCase();
+
+    const isSeniorTitle =
+      /\b(?:senior|sr\.?|lead|staff|principal|architect|head\s+of|director|vp|chief|expert)\b|(?:سينيور|خبير|قائد|رئيس|معماري)/i.test(
+        jobTitle,
+      );
+
+    const isJuniorTitle =
+      /\b(?:junior|jr\.?|entry[- ]level|associate|intern|internship|trainee|apprentice|fresh\s+grad)\b|(?:مبتدئ|جونيور|متدرب|حديث\s+التخرج|مساعد)/i.test(
+        jobTitle,
+      );
+
+    if (normCandidate === 'JUNIOR') {
+      // Junior candidates MUST NOT receive senior/lead roles
+      if (jobLevel === 'SENIOR' || isSeniorTitle) {
+        return false;
+      }
+      return true;
+    }
+
+    if (normCandidate === 'SENIOR') {
+      // Senior candidates MUST NOT receive junior/intern roles
+      if (jobLevel === 'JUNIOR' || isJuniorTitle) {
+        return false;
+      }
+      return true;
+    }
+
+    if (normCandidate === 'MID') {
+      // Mid-level candidates: exclude pure intern/trainee
+      if (
+        /\b(?:intern|internship|trainee|apprentice)\b/i.test(jobTitle) ||
+        /\b(?:متدرب)\b/i.test(jobTitle)
+      ) {
+        return false;
+      }
+      return true;
+    }
+
+    return true;
+  }
+
+  /**
    * Filters candidate array by excluding previously delivered jobs in O(1) lookup time.
    * (TASK-37.2: Historical Delivery Exclusion)
    */
@@ -227,6 +293,14 @@ export class HardFilterEngine {
       };
     }
 
+    if (!this.isExperienceCompatible(job, preferences.experienceLevel)) {
+      return {
+        passed: false,
+        exclusionReason: 'EXPERIENCE_INCOMPATIBLE',
+        details: `Job with level "${job.experienceLevel || 'N/A'}" and title "${job.title || 'N/A'}" is incompatible with candidate experience level "${preferences.experienceLevel}".`,
+      };
+    }
+
     return { passed: true };
   }
 
@@ -247,7 +321,8 @@ export class HardFilterEngine {
 
       return (
         this.isSpecializationCompatible(job, userSpecsSet) &&
-        this.isRegionCompatible(job, preferences.regionPreference)
+        this.isRegionCompatible(job, preferences.regionPreference) &&
+        this.isExperienceCompatible(job, preferences.experienceLevel)
       );
     });
   }

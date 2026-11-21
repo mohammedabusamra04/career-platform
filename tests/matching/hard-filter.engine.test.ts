@@ -245,6 +245,70 @@ describe('TASK-37.1: Specialization & Region Incompatibility Exclusion (#109)', 
     });
   });
 
+  describe('Experience Level Filtering', () => {
+    it('strictly rejects senior/lead jobs for junior candidates', () => {
+      const seniorJob: FilterableJob = {
+        title: 'Senior Backend Engineer',
+        primarySpecialization: Specialization.BACKEND,
+        experienceLevel: 'SENIOR',
+      };
+      const leadJob: FilterableJob = {
+        title: 'Lead Architect',
+        primarySpecialization: Specialization.BACKEND,
+      };
+      const juniorPreferences: CandidatePreferences = {
+        specializations: [Specialization.BACKEND],
+        regionPreference: RegionPreference.BOTH,
+        experienceLevel: 'JUNIOR',
+      };
+
+      const res1 = engine.evaluate(seniorJob, juniorPreferences);
+      expect(res1.passed).toBe(false);
+      expect(res1.exclusionReason).toBe('EXPERIENCE_INCOMPATIBLE');
+
+      const res2 = engine.evaluate(leadJob, juniorPreferences);
+      expect(res2.passed).toBe(false);
+      expect(res2.exclusionReason).toBe('EXPERIENCE_INCOMPATIBLE');
+    });
+
+    it('accepts junior or open/unspecified level jobs for junior candidates', () => {
+      const juniorJob: FilterableJob = {
+        title: 'Junior Backend Developer',
+        primarySpecialization: Specialization.BACKEND,
+        experienceLevel: 'JUNIOR',
+      };
+      const openJob: FilterableJob = {
+        title: 'Backend Developer',
+        primarySpecialization: Specialization.BACKEND,
+      };
+      const juniorPreferences: CandidatePreferences = {
+        specializations: [Specialization.BACKEND],
+        regionPreference: RegionPreference.BOTH,
+        experienceLevel: 'JUNIOR',
+      };
+
+      expect(engine.evaluate(juniorJob, juniorPreferences).passed).toBe(true);
+      expect(engine.evaluate(openJob, juniorPreferences).passed).toBe(true);
+    });
+
+    it('strictly rejects junior/intern jobs for senior candidates', () => {
+      const internJob: FilterableJob = {
+        title: 'Backend Engineering Intern',
+        primarySpecialization: Specialization.BACKEND,
+        experienceLevel: 'JUNIOR',
+      };
+      const seniorPreferences: CandidatePreferences = {
+        specializations: [Specialization.BACKEND],
+        regionPreference: RegionPreference.BOTH,
+        experienceLevel: 'SENIOR',
+      };
+
+      const res = engine.evaluate(internJob, seniorPreferences);
+      expect(res.passed).toBe(false);
+      expect(res.exclusionReason).toBe('EXPERIENCE_INCOMPATIBLE');
+    });
+  });
+
   describe('Batch Filtering Method: filter()', () => {
     it('filters candidates array in O(1) checks per item discarding mismatches', () => {
       const jobs: FilterableJob[] = [

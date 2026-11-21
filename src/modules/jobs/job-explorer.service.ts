@@ -245,19 +245,29 @@ export class JobExplorerService {
       ],
     });
 
-    // 3. Filter jobs by regional compatibility
+    // 3. Filter jobs by regional and experience level compatibility
     const regionallyFiltered = rawJobs.filter((job) =>
       hardFilterEngine.isRegionCompatible(
         {
           id: job.id,
+          title: job.title,
           primarySpecialization: (job.primarySpecialization as Specialization) ?? null,
           secondarySpecialization: (job.secondarySpecialization as Specialization) ?? null,
           remoteScope: job.remoteScope,
           country: job.country,
           location: job.location,
           workType: job.workType,
+          experienceLevel: job.experienceLevel,
         },
         regionPref,
+      ) &&
+      hardFilterEngine.isExperienceCompatible(
+        {
+          id: job.id,
+          title: job.title,
+          experienceLevel: job.experienceLevel,
+        },
+        userPref.experienceLevel,
       ),
     );
 

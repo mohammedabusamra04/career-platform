@@ -61,6 +61,7 @@ export class EquivalenceMatchingService {
     const filteredJobs = hardFilterEngine.filter(activeJobs, {
       specializations: group.specializations,
       regionPreference: group.regionPreference,
+      experienceLevel: group.experienceLevel,
     });
 
     // 2. O(J) Deterministic Bounded Scoring

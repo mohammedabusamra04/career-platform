@@ -107,10 +107,15 @@ export function registerConfirmationHandler(
         });
       }
 
-      // 2. Transactionally save preferences
+      // 2. Transactionally save preferences (preserving any configured experience level)
+      const existingPrefs = await prefRepo.findByUserId(user.id);
+      const experienceLevel =
+        existingPrefs?.experienceLevel || ctx.session?.preferences?.experienceLevel || undefined;
+
       await prefRepo.savePreferences(user.id, {
         specializations,
         regionPreference,
+        experienceLevel: experienceLevel as any,
       });
 
       // 3. Update session step
@@ -159,6 +164,7 @@ export function registerConfirmationHandler(
         const digest = await digestService.generateAndDeliverFirstDigest(user.id, {
           specializations,
           regionPreference,
+          experienceLevel,
         });
 
         const digestCard = digestService.formatDigestMessage(digest, {
