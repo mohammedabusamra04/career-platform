@@ -24,8 +24,9 @@ interface RemotiveApiResponse {
 export class RemotiveJobSource implements JobSource {
   public readonly type = JobSourceType.REMOTIVE;
 
-  async fetchJobs(query: JobSearchQuery): Promise<Job[]> {
-    const searchTerm = query.jobTitle.trim();
+  async fetchJobs(query?: JobSearchQuery): Promise<Job[]> {
+    const effectiveQuery: JobSearchQuery = query ?? { jobTitle: 'Software' };
+    const searchTerm = effectiveQuery.jobTitle.trim();
     const url = `https://remotive.com/api/remote-jobs?search=${encodeURIComponent(searchTerm)}`;
 
     try {
@@ -47,7 +48,7 @@ export class RemotiveJobSource implements JobSource {
         return [];
       }
 
-      return data.jobs.map((item) => this.mapToJob(item, query));
+      return data.jobs.map((item) => this.mapToJob(item, effectiveQuery));
     } catch (err: unknown) {
       logger.warn(`[RemotiveJobSource] Fetch error: ${(err as Error).message}`);
       return [];

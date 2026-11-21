@@ -37,12 +37,13 @@ export class AdzunaJobSource implements JobSource {
     private readonly country = 'gb',
   ) {}
 
-  async fetchJobs(query: JobSearchQuery): Promise<Job[]> {
+  async fetchJobs(query?: JobSearchQuery): Promise<Job[]> {
     if (!this.appId || !this.appKey) {
       return [];
     }
 
-    const searchTerm = query.jobTitle.trim();
+    const effectiveQuery: JobSearchQuery = query ?? { jobTitle: 'Software Engineer' };
+    const searchTerm = effectiveQuery.jobTitle.trim();
     const url = `https://api.adzuna.com/v1/api/jobs/${this.country}/search/1?app_id=${encodeURIComponent(
       this.appId,
     )}&app_key=${encodeURIComponent(
@@ -68,7 +69,7 @@ export class AdzunaJobSource implements JobSource {
         return [];
       }
 
-      return data.results.map((item) => this.mapToJob(item, query));
+      return data.results.map((item) => this.mapToJob(item, effectiveQuery));
     } catch (err: unknown) {
       logger.warn(`[AdzunaJobSource] Fetch error: ${(err as Error).message}`);
       return [];

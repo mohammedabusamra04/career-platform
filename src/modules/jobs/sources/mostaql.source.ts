@@ -13,8 +13,9 @@ import logger from '../../../shared/utils/logger.js';
 export class MostaqlJobSource implements JobSource {
   public readonly type = JobSourceType.MOSTAQEL;
 
-  async fetchJobs(query: JobSearchQuery): Promise<Job[]> {
-    const searchKeyword = query.jobTitle.trim();
+  async fetchJobs(query?: JobSearchQuery): Promise<Job[]> {
+    const effectiveQuery: JobSearchQuery = query ?? { jobTitle: 'برمجة' };
+    const searchKeyword = effectiveQuery.jobTitle.trim();
     const url = `https://mostaql.com/projects?filter[query]=${encodeURIComponent(searchKeyword)}`;
 
     try {
@@ -32,7 +33,7 @@ export class MostaqlJobSource implements JobSource {
       }
 
       const html = await response.text();
-      return this.parseProjects(html, query);
+      return this.parseProjects(html, effectiveQuery);
     } catch (err: unknown) {
       logger.warn(`[MostaqlJobSource] Fetch error: ${(err as Error).message}`);
       return [];

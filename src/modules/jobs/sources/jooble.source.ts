@@ -205,11 +205,12 @@ export class JoobleJobSource implements JobSource {
     this.concurrency = options.concurrency ?? DEFAULT_CONCURRENCY;
   }
 
-  async fetchJobs(query: JobSearchQuery): Promise<Job[]> {
+  async fetchJobs(query?: JobSearchQuery): Promise<Job[]> {
     if (!this.apiKey) {
       return [];
     }
 
+    const effectiveQuery: JobSearchQuery = query ?? { jobTitle: 'Developer', location: 'Remote' };
     const url = `https://jooble.org/api/${this.apiKey}`;
     const now = Date.now();
     const dateFrom = new Date(now - this.maxAgeDays * 24 * 60 * 60 * 1000)
@@ -217,8 +218,8 @@ export class JoobleJobSource implements JobSource {
       .split('T')[0];
 
     const payload: Record<string, unknown> = {
-      keywords: query.jobTitle.trim(),
-      location: query.location || 'Remote',
+      keywords: effectiveQuery.jobTitle.trim(),
+      location: effectiveQuery.location || 'Remote',
       page: 1,
     };
 
@@ -264,7 +265,7 @@ export class JoobleJobSource implements JobSource {
         return true;
       });
 
-      const candidateJobs = freshItems.map((item) => this.mapToJob(item, query));
+      const candidateJobs = freshItems.map((item) => this.mapToJob(item, effectiveQuery));
 
       // 2. Active Link & Soft-404 Verification with bounded concurrency
       if (!this.verifyLinks || candidateJobs.length === 0) {

@@ -12,8 +12,9 @@ import logger from '../../../shared/utils/logger.js';
 export class TanqeebJobSource implements JobSource {
   public readonly type = JobSourceType.TANQEEB;
 
-  async fetchJobs(query: JobSearchQuery): Promise<Job[]> {
-    const searchTerm = query.jobTitle.trim();
+  async fetchJobs(query?: JobSearchQuery): Promise<Job[]> {
+    const effectiveQuery: JobSearchQuery = query ?? { jobTitle: 'Developer' };
+    const searchTerm = effectiveQuery.jobTitle.trim();
     const url = `https://www.tanqeeb.com/en/jobs/search?keywords=${encodeURIComponent(searchTerm)}`;
 
     try {
@@ -32,7 +33,7 @@ export class TanqeebJobSource implements JobSource {
       }
 
       const html = await response.text();
-      return this.parseJobs(html, query);
+      return this.parseJobs(html, effectiveQuery);
     } catch (err: unknown) {
       logger.warn(`[TanqeebJobSource] Fetch error: ${(err as Error).message}`);
       return [];

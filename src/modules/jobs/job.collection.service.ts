@@ -246,10 +246,61 @@ export class JobCollectionService {
 
   /**
    * Backward-compatible collection query method.
+   * Fetches, validates, and automatically persists jobs to the database pool
+   * so on-demand /jobs queries immediately find them.
    */
   public async collectJobs(query?: JobSearchQuery): Promise<Job[]> {
     const jobs = await this.sourceManager.fetchJobs(query);
-    return jobs.filter(validateJob).filter((job) => this.isRecentJob(job));
+    const validJobs = jobs.filter(validateJob).filter((job) => this.isRecentJob(job));
+
+    if (this.jobRepository && validJobs.length > 0) {
+      const fpService = this.fingerprintService ?? new FingerprintService();
+      for (const job of validJobs) {
+        try {
+          const deduplicationKey = fpService.generate(job);
+          const semanticKey = fpService.generateSemanticFingerprint(job);
+          const classification = this.classifier.classify(job);
+
+          if (classification.isExcluded || !classification.primarySpecialization) {
+            continue;
+          }
+
+          const input: NormalizedJobInput = {
+            deduplicationKey,
+            semanticKey,
+            title: job.title,
+            company: job.company,
+            source: job.source,
+            url: job.url,
+            applicationUrl: job.applicationUrl || null,
+            location: job.location || null,
+            country: job.country || null,
+            remoteScope: classification.remoteScope,
+            primarySpecialization: classification.primarySpecialization,
+            secondarySpecialization: classification.secondarySpecialization,
+            experienceLevel: classification.experienceLevel,
+            workType: classification.workType,
+            description: job.description || '',
+            skills: job.skills || [],
+            salaryMin: job.salaryMin ?? null,
+            salaryMax: job.salaryMax ?? null,
+            currency: job.currency ?? null,
+            publishedAt: job.publishedAt || job.publicationDate || new Date(),
+            scrapedAt: job.scrapedAt || new Date(),
+            lastSeenAt: new Date(),
+            status: 'ACTIVE',
+          };
+
+          await this.jobRepository.upsertJob(input);
+        } catch (err: unknown) {
+          logger.debug(
+            `[JobCollectionService] Failed to upsert job in collectJobs: ${(err as Error).message}`,
+          );
+        }
+      }
+    }
+
+    return validJobs;
   }
 
   public getLastStats(): CollectionStats | null {

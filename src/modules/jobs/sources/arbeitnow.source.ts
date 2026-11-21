@@ -28,7 +28,8 @@ export class ArbeitnowJobSource implements JobSource {
   public readonly type = JobSourceType.ARBEITNOW;
   private readonly apiUrl = 'https://www.arbeitnow.com/api/job-board-api';
 
-  async fetchJobs(query: JobSearchQuery): Promise<Job[]> {
+  async fetchJobs(query?: JobSearchQuery): Promise<Job[]> {
+    const effectiveQuery: JobSearchQuery = query ?? { jobTitle: 'Developer' };
     try {
       const response = await fetch(this.apiUrl, {
         headers: {
@@ -48,9 +49,9 @@ export class ArbeitnowJobSource implements JobSource {
         return [];
       }
 
-      const keywords = [query.jobTitle, ...(query.skills || [])]
+      const keywords = [effectiveQuery.jobTitle, ...(effectiveQuery.skills || [])]
         .filter(Boolean)
-        .map((k) => k.toLowerCase().trim());
+        .map((k) => (k as string).toLowerCase().trim());
 
       const filtered = data.data.filter((item) => {
         if (!item.title || !item.url) {
@@ -67,7 +68,7 @@ export class ArbeitnowJobSource implements JobSource {
         return keywords.some((k) => combined.includes(k));
       });
 
-      return filtered.slice(0, 20).map((item) => this.mapToJob(item, query));
+      return filtered.slice(0, 20).map((item) => this.mapToJob(item, effectiveQuery));
     } catch (err: unknown) {
       logger.warn(`[ArbeitnowJobSource] Fetch error: ${(err as Error).message}`);
       return [];

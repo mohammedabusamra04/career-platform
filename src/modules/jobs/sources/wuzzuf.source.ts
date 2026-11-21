@@ -13,8 +13,10 @@ import logger from '../../../shared/utils/logger.js';
 export class WuzzufJobSource implements JobSource {
   public readonly type = JobSourceType.WUZZUF;
 
-  async fetchJobs(query: JobSearchQuery): Promise<Job[]> {
-    const url = `https://wuzzuf.net/search/jobs/?q=${encodeURIComponent(query.jobTitle.trim())}`;
+  async fetchJobs(query?: JobSearchQuery): Promise<Job[]> {
+    const effectiveQuery: JobSearchQuery = query ?? { jobTitle: 'Developer' };
+    const searchKeyword = effectiveQuery.jobTitle.trim();
+    const url = `https://wuzzuf.net/search/jobs/?q=${encodeURIComponent(searchKeyword)}`;
 
     try {
       const response = await fetch(url, {
@@ -31,7 +33,7 @@ export class WuzzufJobSource implements JobSource {
       }
 
       const html = await response.text();
-      return this.parseJobs(html, query);
+      return this.parseJobs(html, effectiveQuery);
     } catch (err: unknown) {
       logger.warn(`[WuzzufJobSource] Fetch error: ${(err as Error).message}`);
       return [];
