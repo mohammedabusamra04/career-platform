@@ -208,13 +208,13 @@ describe('TASK-29.2: Consecutive Failure Detection & Source Health Telemetry (#9
       jobSourceManager.getHealthMonitor().reset();
     });
 
-    it('reports status: ok and all sources HEALTHY when system operates normally', () => {
+    it('reports status: ok and all sources HEALTHY when system operates normally', async () => {
       const healthHandler = getHealthHandler();
       const mockRes = {
         success: vi.fn(),
       };
 
-      healthHandler({} as Request, mockRes as unknown as Response);
+      await healthHandler({} as Request, mockRes as unknown as Response);
 
       expect(mockRes.success).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -231,7 +231,7 @@ describe('TASK-29.2: Consecutive Failure Detection & Source Health Telemetry (#9
       );
     });
 
-    it('reports status: DEGRADED on GET /health when a source has 2 consecutive zero-yield runs', () => {
+    it('reports status: DEGRADED on GET /health when a source has 2 consecutive zero-yield runs', async () => {
       const monitor = jobSourceManager.getHealthMonitor();
       monitor.recordRun(JobSourceType.BAEED, { success: true, jobCount: 0 });
       monitor.recordRun(JobSourceType.BAEED, { success: true, jobCount: 0 });
@@ -241,7 +241,7 @@ describe('TASK-29.2: Consecutive Failure Detection & Source Health Telemetry (#9
         success: vi.fn(),
       };
 
-      healthHandler({} as Request, mockRes as unknown as Response);
+      await healthHandler({} as Request, mockRes as unknown as Response);
 
       expect(mockRes.success).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -258,7 +258,7 @@ describe('TASK-29.2: Consecutive Failure Detection & Source Health Telemetry (#9
       );
     });
 
-    it('reports status: UNHEALTHY on GET /health when a source experiences >= 2 consecutive failures', () => {
+    it('reports status: UNHEALTHY on GET /health when a source experiences >= 2 consecutive failures', async () => {
       const monitor = jobSourceManager.getHealthMonitor();
       monitor.recordRun(JobSourceType.TANQEEB, { success: false, jobCount: 0, error: 'HTTP 500' });
       monitor.recordRun(JobSourceType.TANQEEB, { success: false, jobCount: 0, error: 'HTTP 500' });
@@ -268,7 +268,7 @@ describe('TASK-29.2: Consecutive Failure Detection & Source Health Telemetry (#9
         success: vi.fn(),
       };
 
-      healthHandler({} as Request, mockRes as unknown as Response);
+      await healthHandler({} as Request, mockRes as unknown as Response);
 
       expect(mockRes.success).toHaveBeenCalledWith(
         expect.objectContaining({

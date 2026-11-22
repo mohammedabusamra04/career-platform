@@ -30,12 +30,13 @@ export class LinkedinJobSource implements JobSource {
 
   constructor(private readonly apiKey: string) {}
 
-  async fetchJobs(query: JobSearchQuery): Promise<Job[]> {
+  async fetchJobs(query?: JobSearchQuery): Promise<Job[]> {
     if (!this.apiKey) {
       return [];
     }
 
-    const searchQuery = [query.jobTitle, query.location || 'Remote']
+    const effectiveQuery: JobSearchQuery = query ?? { jobTitle: 'Developer', location: 'Remote' };
+    const searchQuery = [effectiveQuery.jobTitle, effectiveQuery.location || 'Remote']
       .filter(Boolean)
       .join(' in ');
 
@@ -65,7 +66,7 @@ export class LinkedinJobSource implements JobSource {
           ? data.data.jobs
           : [];
 
-      return jobsList.map((item) => this.mapToJob(item, query));
+      return jobsList.map((item) => this.mapToJob(item, effectiveQuery));
     } catch (err: unknown) {
       logger.warn(`[LinkedInJobSource] Fetch error: ${(err as Error).message}`);
       return [];

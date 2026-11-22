@@ -28,13 +28,14 @@ export class FirecrawlLinkedInSource implements JobSource {
 
   constructor(private readonly apiKey: string) {}
 
-  async fetchJobs(query: JobSearchQuery): Promise<Job[]> {
+  async fetchJobs(query?: JobSearchQuery): Promise<Job[]> {
     if (!this.apiKey) {
       return [];
     }
 
-    const searchTerm = encodeURIComponent(query.jobTitle.trim());
-    const locationTerm = encodeURIComponent(query.location || 'Worldwide');
+    const effectiveQuery: JobSearchQuery = query ?? { jobTitle: 'Developer', location: 'Remote' };
+    const searchTerm = encodeURIComponent(effectiveQuery.jobTitle.trim());
+    const locationTerm = encodeURIComponent(effectiveQuery.location || 'Worldwide');
     const linkedinUrl = `https://www.linkedin.com/jobs/search?keywords=${searchTerm}&location=${locationTerm}&f_TPR=r86400&position=1&pageNum=0`;
 
     try {
@@ -86,7 +87,7 @@ export class FirecrawlLinkedInSource implements JobSource {
       const extractedJobs = result.data.extract.jobs;
       return extractedJobs
         .filter((item) => Boolean(item.title && item.company))
-        .map((item) => this.mapToJob(item, query));
+        .map((item) => this.mapToJob(item, effectiveQuery));
     } catch (err: unknown) {
       logger.warn(`[FirecrawlLinkedInSource] Fetch error: ${(err as Error).message}`);
       return [];

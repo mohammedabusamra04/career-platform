@@ -14,8 +14,9 @@ import logger from '../../../shared/utils/logger.js';
 export class ForasnaJobSource implements JobSource {
   public readonly type = JobSourceType.FORASNA;
 
-  async fetchJobs(query: JobSearchQuery): Promise<Job[]> {
-    const url = `https://forasna.com/jobs/search?q=${encodeURIComponent(query.jobTitle.trim())}`;
+  async fetchJobs(query?: JobSearchQuery): Promise<Job[]> {
+    const effectiveQuery: JobSearchQuery = query ?? { jobTitle: 'Developer' };
+    const url = `https://forasna.com/jobs/search?q=${encodeURIComponent(effectiveQuery.jobTitle.trim())}`;
 
     try {
       const response = await fetch(url, {
@@ -32,7 +33,7 @@ export class ForasnaJobSource implements JobSource {
       }
 
       const html = await response.text();
-      return this.parseJobs(html, query);
+      return this.parseJobs(html, effectiveQuery);
     } catch (err: unknown) {
       logger.warn(`[ForasnaJobSource] Fetch error: ${(err as Error).message}`);
       return [];

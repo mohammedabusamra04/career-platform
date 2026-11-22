@@ -13,8 +13,9 @@ import logger from '../../../shared/utils/logger.js';
 export class BaytJobSource implements JobSource {
   public readonly type = JobSourceType.BAYT;
 
-  async fetchJobs(query: JobSearchQuery): Promise<Job[]> {
-    const url = `https://www.bayt.com/en/jobs/?q=${encodeURIComponent(query.jobTitle.trim())}`;
+  async fetchJobs(query?: JobSearchQuery): Promise<Job[]> {
+    const effectiveQuery: JobSearchQuery = query ?? { jobTitle: 'Developer' };
+    const url = `https://www.bayt.com/en/jobs/?q=${encodeURIComponent(effectiveQuery.jobTitle.trim())}`;
 
     try {
       const response = await fetch(url, {
@@ -32,7 +33,7 @@ export class BaytJobSource implements JobSource {
       }
 
       const html = await response.text();
-      return this.parseJobs(html, query);
+      return this.parseJobs(html, effectiveQuery);
     } catch (err: unknown) {
       logger.warn(`[BaytJobSource] Fetch error: ${(err as Error).message}`);
       return [];
