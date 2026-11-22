@@ -1,6 +1,9 @@
 import type { Bot } from 'grammy';
 import type { BotContext } from '../context.js';
-import { RegionPreference } from '../../modules/preferences/preference.taxonomy.js';
+import {
+  RegionPreference,
+  Specialization,
+} from '../../modules/preferences/preference.taxonomy.js';
 import { buildRegionKeyboard } from '../keyboards/region.keyboard.js';
 import { buildConfirmationKeyboard } from '../keyboards/confirmation.keyboard.js';
 import { formatSummaryCard } from './confirmation.handler.js';
@@ -100,6 +103,22 @@ export function registerRegionHandler(bot: Bot<BotContext>): void {
       ctx.session.selectedRegion = RegionPreference.BOTH;
     }
 
+    // If session lost specializations (e.g. after deployment restart), restore from DB or fallback safely
+    if ((!ctx.session.selectedSpecializations || ctx.session.selectedSpecializations.length === 0) && ctx.from?.id) {
+      try {
+        const { prisma } = await import('../../shared/database/prisma.service.js');
+        const user = await prisma.user.findUnique({
+          where: { telegramId: BigInt(ctx.from.id) },
+          include: { preference: true },
+        });
+        if (user?.preference?.specializations && user.preference.specializations.length > 0) {
+          ctx.session.selectedSpecializations = user.preference.specializations as Specialization[];
+        }
+      } catch (err: unknown) {
+        logger.info(`[RegionHandler] preference fallback lookup: ${(err as Error).message}`);
+      }
+    }
+
     ctx.session.step = 'confirmation';
     const lang = ctx.session.language || 'ar';
     const specs = ctx.session.selectedSpecializations || [];
@@ -109,6 +128,18 @@ export function registerRegionHandler(bot: Bot<BotContext>): void {
 
     const summaryText = formatSummaryCard(specs, region, lang);
     const confirmationKeyboard = buildConfirmationKeyboard(lang);
+
+    if (typeof ctx.editMessageText === 'function') {
+      try {
+        await ctx.editMessageText(summaryText, {
+          parse_mode: 'Markdown',
+          reply_markup: confirmationKeyboard,
+        });
+        return;
+      } catch (err: unknown) {
+        logger.info(`[RegionHandler] region_submit editMessageText fallback: ${(err as Error).message}`);
+      }
+    }
 
     await ctx.reply(summaryText, {
       parse_mode: 'Markdown',
