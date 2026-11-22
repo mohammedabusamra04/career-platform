@@ -22,6 +22,7 @@ import {
   type Specialization,
 } from '../preferences/preference.taxonomy.js';
 import { JobSourceRegistry } from './sources/job-source.registry.js';
+import { negativeExclusionMatcher } from './classifier/negative-exclusion.matcher.js';
 import logger from '../../shared/utils/logger.js';
 
 export type JobSortOrder = 'BEST_MATCH' | 'LATEST';
@@ -249,9 +250,10 @@ export class JobExplorerService {
       ],
     });
 
-    // 3. Filter jobs by regional and experience level compatibility (excluding navigation URLs)
+    // 3. Filter jobs by regional and experience level compatibility (excluding navigation URLs and non-technical roles)
     const regionallyFiltered = rawJobs.filter((job) =>
       !/job_list|with-salaries|search\?|create_job|create_widget/i.test(job.url) &&
+      !negativeExclusionMatcher.evaluate(job.title).isExcluded &&
       hardFilterEngine.isRegionCompatible(
         {
           id: job.id,
@@ -481,7 +483,7 @@ export class JobExplorerService {
         const remoteLine = formatRemoteScope(job.remoteScope, job.country, job.location, lang);
         const experienceLine = formatExperienceLevel(job.experienceLevel, lang);
         const matchToneLine = formatMatchTone(job.score ?? 70, lang);
-        const platformBadge = JobSourceRegistry.formatSourceBadge(job.source, lang);
+        const platformBadge = JobSourceRegistry.formatSourceBadge(job.source, lang, targetUrl || job.url);
         const platformLine = `🌐 ${escapeTelegramMarkdown(platformBadge)}`;
 
         const lines = [

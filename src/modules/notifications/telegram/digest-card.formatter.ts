@@ -248,7 +248,7 @@ export function formatJobCard(
   const remoteLine = formatRemoteScope(job.remoteScope, job.country, job.location, lang);
   const experienceLine = formatExperienceLevel(job.experienceLevel, lang);
   const matchToneLine = formatMatchTone(job.score ?? 70, lang);
-  const platformBadge = JobSourceRegistry.formatSourceBadge(job.source, lang);
+  const platformBadge = JobSourceRegistry.formatSourceBadge(job.source, lang, job.applicationUrl || job.url);
   const platformLine = `🌐 ${escapeTelegramMarkdown(platformBadge)}`;
 
   const lines = [

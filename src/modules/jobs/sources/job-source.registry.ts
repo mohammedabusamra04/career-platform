@@ -39,14 +39,37 @@ export class JobSourceRegistry {
   /**
    * Resolves the localized display name for any job source without hardcoded switch/if-else.
    * Completely open for extension: any new class simply declares its displayName.
+   * Also verifies URL authenticity: if marked as linkedin but url is from a third-party aggregator
+   * (e.g. career.io, greenhouse.io), it resolves the true platform domain rather than falsely claiming LinkedIn.
    */
-  static formatSourceBadge(sourceType?: string | null, lang: 'ar' | 'en' = 'ar'): string {
+  static formatSourceBadge(
+    sourceType?: string | null,
+    lang: 'ar' | 'en' = 'ar',
+    jobUrl?: string | null,
+  ): string {
     const isAr = lang === 'ar';
     if (!sourceType) {
       return isAr ? 'المنصة: تقديم مباشر' : 'Platform: Direct';
     }
 
     const key = sourceType.toLowerCase();
+
+    // Verify authenticity for LinkedIn: if url is not a linkedin.com link, extract actual platform
+    if (key === 'linkedin' && jobUrl) {
+      try {
+        const parsed = new URL(jobUrl);
+        const host = parsed.hostname.toLowerCase().replace(/^www\./, '');
+        if (!host.includes('linkedin.com')) {
+          const parts = host.split('.');
+          const domainName = parts.length >= 2 ? parts[parts.length - 2] : parts[0];
+          const capitalized = domainName.charAt(0).toUpperCase() + domainName.slice(1);
+          return isAr ? `المنصة: ${capitalized}` : `Platform: ${capitalized}`;
+        }
+      } catch {
+        // Keep fallback
+      }
+    }
+
     const meta = this.metadataRegistry.get(key);
     if (meta) {
       const name = isAr ? meta.ar : meta.en;
