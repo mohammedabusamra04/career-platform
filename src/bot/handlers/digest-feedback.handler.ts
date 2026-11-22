@@ -39,6 +39,40 @@ export function registerDigestFeedbackHandler(
   const userRepo = deps?.userRepository ?? defaultUserRepository;
   const sentJobRepo = deps?.sentJobRepository ?? defaultSentJobRepository;
 
+  // 1. Star Rating Callback Handler: feedback:rate:([1-5])
+  bot.callbackQuery(/^feedback:rate:([1-5])$/, async (ctx) => {
+    const stars = parseInt(ctx.match?.[1] || '5', 10);
+    const lang: SupportedLanguage = ctx.session?.language || 'ar';
+    const isAr = lang === 'ar';
+
+    const toastMessage = isAr
+      ? `شكراً لتقييمك (${stars}/5 نجوم)! رح نضبطلك الفرص للجايات ⭐️`
+      : `Thanks for rating (${stars}/5 stars)! Tuning your feed ⭐️`;
+
+    try {
+      await ctx.answerCallbackQuery({
+        text: toastMessage,
+      });
+    } catch (err: unknown) {
+      logger.warn(`[DigestFeedbackHandler] Failed answering rate callback: ${(err as Error).message}`);
+    }
+
+    const telegramId = ctx.from?.id;
+    if (!telegramId) {
+      return;
+    }
+
+    try {
+      const user = await userRepo.findByTelegramId(telegramId);
+      if (user) {
+        logger.info(`[DigestFeedbackHandler] User ${user.id} submitted a ${stars}-star rating.`);
+      }
+    } catch (err: unknown) {
+      logger.error(`[DigestFeedbackHandler] Error processing star rating: ${(err as Error).message}`);
+    }
+  });
+
+  // 2. Individual Job Feedback (LIKE / DISLIKE) Callback Handler
   bot.callbackQuery(/^feedback:(like|dislike):([a-zA-Z0-9_-]+)$/, async (ctx) => {
     const rawAction = ctx.match?.[1];
     const jobId = ctx.match?.[2];

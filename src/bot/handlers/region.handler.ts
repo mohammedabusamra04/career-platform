@@ -16,14 +16,16 @@ export function getRegionPromptMessage(lang: SupportedLanguage): string {
   if (lang === 'en') {
     return (
       `📍 *Step 2:* Pick your target market scope:\n\n` +
-      `Choose whether you want roles from the Arab/MENA region, global Remote gigs, or both.\n\n` +
+      `Choose whether you want roles from the Arab/MENA region, global Remote gigs, or both.\n` +
+      `*(Tap your choice to mark it with a green checkmark ✅, then tap Next)*\n\n` +
       `💡 *Note:* If you'd like to set your experience level (Junior, Mid, Senior), you can do so anytime from /settings.`
     );
   }
 
   return (
     `📍 *الخطوة 2:* حدد نطاق السوق اللي بتستهدفه:\n\n` +
-    `اختار إذا حابب توصلك فرص السوق العربي، أو فرص الـ Remote العالمية، أو الاثنين مع بعض.\n\n` +
+    `اختار إذا حابب توصلك فرص السوق العربي، أو فرص الـ Remote العالمية، أو الاثنين مع بعض.\n` +
+    `*(اضغط على خيارك لتحديده بعلامة الصح الأخضر ✅ ثم اضغط التالي)*\n\n` +
     `💡 *ملاحظة:* إذا حابب تحدد مستوى خبرتك (مبتدئ، متوسط، خبير) بتقدر تضبطها بأي وقت من /settings.`
   );
 }

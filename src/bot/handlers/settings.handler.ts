@@ -331,8 +331,8 @@ export function registerSettingsHandler(
     }
 
     const prompt = isAr
-      ? '📊 *تحديد مستوى الخبرة*\n\nاختار مستواك المهني لتصفية واستلام الوظائف الأنسب لخبرتك:'
-      : '📊 *Set Experience Level*\n\nPick your seniority level to match relevant opportunities:';
+      ? '📊 *تحديد مستوى الخبرة*\n\nاختار مستواك المهني لتصفية واستلام الوظائف الأنسب لخبرتك:\n*(اضغط على مستواك ليتم اختياره بالصح الأخضر ✅)*'
+      : '📊 *Set Experience Level*\n\nPick your seniority level to match relevant opportunities:\n*(Tap your level to select it with a green checkmark ✅)*';
 
     const keyboard = buildExperienceSettingsKeyboard(currentExp, lang);
 

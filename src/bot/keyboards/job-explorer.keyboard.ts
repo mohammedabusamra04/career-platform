@@ -21,27 +21,11 @@ export function buildJobExplorerKeyboard(options: JobExplorerKeyboardOptions): I
   const { currentPage, totalPages, sort = 'BEST_MATCH', language = 'ar', jobs = [] } = options;
   const isArabic = language === 'ar';
 
-  // 1. Feedback buttons for jobs on the current page
+  // 1. 5-Star rating buttons for candidate relevance
   if (jobs.length > 0) {
-    const isSingleJob = jobs.length === 1;
-
-    for (let i = 0; i < jobs.length; i++) {
-      const job = jobs[i];
-      if (!job.id) continue;
-
-      const jobNum = i + 1;
-      const likeText = isSingleJob ? '👍' : `👍 ${jobNum}`;
-      const dislikeText = isSingleJob ? '👎' : `👎 ${jobNum}`;
-
-      keyboard.text(likeText, `feedback:like:${job.id}`);
-      keyboard.text(dislikeText, `feedback:dislike:${job.id}`);
-
-      // Two jobs per row (4 buttons max)
-      if ((i + 1) % 2 === 0 && i < jobs.length - 1) {
-        keyboard.row();
-      }
+    for (let s = 1; s <= 5; s++) {
+      keyboard.text(`⭐ ${s}`, `feedback:rate:${s}`);
     }
-
     keyboard.row();
   }
 

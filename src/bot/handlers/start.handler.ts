@@ -29,14 +29,16 @@ export function getWelcomeMessage(lang: SupportedLanguage, firstName?: string | 
     return (
       `👋 Hey${safeName}, welcome to *DeployMe*!\n\n` +
       `⚡ Ready to ship your career to production? Pick your tech stack, and I'll filter out the noise and ping you with roles tailored to your skills.\n\n` +
-      `*Step 1:* Select between *1 and 3 specializations* that match your stack:`
+      `*Step 1:* Select between *1 and 3 specializations* that match your stack:\n` +
+      `*(Tap an option to mark it with a green checkmark ✅, then tap Confirm Stack)*`
     );
   }
 
   return (
     `👋 أهلاً بك يا${safeName} في *DeployMe (ديبلوي مي)*!\n\n` +
     `⚡ جاهز تطلع Production؟ حدد تخصصك والـ Stack تبعك، وأنا بفلتر السوق وبعملك Ping بالفرص اللي بتفصّل على مهاراتك بدون أي رغي أو إزعاج.\n\n` +
-    `*الخطوة 1:* اختار من *1 إلى 3 تخصصات* بتطابق الـ Stack تبعك:`
+    `*الخطوة 1:* اختار من *1 إلى 3 تخصصات* بتطابق الـ Stack تبعك:\n` +
+    `*(اضغط على التخصص لتحديده بعلامة الصح الأخضر ✅ ثم اضغط تأكيد الـ Stack)*`
   );
 }
 

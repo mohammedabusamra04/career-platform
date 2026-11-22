@@ -14,11 +14,8 @@ export interface DigestPaginationKeyboardOptions {
 }
 
 /**
- * Builds an inline keyboard containing thumbs up (👍) and thumbs down (👎)
+ * Builds an inline keyboard containing 5-star rating (⭐ 1 to ⭐ 5)
  * feedback buttons for jobs displayed on the current digest page.
- *
- * For a single job: [👍] [👎]
- * For multiple jobs: [👍 1] [👎 1] [👍 2] [👎 2], 2 jobs per row for compact display.
  */
 export function buildDigestFeedbackKeyboard(
   jobs: Array<DigestJobFeedbackItem | string>,
@@ -28,24 +25,8 @@ export function buildDigestFeedbackKeyboard(
     return keyboard;
   }
 
-  const isSingleJob = jobs.length === 1;
-
-  for (let i = 0; i < jobs.length; i++) {
-    const item = jobs[i];
-    const jobId = typeof item === 'string' ? item : (item.id || item.jobId);
-    if (!jobId) continue;
-
-    const jobNum = i + 1;
-    const likeText = isSingleJob ? '👍' : `👍 ${jobNum}`;
-    const dislikeText = isSingleJob ? '👎' : `👎 ${jobNum}`;
-
-    keyboard.text(likeText, `feedback:like:${jobId}`);
-    keyboard.text(dislikeText, `feedback:dislike:${jobId}`);
-
-    // Break into a new row after every 2 jobs (4 buttons max per row)
-    if ((i + 1) % 2 === 0 && i < jobs.length - 1) {
-      keyboard.row();
-    }
+  for (let s = 1; s <= 5; s++) {
+    keyboard.text(`⭐ ${s}`, `feedback:rate:${s}`);
   }
 
   return keyboard;
@@ -53,13 +34,13 @@ export function buildDigestFeedbackKeyboard(
 
 /**
  * Builds an inline keyboard for Telegram digest pagination and job feedback:
- * - Thumbs up (👍) and thumbs down (👎) feedback buttons for candidate jobs on the page.
+ * - 5-star rating (⭐ 1 to ⭐ 5) feedback buttons for candidate jobs on the page.
  * - [Prev] button (when currentPage > 1)
  * - [Page indicator] non-action button in center
  * - [Next] button (when currentPage < totalPages)
  *
  * Callback data pattern:
- * - Feedback: `feedback:like:<jobId>` and `feedback:dislike:<jobId>`
+ * - Rating: `feedback:rate:<1-5>`
  * - Previous page: `digest:page:<targetPage>`
  * - Next page: `digest:page:<targetPage>`
  * - Current indicator: `digest:noop`
@@ -72,26 +53,10 @@ export function buildDigestPaginationKeyboard(
 ): InlineKeyboard {
   const keyboard = new InlineKeyboard();
 
-  // 1. Attach feedback buttons if candidate jobs are provided
+  // 1. Attach 5-star rating buttons if candidate jobs are provided
   if (jobs && jobs.length > 0) {
-    const isSingleJob = jobs.length === 1;
-
-    for (let i = 0; i < jobs.length; i++) {
-      const item = jobs[i];
-      const jobId = typeof item === 'string' ? item : (item.id || item.jobId);
-      if (!jobId) continue;
-
-      const jobNum = i + 1;
-      const likeText = isSingleJob ? '👍' : `👍 ${jobNum}`;
-      const dislikeText = isSingleJob ? '👎' : `👎 ${jobNum}`;
-
-      keyboard.text(likeText, `feedback:like:${jobId}`);
-      keyboard.text(dislikeText, `feedback:dislike:${jobId}`);
-
-      // Break into a new row after every 2 jobs (4 buttons max per row)
-      if ((i + 1) % 2 === 0 && i < jobs.length - 1) {
-        keyboard.row();
-      }
+    for (let s = 1; s <= 5; s++) {
+      keyboard.text(`⭐ ${s}`, `feedback:rate:${s}`);
     }
 
     // Move to next row for pagination controls if pagination exists

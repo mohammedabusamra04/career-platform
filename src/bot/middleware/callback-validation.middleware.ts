@@ -36,6 +36,7 @@ export const EXACT_CALLBACK_WHITELIST = new Set([
  * Whitelist of known parameterized regex callback patterns.
  */
 export const PARAMETERIZED_CALLBACK_PATTERNS = [
+  /^feedback:rate:([1-5])$/,
   /^feedback:(like|dislike):([a-zA-Z0-9_-]+)$/,
   /^digest:page:([1-9][0-9]*)$/,
   /^jobs:page:(?:(BEST_MATCH|LATEST):)?([1-9][0-9]*)$/,
