@@ -180,6 +180,26 @@ describe('DeterministicJobClassifier - 10-Domain Specialization Classifier (TASK
       expect(security?.primarySpecialization).toBe(Specialization.SECURITY);
     });
 
+    it('classifies Arabized frameworks and tech stacks (لارافيل, فلاتر, رياكت, شات بوت, فيجما)', () => {
+      const laravel = classifier.classifyTitle('مطلوب مبرمج لارافيل لبناء لوحة تحكم');
+      expect(laravel?.primarySpecialization).toBe(Specialization.BACKEND);
+
+      const nodejs = classifier.classifyTitle('مطور نود جي اس وبناء خادم API');
+      expect(nodejs?.primarySpecialization).toBe(Specialization.BACKEND);
+
+      const react = classifier.classifyTitle('تطوير واجهات المستخدم باستخدام رياكت و فيو');
+      expect(react?.primarySpecialization).toBe(Specialization.FRONTEND);
+
+      const flutter = classifier.classifyTitle('برمجة تطبيق جوال باستخدام فلاتر');
+      expect(flutter?.primarySpecialization).toBe(Specialization.MOBILE);
+
+      const figma = classifier.classifyTitle('تصميم تطبيق وموقع باستخدام فيجما');
+      expect(figma?.primarySpecialization).toBe(Specialization.UIUX);
+
+      const chatbot = classifier.classifyTitle('بناء شات بوت ذكاء اصطناعي وأتمتة ذكية');
+      expect(chatbot?.primarySpecialization).toBe(Specialization.AI_ENGINEER);
+    });
+
     it('returns null for unclassifiable or ambiguous titles without throwing', () => {
       expect(classifier.classifyTitle('')).toBeNull();
       expect(classifier.classifyTitle('   ')).toBeNull();
@@ -282,6 +302,37 @@ describe('DeterministicJobClassifier - 10-Domain Specialization Classifier (TASK
 
       const cs = classifier.classify({ title: 'أخصائي خدمة عملاء ودعم فني' });
       expect(cs.isExcluded).toBe(true);
+
+      // Freelance non-technical roles (Mostaql patterns)
+      const translation = classifier.classify({ title: 'مترجم نصوص وترجمة فورية' });
+      expect(translation.isExcluded).toBe(true);
+
+      const voiceover = classifier.classify({ title: 'تعليق صوتي إعلاني لقناة يوتيوب' });
+      expect(voiceover.isExcluded).toBe(true);
+
+      const transcription = classifier.classify({ title: 'تفريغ صوتي لمحاضرات صوتية' });
+      expect(transcription.isExcluded).toBe(true);
+
+      const article = classifier.classify({ title: 'كتابة مقال متوافق مع سيو' });
+      expect(article.isExcluded).toBe(true);
+
+      const dataEntry = classifier.classify({ title: 'إدخال بيانات في ملف إكسل' });
+      expect(dataEntry.isExcluded).toBe(true);
+
+      const logo = classifier.classify({ title: 'تصميم شعار احترافي لشركة' });
+      expect(logo.isExcluded).toBe(true);
+
+      const branding = classifier.classify({ title: 'تصميم هوية بصرية كاملة' });
+      expect(branding.isExcluded).toBe(true);
+
+      const montage = classifier.classify({ title: 'مونتاج فيديو ترويجي إبداعي' });
+      expect(montage.isExcluded).toBe(true);
+
+      const accounting = classifier.classify({ title: 'مطلوب محاسب لمراجعة الحسابات' });
+      expect(accounting.isExcluded).toBe(true);
+
+      const marketing = classifier.classify({ title: 'أخصائي تسويق إلكتروني وإعلانات ممولة' });
+      expect(marketing.isExcluded).toBe(true);
     });
 
     it('prevents positive title classification from matching excluded roles', () => {

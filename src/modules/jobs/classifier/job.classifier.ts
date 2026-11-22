@@ -111,7 +111,16 @@ export class DeterministicJobClassifier {
     ['مطور خلفي', { spec: Specialization.BACKEND, weight: 110, isDirectRole: true }],
     ['مهندس خلفية', { spec: Specialization.BACKEND, weight: 110, isDirectRole: true }],
     ['باك اند', { spec: Specialization.BACKEND, weight: 100, isDirectRole: true }],
+    ['باك إند', { spec: Specialization.BACKEND, weight: 100, isDirectRole: true }],
     ['مبرمج باك اند', { spec: Specialization.BACKEND, weight: 100, isDirectRole: true }],
+    ['لارافيل', { spec: Specialization.BACKEND, weight: 80, isDirectRole: false }],
+    ['نود', { spec: Specialization.BACKEND, weight: 75, isDirectRole: false }],
+    ['نود جي اس', { spec: Specialization.BACKEND, weight: 80, isDirectRole: false }],
+    ['دوت نت', { spec: Specialization.BACKEND, weight: 80, isDirectRole: false }],
+    ['جانغو', { spec: Specialization.BACKEND, weight: 80, isDirectRole: false }],
+    ['دجانغو', { spec: Specialization.BACKEND, weight: 80, isDirectRole: false }],
+    ['خادم', { spec: Specialization.BACKEND, weight: 70, isDirectRole: false }],
+    ['اي بي اي', { spec: Specialization.BACKEND, weight: 75, isDirectRole: false }],
     ['rust', { spec: Specialization.BACKEND, weight: 80, isDirectRole: false }],
     ['rustlang', { spec: Specialization.BACKEND, weight: 80, isDirectRole: false }],
     ['rust developer', { spec: Specialization.BACKEND, weight: 110, isDirectRole: true }],
@@ -156,7 +165,16 @@ export class DeterministicJobClassifier {
     ['مطور واجهات', { spec: Specialization.FRONTEND, weight: 110, isDirectRole: true }],
     ['مهندس واجهات', { spec: Specialization.FRONTEND, weight: 110, isDirectRole: true }],
     ['فرونت اند', { spec: Specialization.FRONTEND, weight: 100, isDirectRole: true }],
+    ['فرونت إند', { spec: Specialization.FRONTEND, weight: 100, isDirectRole: true }],
     ['مبرمج فرونت اند', { spec: Specialization.FRONTEND, weight: 100, isDirectRole: true }],
+    ['واجهات امامية', { spec: Specialization.FRONTEND, weight: 95, isDirectRole: true }],
+    ['واجهات أمامية', { spec: Specialization.FRONTEND, weight: 95, isDirectRole: true }],
+    ['رياكت', { spec: Specialization.FRONTEND, weight: 80, isDirectRole: false }],
+    ['فيو', { spec: Specialization.FRONTEND, weight: 75, isDirectRole: false }],
+    ['انجولار', { spec: Specialization.FRONTEND, weight: 80, isDirectRole: false }],
+    ['أنغولار', { spec: Specialization.FRONTEND, weight: 80, isDirectRole: false }],
+    ['نيكست', { spec: Specialization.FRONTEND, weight: 80, isDirectRole: false }],
+    ['نيكست جي اس', { spec: Specialization.FRONTEND, weight: 80, isDirectRole: false }],
     ['react', { spec: Specialization.FRONTEND, weight: 75, isDirectRole: false }],
     ['react.js', { spec: Specialization.FRONTEND, weight: 75, isDirectRole: false }],
     ['reactjs', { spec: Specialization.FRONTEND, weight: 75, isDirectRole: false }],
@@ -202,7 +220,16 @@ export class DeterministicJobClassifier {
     ['مطور تطبيقات', { spec: Specialization.MOBILE, weight: 115, isDirectRole: true }],
     ['مهندس تطبيقات', { spec: Specialization.MOBILE, weight: 115, isDirectRole: true }],
     ['تطبيقات الجوال', { spec: Specialization.MOBILE, weight: 105, isDirectRole: true }],
+    ['تطبيق جوال', { spec: Specialization.MOBILE, weight: 100, isDirectRole: true }],
+    ['تطبيقات جوال', { spec: Specialization.MOBILE, weight: 100, isDirectRole: true }],
+    ['تطبيق موبايل', { spec: Specialization.MOBILE, weight: 100, isDirectRole: true }],
+    ['تطبيقات موبايل', { spec: Specialization.MOBILE, weight: 100, isDirectRole: true }],
     ['مطور موبايل', { spec: Specialization.MOBILE, weight: 115, isDirectRole: true }],
+    ['فلاتر', { spec: Specialization.MOBILE, weight: 90, isDirectRole: false }],
+    ['مبرمج فلاتر', { spec: Specialization.MOBILE, weight: 110, isDirectRole: true }],
+    ['مطور فلاتر', { spec: Specialization.MOBILE, weight: 110, isDirectRole: true }],
+    ['اندرويد', { spec: Specialization.MOBILE, weight: 85, isDirectRole: false }],
+    ['أندرويد', { spec: Specialization.MOBILE, weight: 85, isDirectRole: false }],
     ['ايفون', { spec: Specialization.MOBILE, weight: 85, isDirectRole: false }],
     ['flutter', { spec: Specialization.MOBILE, weight: 85, isDirectRole: false }],
     ['flutter developer', { spec: Specialization.MOBILE, weight: 110, isDirectRole: true }],
@@ -255,6 +282,10 @@ export class DeterministicJobClassifier {
     ['interaction designer', { spec: Specialization.UIUX, weight: 100, isDirectRole: true }],
     ['مصمم واجهات', { spec: Specialization.UIUX, weight: 110, isDirectRole: true }],
     ['تجربة المستخدم', { spec: Specialization.UIUX, weight: 105, isDirectRole: true }],
+    ['تصميم تطبيق', { spec: Specialization.UIUX, weight: 100, isDirectRole: true }],
+    ['تصميم موقع', { spec: Specialization.UIUX, weight: 95, isDirectRole: true }],
+    ['تصميم مواقع', { spec: Specialization.UIUX, weight: 95, isDirectRole: true }],
+    ['فيجما', { spec: Specialization.UIUX, weight: 85, isDirectRole: false }],
     ['figma', { spec: Specialization.UIUX, weight: 70, isDirectRole: false }],
 
     // ==========================================
@@ -333,6 +364,12 @@ export class DeterministicJobClassifier {
     ['artificial intelligence', { spec: Specialization.AI_ENGINEER, weight: 105, isDirectRole: true }],
     ['ذكاء اصطناعي', { spec: Specialization.AI_ENGINEER, weight: 115, isDirectRole: true }],
     ['تعلم الآلة', { spec: Specialization.AI_ENGINEER, weight: 110, isDirectRole: true }],
+    ['تعلم عميق', { spec: Specialization.AI_ENGINEER, weight: 105, isDirectRole: true }],
+    ['شات بوت', { spec: Specialization.AI_ENGINEER, weight: 105, isDirectRole: true }],
+    ['شاتبوت', { spec: Specialization.AI_ENGINEER, weight: 105, isDirectRole: true }],
+    ['بوت ذكاء اصطناعي', { spec: Specialization.AI_ENGINEER, weight: 115, isDirectRole: true }],
+    ['أتمتة ذكية', { spec: Specialization.AI_ENGINEER, weight: 95, isDirectRole: true }],
+    ['اتمتة ذكية', { spec: Specialization.AI_ENGINEER, weight: 95, isDirectRole: true }],
   ]);
 
   private static readonly SPECIALIZATION_RULES: Array<{
@@ -556,7 +593,7 @@ export class DeterministicJobClassifier {
     text = text.replace(/\s+-\s+/g, ' ');
 
     // Normalize Arabic conjunction 'و' (waw) attached to role stems (e.g. 'وذكاء' -> 'ذكاء')
-    text = text.replace(/(?:^|\s)و(ذكاء|بيانات|أمن|امن|تصميم|تطوير|محلل|مهندس|سحابية|نظم)/g, ' $1');
+    text = text.replace(/(?:^|\s)و(ذكاء|بيانات|أمن|امن|تصميم|تطوير|محلل|مهندس|سحابية|نظم|لارافيل|فلاتر|رياكت|نود|فيو|شات)/g, ' $1');
 
     // Collapse multiple whitespace
     return text.trim();
