@@ -209,6 +209,7 @@ export class JobExplorerService {
     const whereConditions: Prisma.JobWhereInput[] = [
       {
         status: 'ACTIVE',
+        title: { notIn: ['Reset Filter', 'Manage My Jobs', 'Jobs with Salaries', 'Add Job'] },
         OR: [
           { primarySpecialization: { in: specs } },
           { secondarySpecialization: { in: specs } },
@@ -245,8 +246,9 @@ export class JobExplorerService {
       ],
     });
 
-    // 3. Filter jobs by regional and experience level compatibility
+    // 3. Filter jobs by regional and experience level compatibility (excluding navigation URLs)
     const regionallyFiltered = rawJobs.filter((job) =>
+      !/job_list|with-salaries|search\?|create_job|create_widget/i.test(job.url) &&
       hardFilterEngine.isRegionCompatible(
         {
           id: job.id,
