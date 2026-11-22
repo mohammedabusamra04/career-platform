@@ -73,23 +73,12 @@ describe('TelegramNotificationService', () => {
     expect(messageText).toContain('تطابق قوي');
     expect(messageText).not.toContain('85%');
     expect(messageText).toContain('/jobs');
+    expect(messageText).toContain('🔗 [تقديم مباشر](https://example.com/apply/1)');
     expect(options).toEqual(
       expect.objectContaining({
         parse_mode: 'Markdown',
         disable_web_page_preview: true,
         link_preview_options: { is_disabled: true },
-        reply_markup: {
-          inline_keyboard: expect.arrayContaining([
-            [
-              { text: '⚡ قدّم #1', url: 'https://example.com/apply/1' },
-              { text: '⚡ قدّم #2', url: 'https://example.com/apply/2' },
-            ],
-            [
-              { text: '⚡ قدّم #19', url: 'https://example.com/apply/19' },
-              { text: '⚡ قدّم #20', url: 'https://example.com/apply/20' },
-            ],
-          ]),
-        },
       }),
     );
   });

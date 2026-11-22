@@ -22,22 +22,6 @@ interface PreparedDigestItem {
   url: string;
 }
 
-function buildApplyInlineKeyboard(
-  items: PreparedDigestItem[],
-): Array<Array<{ text: string; url: string }>> {
-  const buttons = items
-    .filter((item) => item.url.length > 0)
-    .map((item) => ({
-      text: items.length === 1 ? '⚡ قدّم الآن' : `⚡ قدّم #${item.index}`,
-      url: item.url,
-    }));
-
-  const rows: Array<Array<{ text: string; url: string }>> = [];
-  for (let i = 0; i < buttons.length; i += 2) {
-    rows.push(buttons.slice(i, i + 2));
-  }
-  return rows;
-}
 
 function formatSourceBadge(source?: string): string {
   switch (source) {
@@ -157,11 +141,7 @@ export class TelegramNotificationService implements NotificationService {
 
     try {
       if (fullMessage.length <= TELEGRAM_MAX_MESSAGE_LENGTH) {
-        const inlineKeyboard = buildApplyInlineKeyboard(preparedItems);
-        await this.api.sendMessage(chatId, fullMessage, {
-          ...baseSendOptions,
-          ...(inlineKeyboard.length > 0 ? { reply_markup: { inline_keyboard: inlineKeyboard } } : {}),
-        });
+        await this.api.sendMessage(chatId, fullMessage, baseSendOptions);
         return;
       }
 
@@ -194,11 +174,7 @@ export class TelegramNotificationService implements NotificationService {
       }
 
       for (const chunk of chunks) {
-        const inlineKeyboard = buildApplyInlineKeyboard(chunk.items);
-        await this.api.sendMessage(chatId, chunk.text, {
-          ...baseSendOptions,
-          ...(inlineKeyboard.length > 0 ? { reply_markup: { inline_keyboard: inlineKeyboard } } : {}),
-        });
+        await this.api.sendMessage(chatId, chunk.text, baseSendOptions);
       }
     } catch (error) {
       console.error(`Failed to send digest notification to chat ${chatId}:`, error);
