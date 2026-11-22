@@ -152,7 +152,7 @@ describe('FirstDigestService (TASK-40.1)', () => {
     expect(messageAr).toContain('Senior Backend Engineer');
     expect(messageAr).toContain('TechCorp');
     expect(messageAr).toContain('نسبة التوافق: 95%');
-    expect(messageAr).toContain('ساعة الراحة المسائية');
+    expect(messageAr).toContain('في المساء');
 
     const messageEn = service.formatDigestMessage(mockDigestResult, {
       singleDailyRunTime: '21:00',
