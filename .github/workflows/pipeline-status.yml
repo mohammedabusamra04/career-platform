@@ -42,6 +42,43 @@ jobs:
               const activeSources = (d.sourcesSummary?.active || []).join(", ");
               const failedSources = (d.sourcesSummary?.failedLastRun || []).join(", ") || "None (All 100% operational)";
 
+              // Subscribers & Delivery details (All in English)
+              const subs = d.subscribers;
+              let subsSection = "";
+              if (subs && Array.isArray(subs.list) && subs.list.length > 0) {
+                const rows = subs.list.map((u, i) => {
+                  const specs = u.specializations && u.specializations.length > 0 ? u.specializations.join(", ") : "Not set";
+                  const level = u.experienceLevel || "All";
+                  const count = u.totalSentJobs || 0;
+                  const delivered = count > 0 || u.latestDeliveryStatus === "SENT"
+                    ? "✅ Delivered"
+                    : (u.status === "PAUSED" ? "⏸️ Paused" : "⏳ Pending Digest (21:00)");
+                  const lastTime = u.lastSentAt 
+                    ? new Date(u.lastSentAt).toLocaleString("en-GB", { timeZone: d.timezone || "Asia/Gaza" })
+                    : "-";
+                  const displayName = u.name && u.name !== "User" && u.name !== "Anonymous" ? `${u.name} (\`${u.telegramId}\`)` : `\`${u.telegramId}\``;
+                  return `| ${i + 1} | ${displayName} | \`${specs}\` | ${level} | **${count}** | ${delivered} | ${lastTime} |`;
+                }).join("\n");
+
+                subsSection = `
+          ---
+
+          ### 👥 Subscribers & Job Delivery Status
+          - **Total Subscribers:** **${subs.total}** (${subs.active} active, ${subs.paused} paused)
+
+          | # | Subscriber | Specialization (Stack) | Level | Total Delivered | Delivery Status | Last Delivery (Asia/Gaza) |
+          | :-: | :--- | :--- | :-: | :-: | :--- | :--- |
+          ${rows}
+          `;
+              } else {
+                subsSection = `
+          ---
+
+          ### 👥 Subscribers & Job Delivery Status
+          - **Total Registered Subscribers:** ${subs?.total ?? 0}
+          `;
+              }
+
               // Last digest delivery info
               const slotInfo = d.lastDigestSlot;
               const slotText = slotInfo 
@@ -70,7 +107,7 @@ jobs:
           | **Timezone** | \`${d.timezone || "Asia/Gaza"}\` |
           | **PostgreSQL Database** | ${dbStatus} (Pool: \`${d.database?.pool?.active ?? 1}\` active / \`${d.database?.pool?.maxPoolSize ?? 20}\` max) |
           | **Redis Cache** | ${redisStatus} |
-
+          ${subsSection}
           ---
 
           ### ⏰ Scheduler & Evening Digest (21:00)

@@ -28,6 +28,7 @@ app.get('/', (_req, res) => {
 export function buildHealthTelemetry(overrides?: {
   database?: { status: 'connected' | 'disconnected'; pool: { total: number; active: number; idle: number; maxPoolSize: number } };
   lastDigestSlot?: Record<string, unknown> | null;
+  subscribers?: Record<string, unknown> | null;
 }): Record<string, unknown> {
   const dbHealth =
     overrides?.database ??
@@ -132,6 +133,7 @@ export function buildHealthTelemetry(overrides?: {
       : null,
     lastCollectionStats: lastCollectionStats ?? null,
     lastDigestSlot,
+    subscribers: overrides?.subscribers ?? null,
     sources: sourceHealthMap,
     sourcesSummary: {
       active: services.activeJobSources ? services.activeJobSources.map((s) => s.type) : [],
@@ -211,18 +213,83 @@ export async function getHealthTelemetry(): Promise<Record<string, unknown>> {
     );
   }
 
+  // Retrieve subscribers summary with delivery tracking
+  let subscribersSummary: Record<string, unknown> | null = null;
+  try {
+    if (prisma.user && typeof prisma.user.findMany === 'function') {
+      const users = await prisma.user.findMany({
+        where: { status: { in: ['ACTIVE', 'PAUSED'] } },
+        include: {
+          preference: true,
+          sentJobs: {
+            orderBy: { sentAt: 'desc' },
+            take: 1,
+          },
+          digestDeliveries: {
+            orderBy: { slot: { scheduledTime: 'desc' } },
+            take: 1,
+            include: {
+              slot: true,
+            },
+          },
+          _count: {
+            select: { sentJobs: true },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      subscribersSummary = {
+        total: users.length,
+        active: users.filter((u) => u.status === 'ACTIVE').length,
+        paused: users.filter((u) => u.status === 'PAUSED').length,
+        list: users.map((u) => {
+          const latestDelivery = u.digestDeliveries[0];
+          let deliveryStatus = 'PENDING';
+          if (latestDelivery) {
+            deliveryStatus = latestDelivery.status;
+          } else if (u._count.sentJobs > 0) {
+            deliveryStatus = 'SENT';
+          } else {
+            deliveryStatus = 'NO_JOBS_YET';
+          }
+
+          return {
+            telegramId: String(u.telegramId),
+            name: u.firstName || u.username || 'User',
+            status: u.status,
+            specializations: u.preference?.specializations || [],
+            experienceLevel: u.preference?.experienceLevel || 'ALL',
+            totalSentJobs: u._count.sentJobs,
+            lastSentAt: u.sentJobs[0]?.sentAt ? u.sentJobs[0].sentAt.toISOString() : null,
+            latestDeliveryStatus: deliveryStatus,
+          };
+        }),
+      };
+    }
+  } catch (err: unknown) {
+    logger.warn(
+      `[HealthCheck] Failed retrieving subscribers summary: ${err instanceof Error ? err.message : String(err)}`,
+    );
+  }
+
   return buildHealthTelemetry({
     database: {
       status: dbStatus,
       pool,
     },
     lastDigestSlot,
+    subscribers: subscribersSummary,
   });
 }
 
-app.get('/health', (_req, res) => {
-  const data = buildHealthTelemetry();
-  res.success({ data });
+app.get('/health', async (_req, res, next) => {
+  try {
+    const data = await getHealthTelemetry();
+    res.success({ data });
+  } catch (err: unknown) {
+    next(err);
+  }
 });
 
 app.use(errorHandler);
