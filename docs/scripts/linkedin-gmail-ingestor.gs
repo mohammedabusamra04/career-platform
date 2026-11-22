@@ -326,7 +326,7 @@ function sendJobsToBackend(apiUrl, apiToken, jobs) {
 function getOrCreateLabel(labelName) {
   var label = GmailApp.getUserLabelByName(labelName);
   if (!label) {
-    label = GmailApp.createUserLabel(labelName);
+    label = GmailApp.createLabel(labelName);
     Logger.log('[DeployMe] Created new Gmail label: ' + labelName);
   }
   return label;
