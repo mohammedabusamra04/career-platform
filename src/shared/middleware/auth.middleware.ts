@@ -45,9 +45,18 @@ export function requirePipelineAuth(req: Request, _res: Response, next: NextFunc
       providedKey = apiKeyHeader.trim();
     }
 
-    const expectedKey = env.pipelineApiKey?.trim();
+    const expectedKeys = [
+      env.pipelineApiKey?.trim(),
+      process.env.API_BEARER_TOKEN?.trim(),
+      process.env.PIPELINE_API_SECRET?.trim(),
+    ].filter((k): k is string => Boolean(k && k.length > 0));
 
-    if (!expectedKey || !providedKey || !secureCompareTokens(providedKey, expectedKey)) {
+    const isMatch =
+      Boolean(providedKey) &&
+      expectedKeys.length > 0 &&
+      expectedKeys.some((expected) => secureCompareTokens(providedKey!, expected));
+
+    if (!providedKey || expectedKeys.length === 0 || !isMatch) {
       const clientIp = req.ip || req.socket?.remoteAddress || 'unknown';
       logger.warn(
         `[PipelineAuth] Unauthorized pipeline access attempt on ${req.method} ${req.path} from ${clientIp}`,

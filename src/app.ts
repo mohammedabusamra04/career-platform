@@ -3,6 +3,7 @@ import { errorHandler } from './shared/middleware/error.middleware.js';
 import { responseFormatter } from './shared/middleware/response.middleware.js';
 import jobPipelineRouter from './modules/jobs/job.pipeline.route.js';
 import jobCollectionRouter from './modules/jobs/job.collection.route.js';
+import jobIngestRouter from './modules/jobs/job.ingest.route.js';
 import env from './config/env.js';
 import redisClient from './config/redis.js';
 import { prisma } from './shared/database/prisma.service.js';
@@ -18,6 +19,9 @@ app.use(responseFormatter);
 app.use('/jobs/pipeline', jobPipelineRouter);
 app.use('/internal/pipeline', jobPipelineRouter);
 app.use('/jobs/collection', jobCollectionRouter);
+app.use('/api/internal/jobs', jobIngestRouter);
+app.use('/internal/jobs', jobIngestRouter);
+app.use('/jobs', jobIngestRouter);
 
 app.get('/', (_req, res) => {
   res.success({

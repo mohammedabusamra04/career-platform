@@ -29,10 +29,10 @@ export class LinkedinJobSource implements JobSource {
   public readonly type = JobSourceType.LINKEDIN;
   public readonly displayName = { ar: 'لينكدإن (LinkedIn)', en: 'LinkedIn' };
 
-  constructor(private readonly apiKey: string) {}
+  constructor(private readonly apiKey?: string) {}
 
   async fetchJobs(query?: JobSearchQuery): Promise<Job[]> {
-    if (!this.apiKey) {
+    if (!this.apiKey || !this.apiKey.trim()) {
       return [];
     }
 

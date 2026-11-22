@@ -1,8 +1,8 @@
 import ms from 'ms';
-import type { Job, JobSearchQuery } from './job.types.js';
+import { JobSourceType, type Job, type JobSearchQuery } from './job.types.js';
 import { JobSourceManager } from './sources/job-source.manager.js';
 import { validateJob } from './job.validator.js';
-import { normalizeJob } from './job.normalizer.js';
+import { normalizeJob, type RawJob } from './job.normalizer.js';
 import type { IJobRepository, NormalizedJobInput } from './repositories/job.repository.interface.js';
 import { DeduplicationService } from '../deduplication/deduplication.service.js';
 import { FingerprintService } from '../deduplication/fingerprint.service.js';
@@ -44,6 +44,25 @@ export interface CollectionCycleResult {
   executed: boolean;
   skippedReason?: string;
   stats?: CollectionStats;
+}
+
+export interface ExternalJobIngestInput {
+  title: string;
+  company: string;
+  location?: string;
+  url: string;
+  description?: string;
+  publishedAt?: string | number | Date;
+}
+
+export interface IngestJobsResult {
+  received: number;
+  valid: number;
+  unique: number;
+  inserted: number;
+  updated: number;
+  droppedNonTechnical: number;
+  droppedDuplicates: number;
 }
 
 export class JobCollectionService {
@@ -332,5 +351,135 @@ export class JobCollectionService {
     }
     const cutoff = new Date(Date.now() - ms('21d'));
     return job.publicationDate >= cutoff;
+  }
+
+  /**
+   * Ingests externally provided jobs (e.g. from LinkedIn Gmail alerts via Google Apps Script).
+   * Passes them through:
+   * 1. Normalization & safe HTML sanitization (JobSourceType.LINKEDIN)
+   * 2. Validation & Recency filtering
+   * 3. Two-Tier Deduplication (fingerprint & semantic)
+   * 4. Deterministic Specialization & Remote Classification
+   * 5. Prisma JobRepository Upsert (persisting to shared pool)
+   */
+  public async ingestJobs(rawJobs: ExternalJobIngestInput[]): Promise<IngestJobsResult> {
+    if (!Array.isArray(rawJobs) || rawJobs.length === 0) {
+      return {
+        received: 0,
+        valid: 0,
+        unique: 0,
+        inserted: 0,
+        updated: 0,
+        droppedNonTechnical: 0,
+        droppedDuplicates: 0,
+      };
+    }
+
+    // 1. Map to RawJob interface and normalize
+    const normalizedJobs = rawJobs
+      .map((item) => {
+        const raw: RawJob = {
+          title: item.title,
+          company: item.company,
+          location: item.location,
+          url: item.url,
+          applicationUrl: item.url,
+          description: item.description,
+          publishedAt: item.publishedAt ?? new Date(),
+          publicationDate: item.publishedAt ?? new Date(),
+          source: JobSourceType.LINKEDIN,
+        };
+        return normalizeJob(raw);
+      })
+      .filter(validateJob)
+      .filter((job) => this.isRecentJob(job));
+
+    const validCount = normalizedJobs.length;
+
+    // 2. Two-Tier Deduplication
+    let uniqueJobs = normalizedJobs;
+    let droppedDuplicates = 0;
+
+    if (this.deduplicationService) {
+      const dedupeResult = await this.deduplicationService.deduplicate(normalizedJobs);
+      uniqueJobs = dedupeResult.uniqueJobs;
+      droppedDuplicates = dedupeResult.duplicateJobs.length;
+    }
+
+    // 3. Deterministic Classify & 4. Upsert to Shared Pool
+    let inserted = 0;
+    let updated = 0;
+    let droppedNonTechnical = 0;
+
+    const fpService = this.fingerprintService ?? new FingerprintService();
+
+    if (this.jobRepository) {
+      for (const job of uniqueJobs) {
+        const deduplicationKey = fpService.generate(job);
+        const semanticKey = fpService.generateSemanticFingerprint(job);
+        const classification = this.ambiguityResolver
+          ? await this.classifier.classifyWithFallback(job, this.ambiguityResolver)
+          : this.classifier.classify(job);
+
+        if (classification.isExcluded || !classification.primarySpecialization) {
+          logger.info(
+            `[JobCollectionService] Ingest dropping non-technical job: "${job.title}" (${classification.exclusionReason || 'Non-technical'})`,
+          );
+          droppedNonTechnical++;
+          continue;
+        }
+
+        const input: NormalizedJobInput = {
+          deduplicationKey,
+          semanticKey,
+          title: job.title,
+          company: job.company,
+          source: JobSourceType.LINKEDIN,
+          url: job.url,
+          applicationUrl: job.applicationUrl || null,
+          location: job.location || null,
+          country: job.country || null,
+          remoteScope: classification.remoteScope,
+          primarySpecialization: classification.primarySpecialization,
+          secondarySpecialization: classification.secondarySpecialization,
+          experienceLevel: classification.experienceLevel,
+          workType: classification.workType,
+          description: job.description || '',
+          skills: job.skills || [],
+          salaryMin: job.salaryMin ?? null,
+          salaryMax: job.salaryMax ?? null,
+          currency: job.currency ?? null,
+          publishedAt: job.publishedAt || job.publicationDate || new Date(),
+          scrapedAt: job.scrapedAt || new Date(),
+          lastSeenAt: new Date(),
+          status: 'ACTIVE',
+        };
+
+        if (typeof this.jobRepository.upsertJobWithResult === 'function') {
+          const res = await this.jobRepository.upsertJobWithResult(input);
+          if (res.isNew) {
+            inserted++;
+          } else {
+            updated++;
+          }
+        } else {
+          await this.jobRepository.upsertJob(input);
+          inserted++;
+        }
+      }
+    }
+
+    const result: IngestJobsResult = {
+      received: rawJobs.length,
+      valid: validCount,
+      unique: uniqueJobs.length,
+      inserted,
+      updated,
+      droppedNonTechnical,
+      droppedDuplicates,
+    };
+
+    logger.info(`[JobCollectionService] Ingestion completed: ${JSON.stringify(result)}`);
+    return result;
   }
 }
