@@ -190,6 +190,7 @@ export interface JoobleJobSourceOptions {
 
 export class JoobleJobSource implements JobSource {
   public readonly type = JobSourceType.JOOBLE;
+  public readonly displayName = { ar: 'جوبل (Jooble)', en: 'Jooble' };
   private readonly maxAgeDays: number;
   private readonly verifyLinks: boolean;
   private readonly linkTimeoutMs: number;

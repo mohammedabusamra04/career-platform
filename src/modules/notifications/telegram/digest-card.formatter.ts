@@ -8,10 +8,13 @@
  * - Direct application hyperlinks with link preview suppression (`disable_web_page_preview: true`).
  */
 
+import { JobSourceRegistry } from '../../jobs/sources/job-source.registry.js';
+
 export interface DigestCardJob {
   id?: string;
   title: string;
   company: string;
+  source?: string | null;
   applicationUrl?: string | null;
   url?: string | null;
   location?: string | null;
@@ -245,10 +248,13 @@ export function formatJobCard(
   const remoteLine = formatRemoteScope(job.remoteScope, job.country, job.location, lang);
   const experienceLine = formatExperienceLevel(job.experienceLevel, lang);
   const matchToneLine = formatMatchTone(job.score ?? 70, lang);
+  const platformBadge = JobSourceRegistry.formatSourceBadge(job.source, lang);
+  const platformLine = `🌐 ${escapeTelegramMarkdown(platformBadge)}`;
 
   const lines = [
     `*${indexOnPage}.* 💻 ${titleLink}`,
     companyAndLocation,
+    platformLine,
     `${escapeTelegramMarkdown(remoteLine)}`,
     `📊 ${escapeTelegramMarkdown(experienceLine)}`,
     `${escapeTelegramMarkdown(matchToneLine)}`,

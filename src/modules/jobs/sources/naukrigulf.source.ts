@@ -11,6 +11,7 @@ import logger from '../../../shared/utils/logger.js';
  */
 export class NaukrigulfJobSource implements JobSource {
   public readonly type = JobSourceType.NARIGULF;
+  public readonly displayName = { ar: 'نوكري جلف (Naukrigulf)', en: 'Naukrigulf' };
   private readonly baseUrl = 'https://www.naukrigulf.com';
 
   async fetchJobs(query?: JobSearchQuery): Promise<Job[]> {

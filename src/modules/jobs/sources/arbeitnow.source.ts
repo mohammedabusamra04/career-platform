@@ -26,6 +26,7 @@ interface ArbeitnowApiResponse {
 
 export class ArbeitnowJobSource implements JobSource {
   public readonly type = JobSourceType.ARBEITNOW;
+  public readonly displayName = { ar: 'أربايتناو (Arbeitnow)', en: 'Arbeitnow' };
   private readonly apiUrl = 'https://www.arbeitnow.com/api/job-board-api';
 
   async fetchJobs(query?: JobSearchQuery): Promise<Job[]> {

@@ -12,6 +12,7 @@ import logger from '../../../shared/utils/logger.js';
  */
 export class WuzzufJobSource implements JobSource {
   public readonly type = JobSourceType.WUZZUF;
+  public readonly displayName = { ar: 'وظف (Wuzzuf)', en: 'Wuzzuf' };
 
   async fetchJobs(query?: JobSearchQuery): Promise<Job[]> {
     const effectiveQuery: JobSearchQuery = query ?? { jobTitle: 'Developer' };

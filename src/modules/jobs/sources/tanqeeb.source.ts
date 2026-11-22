@@ -11,6 +11,7 @@ import logger from '../../../shared/utils/logger.js';
  */
 export class TanqeebJobSource implements JobSource {
   public readonly type = JobSourceType.TANQEEB;
+  public readonly displayName = { ar: 'تنقيب (Tanqeeb)', en: 'Tanqeeb' };
 
   async fetchJobs(query?: JobSearchQuery): Promise<Job[]> {
     const effectiveQuery: JobSearchQuery = query ?? { jobTitle: 'Developer' };

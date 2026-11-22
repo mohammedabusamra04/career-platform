@@ -5,8 +5,8 @@ import {
   Specialization,
 } from '../../modules/preferences/preference.taxonomy.js';
 import { buildRegionKeyboard } from '../keyboards/region.keyboard.js';
-import { buildConfirmationKeyboard } from '../keyboards/confirmation.keyboard.js';
-import { formatSummaryCard } from './confirmation.handler.js';
+import { buildExperienceKeyboard } from '../keyboards/experience.keyboard.js';
+import { getExperienceStepPromptMessage } from './experience-step.handler.js';
 import { buildSpecializationKeyboard } from '../keyboards/specialization.keyboard.js';
 import { getWelcomeMessage } from './start.handler.js';
 import type { SupportedLanguage } from '../session.js';
@@ -17,16 +17,14 @@ export function getRegionPromptMessage(lang: SupportedLanguage): string {
     return (
       `📍 *Step 2:* Pick your target market scope:\n\n` +
       `Choose whether you want roles from the Arab/MENA region, global Remote gigs, or both.\n` +
-      `*(Tap your choice to mark it with a green checkmark ✅, then tap Next)*\n\n` +
-      `💡 *Note:* If you'd like to set your experience level (Junior, Mid, Senior), you can do so anytime from /settings.`
+      `*(Tap your choice to mark it with a green checkmark ✅, then tap Next)*`
     );
   }
 
   return (
     `📍 *الخطوة 2:* حدد نطاق السوق اللي بتستهدفه:\n\n` +
     `اختار إذا حابب توصلك فرص السوق العربي، أو فرص الـ Remote العالمية، أو الاثنين مع بعض.\n` +
-    `*(اضغط على خيارك لتحديده بعلامة الصح الأخضر ✅ ثم اضغط التالي)*\n\n` +
-    `💡 *ملاحظة:* إذا حابب تحدد مستوى خبرتك (مبتدئ، متوسط، خبير) بتقدر تضبطها بأي وقت من /settings.`
+    `*(اضغط على خيارك لتحديده بعلامة الصح الأخضر ✅ ثم اضغط التالي)*`
   );
 }
 
@@ -123,21 +121,22 @@ export function registerRegionHandler(bot: Bot<BotContext>): void {
       }
     }
 
-    ctx.session.step = 'confirmation';
-    const lang = ctx.session.language || 'ar';
-    const specs = ctx.session.selectedSpecializations || [];
-    const region = ctx.session.selectedRegion;
+    ctx.session.step = 'experience-level';
+    if (!ctx.session.selectedExperience) {
+      ctx.session.selectedExperience = 'ALL';
+    }
 
+    const lang = ctx.session.language || 'ar';
     await ctx.answerCallbackQuery();
 
-    const summaryText = formatSummaryCard(specs, region, lang);
-    const confirmationKeyboard = buildConfirmationKeyboard(lang);
+    const experiencePrompt = getExperienceStepPromptMessage(lang);
+    const experienceKeyboard = buildExperienceKeyboard(ctx.session.selectedExperience, lang);
 
     if (typeof ctx.editMessageText === 'function') {
       try {
-        await ctx.editMessageText(summaryText, {
+        await ctx.editMessageText(experiencePrompt, {
           parse_mode: 'Markdown',
-          reply_markup: confirmationKeyboard,
+          reply_markup: experienceKeyboard,
         });
         return;
       } catch (err: unknown) {
@@ -145,9 +144,9 @@ export function registerRegionHandler(bot: Bot<BotContext>): void {
       }
     }
 
-    await ctx.reply(summaryText, {
+    await ctx.reply(experiencePrompt, {
       parse_mode: 'Markdown',
-      reply_markup: confirmationKeyboard,
+      reply_markup: experienceKeyboard,
     });
   });
 }

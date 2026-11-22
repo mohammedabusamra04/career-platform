@@ -27,6 +27,7 @@ interface JSearchApiResponse {
 
 export class LinkedinJobSource implements JobSource {
   public readonly type = JobSourceType.LINKEDIN;
+  public readonly displayName = { ar: 'لينكدإن (LinkedIn)', en: 'LinkedIn' };
 
   constructor(private readonly apiKey: string) {}
 

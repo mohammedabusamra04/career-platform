@@ -30,6 +30,7 @@ interface AdzunaApiResponse {
 
 export class AdzunaJobSource implements JobSource {
   public readonly type = JobSourceType.ADZUNA;
+  public readonly displayName = { ar: 'أدزونا (Adzuna)', en: 'Adzuna' };
 
   constructor(
     private readonly appId: string,

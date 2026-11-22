@@ -23,6 +23,7 @@ interface RemotiveApiResponse {
 
 export class RemotiveJobSource implements JobSource {
   public readonly type = JobSourceType.REMOTIVE;
+  public readonly displayName = { ar: 'ريموتيف (Remotive)', en: 'Remotive' };
 
   async fetchJobs(query?: JobSearchQuery): Promise<Job[]> {
     const effectiveQuery: JobSearchQuery = query ?? { jobTitle: 'Software' };

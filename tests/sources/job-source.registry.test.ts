@@ -4,15 +4,14 @@ import type { JobSource } from '../../src/modules/jobs/sources/job-source.interf
 import { JobSourceType } from '../../src/modules/jobs/job.types.js';
 
 describe('JobSourceRegistry', () => {
-  it('should register and retrieve job sources', () => {
-    const registry = new JobSourceRegistry();
-    const mockSource: JobSource = {
-      type: JobSourceType.ARBEITNOW,
-      fetchJobs: async () => [],
-    };
+  it('should format source badge in Arabic and English using registered metadata', () => {
+    expect(JobSourceRegistry.formatSourceBadge('linkedin', 'ar')).toBe('المنصة: لينكدإن (LinkedIn)');
+    expect(JobSourceRegistry.formatSourceBadge('linkedin', 'en')).toBe('Platform: LinkedIn');
+    expect(JobSourceRegistry.formatSourceBadge('tanqeeb', 'ar')).toBe('المنصة: تنقيب (Tanqeeb)');
+    expect(JobSourceRegistry.formatSourceBadge(null, 'ar')).toBe('المنصة: تقديم مباشر');
+  });
 
-    registry.register(mockSource);
-    expect(registry.getSources()).toHaveLength(1);
-    expect(registry.getSources()[0].type).toBe(JobSourceType.ARBEITNOW);
+  it('should dynamically format arbitrary new sources without crashing', () => {
+    expect(JobSourceRegistry.formatSourceBadge('custom_job_board', 'ar')).toBe('المنصة: Custom job board');
   });
 });

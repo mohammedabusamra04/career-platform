@@ -13,6 +13,7 @@ import logger from '../../../shared/utils/logger.js';
  */
 export class ForasnaJobSource implements JobSource {
   public readonly type = JobSourceType.FORASNA;
+  public readonly displayName = { ar: 'فرصنا (Forasna)', en: 'Forasna' };
 
   async fetchJobs(query?: JobSearchQuery): Promise<Job[]> {
     const effectiveQuery: JobSearchQuery = query ?? { jobTitle: 'Developer' };

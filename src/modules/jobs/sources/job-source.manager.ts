@@ -7,6 +7,7 @@ import {
   CircuitState,
   type CircuitBreakerOptions,
 } from './circuit-breaker.js';
+import { JobSourceRegistry } from './job-source.registry.js';
 import {
   SourceHealthMonitor,
   type SourceHealthStatus,
@@ -50,6 +51,7 @@ export class JobSourceManager {
       healthMonitor ?? new SourceHealthMonitor(this.sources.map((s) => s.type));
 
     for (const source of this.sources) {
+      JobSourceRegistry.registerSource(source);
       this.circuitBreakers.set(
         source.type,
         new CircuitBreaker(source.type, circuitBreakerOptions),

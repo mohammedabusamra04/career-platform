@@ -21,6 +21,7 @@ import {
   RegionPreference,
   type Specialization,
 } from '../preferences/preference.taxonomy.js';
+import { JobSourceRegistry } from './sources/job-source.registry.js';
 import logger from '../../shared/utils/logger.js';
 
 export type JobSortOrder = 'BEST_MATCH' | 'LATEST';
@@ -41,6 +42,7 @@ export interface ExplorerJobItem {
   id: string;
   title: string;
   company: string;
+  source?: string | null;
   url: string;
   applicationUrl?: string | null;
   location?: string | null;
@@ -229,6 +231,7 @@ export class JobExplorerService {
         id: true,
         title: true,
         company: true,
+        source: true,
         url: true,
         applicationUrl: true,
         location: true,
@@ -301,14 +304,27 @@ export class JobExplorerService {
     );
 
     // Map into ExplorerJobItem items
+    const rawJobSourceMap = new Map<string, string>();
+    for (const rj of rawJobs) {
+      if (rj.id && (rj as { source?: string }).source) {
+        rawJobSourceMap.set(rj.id, (rj as { source?: string }).source!);
+      }
+    }
+
     const allMatches: ExplorerJobItem[] = scoredJobs.map((item) => {
       const rawCompany =
         'company' in item.job ? String((item.job as { company?: unknown }).company || '') : '';
+      const jobId = item.job.id as string;
+      const jobSource =
+        ('source' in item.job ? (item.job as { source?: string }).source : undefined) ||
+        rawJobSourceMap.get(jobId) ||
+        null;
 
       return {
-        id: item.job.id as string,
+        id: jobId,
         title: item.job.title || 'Untitled Role',
         company: rawCompany || 'Company',
+        source: jobSource,
         url: item.job.url || item.job.applicationUrl || '',
         applicationUrl: item.job.applicationUrl,
         location: item.job.location,
@@ -465,10 +481,13 @@ export class JobExplorerService {
         const remoteLine = formatRemoteScope(job.remoteScope, job.country, job.location, lang);
         const experienceLine = formatExperienceLevel(job.experienceLevel, lang);
         const matchToneLine = formatMatchTone(job.score ?? 70, lang);
+        const platformBadge = JobSourceRegistry.formatSourceBadge(job.source, lang);
+        const platformLine = `🌐 ${escapeTelegramMarkdown(platformBadge)}`;
 
         const lines = [
           `*${indexOnPage}.* 💼 ${titleLink}`,
           companyAndLocation,
+          platformLine,
           remoteLine,
           experienceLine,
           matchToneLine,

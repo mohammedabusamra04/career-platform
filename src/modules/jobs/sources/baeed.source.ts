@@ -11,6 +11,7 @@ import logger from '../../../shared/utils/logger.js';
  */
 export class BaeedJobSource implements JobSource {
   public readonly type = JobSourceType.BAEED;
+  public readonly displayName = { ar: 'بعيد (Baeed)', en: 'Baeed' };
   private readonly baseUrl = 'https://baeed.com';
 
   async fetchJobs(query?: JobSearchQuery): Promise<Job[]> {

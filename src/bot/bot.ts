@@ -13,6 +13,7 @@ import { registerJobsHandler } from './handlers/jobs.handler.js';
 import { registerStartHandler } from './handlers/start.handler.js';
 import { registerSpecializationHandler } from './handlers/specialization.handler.js';
 import { registerRegionHandler } from './handlers/region.handler.js';
+import { registerExperienceStepHandler } from './handlers/experience-step.handler.js';
 import { registerConfirmationHandler } from './handlers/confirmation.handler.js';
 import { registerSettingsHandler } from './handlers/settings.handler.js';
 import { registerPauseResumeHandler } from './handlers/pause-resume.handler.js';
@@ -46,6 +47,7 @@ bot.use(
 registerStartHandler(bot);
 registerSpecializationHandler(bot);
 registerRegionHandler(bot);
+registerExperienceStepHandler(bot);
 registerConfirmationHandler(bot);
 registerDigestPaginationHandler(bot);
 registerDigestFeedbackHandler(bot);

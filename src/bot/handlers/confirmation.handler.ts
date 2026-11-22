@@ -43,21 +43,39 @@ const REGION_LABELS = {
   },
 };
 
+function formatExperienceDisplay(level?: string | null, lang: SupportedLanguage = 'ar'): string {
+  const norm = level ? level.toUpperCase() : 'ALL';
+  const isAr = lang === 'ar';
+  switch (norm) {
+    case 'JUNIOR':
+      return isAr ? 'مستوى مبتدئ (Junior)' : 'Junior / Entry-Level';
+    case 'MID':
+      return isAr ? 'مستوى متوسط (Mid-Level)' : 'Mid-Level';
+    case 'SENIOR':
+      return isAr ? 'مستوى متقدم / خبير (Senior)' : 'Senior / Lead';
+    default:
+      return isAr ? 'الكل (مفتوح للجميع)' : 'Open to All Levels';
+  }
+}
+
 export function formatSummaryCard(
   specializations: Specialization[],
   region: RegionPreference,
   lang: SupportedLanguage = 'ar',
+  experienceLevel?: string | null,
 ): string {
   const specsList = specializations.length > 0 ? specializations.join(', ') : 'None';
   const regionLabel = REGION_LABELS[region]
     ? REGION_LABELS[region][lang]
     : REGION_LABELS[RegionPreference.BOTH][lang];
+  const expLabel = formatExperienceDisplay(experienceLevel, lang);
 
   if (lang === 'en') {
     return (
       `📋 *Review Your DeployMe Pipeline Config*\n\n` +
       `🎯 *Tech Stack / Specializations:*\n• ${specsList}\n\n` +
       `📍 *Target Market:*\n• ${regionLabel}\n\n` +
+      `📊 *Experience Level:*\n• ${expLabel}\n\n` +
       `⏰ *Delivery Schedule:*\n• You will receive a curated daily digest of matching tech roles every evening ⚡\n\n` +
       `Hit *Save & Deploy Pipeline* to launch your alerts!`
     );
@@ -67,6 +85,7 @@ export function formatSummaryCard(
     `📋 *ملخص إعدادات الـ Pipeline تبعك*\n\n` +
     `🎯 *التخصصات والـ Stack المختار:*\n• ${specsList}\n\n` +
     `📍 *نطاق السوق المستهدف:*\n• ${regionLabel}\n\n` +
+    `📊 *مستوى الخبرة:*\n• ${expLabel}\n\n` +
     `⏰ *نظام الإرسال:*\n• رح توصلك تجميعة يومية بأفضل الفرص التقنية المطابقة لمجالك كل مساء ⚡\n\n` +
     `اضغط على *تأكيد وتشغيل الـ Pipeline* عشان نبدأ!`
   );
@@ -109,8 +128,12 @@ export function registerConfirmationHandler(
 
       // 2. Transactionally save preferences (preserving any configured experience level)
       const existingPrefs = await prefRepo.findByUserId(user.id);
-      const experienceLevel =
-        existingPrefs?.experienceLevel || ctx.session?.preferences?.experienceLevel || undefined;
+      const rawExp =
+        ctx.session?.selectedExperience ||
+        existingPrefs?.experienceLevel ||
+        ctx.session?.preferences?.experienceLevel ||
+        undefined;
+      const experienceLevel = rawExp && rawExp !== 'ALL' ? rawExp : undefined;
 
       await prefRepo.savePreferences(user.id, {
         specializations,

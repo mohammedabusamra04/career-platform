@@ -6,6 +6,7 @@ import logger from '../../../shared/utils/logger.js';
 
 export class WeWorkRemotelyJobSource implements JobSource {
   public readonly type = JobSourceType.WE_WORK_REMOTELY;
+  public readonly displayName = { ar: 'وي وورك ريموتلي (We Work Remotely)', en: 'We Work Remotely' };
   private readonly feedUrl =
     'https://weworkremotely.com/categories/remote-programming-jobs.rss';
 

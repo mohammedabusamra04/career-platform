@@ -12,6 +12,7 @@ import logger from '../../../shared/utils/logger.js';
  */
 export class BaytJobSource implements JobSource {
   public readonly type = JobSourceType.BAYT;
+  public readonly displayName = { ar: 'بيت.كوم (Bayt)', en: 'Bayt' };
 
   async fetchJobs(query?: JobSearchQuery): Promise<Job[]> {
     const effectiveQuery: JobSearchQuery = query ?? { jobTitle: 'Developer' };

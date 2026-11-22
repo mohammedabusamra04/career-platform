@@ -125,7 +125,7 @@ describe('TASK-35.1: Region Preference Selection (Arab, International, Both) (#1
   });
 
   describe('Navigation: Submit Region (region_submit)', () => {
-    it('advances user to Step 3: Confirmation and defaults to BOTH if unset', async () => {
+    it('advances user to Step 3: Experience Level and defaults to BOTH if unset', async () => {
       const route = getHandlerFor('region_submit');
       expect(route).not.toBeNull();
 
@@ -142,11 +142,11 @@ describe('TASK-35.1: Region Preference Selection (Arab, International, Both) (#1
 
       await route!.handler(mockCtx);
 
-      expect(mockCtx.session.step).toBe('confirmation');
+      expect(mockCtx.session.step).toBe('experience-level');
       expect(mockCtx.session.selectedRegion).toBe(RegionPreference.BOTH);
       expect(mockCtx.answerCallbackQuery).toHaveBeenCalled();
       expect(mockCtx.reply).toHaveBeenCalledWith(
-        expect.stringContaining('ملخص إعدادات الـ Pipeline'),
+        expect.stringContaining('الخطوة 3:'),
         expect.objectContaining({
           parse_mode: 'Markdown',
           reply_markup: expect.anything(),
@@ -154,7 +154,7 @@ describe('TASK-35.1: Region Preference Selection (Arab, International, Both) (#1
       );
     });
 
-    it('advances user with English confirmation prompt when language is en', async () => {
+    it('advances user with English experience prompt when language is en', async () => {
       const route = getHandlerFor('region_submit');
 
       const mockCtx = {
@@ -171,10 +171,10 @@ describe('TASK-35.1: Region Preference Selection (Arab, International, Both) (#1
 
       await route!.handler(mockCtx);
 
-      expect(mockCtx.session.step).toBe('confirmation');
+      expect(mockCtx.session.step).toBe('experience-level');
       expect(mockCtx.session.selectedRegion).toBe(RegionPreference.INTERNATIONAL);
       expect(mockCtx.reply).toHaveBeenCalledWith(
-        expect.stringContaining('Review Your DeployMe Pipeline Config'),
+        expect.stringContaining('Step 3:'),
         expect.objectContaining({
           parse_mode: 'Markdown',
           reply_markup: expect.anything(),

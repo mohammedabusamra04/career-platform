@@ -20,6 +20,8 @@ export const EXACT_CALLBACK_WHITELIST = new Set([
   'preferences:update',
   'region_back',
   'region_submit',
+  'exp_step_back',
+  'exp_step_submit',
   'settings_edit_specs',
   'settings_edit_region',
   'settings_edit_experience',
@@ -44,6 +46,7 @@ export const PARAMETERIZED_CALLBACK_PATTERNS = [
   /^work-type:([a-zA-Z0-9_-]+)$/,
   /^experience:([a-zA-Z0-9_-]+)$/,
   /^region_select:(ARAB|INTERNATIONAL|BOTH)$/,
+  /^exp_step_select:(JUNIOR|MID|SENIOR|ALL)$/,
   /^spec_toggle:([a-zA-Z0-9_-]+)$/,
   /^settings_exp:(JUNIOR|MID|SENIOR|ALL)$/,
 ];
