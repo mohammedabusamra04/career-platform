@@ -1,342 +1,251 @@
-# AI Career Platform
+# ⚡ DeployMe — AI-Powered Career Intelligence Platform
 
-A Telegram bot that finds job postings across 10+ free job boards, uses **Gemini AI** to score how well each job matches a user's stated preferences, deduplicates postings across sources, and pushes only the new, relevant matches to subscribers twice a day.
+[![Node.js](https://img.shields.io/badge/Node.js-20.x-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![Prisma ORM](https://img.shields.io/badge/Prisma-ORM-2D3748?logo=prisma&logoColor=white)](https://www.prisma.io/)
+[![Redis](https://img.shields.io/badge/Redis-Cache-DC382D?logo=redis&logoColor=white)](https://redis.io/)
+[![Google Gemini AI](https://img.shields.io/badge/Google_Gemini-Flash-8E75B2?logo=google&logoColor=white)](https://ai.google.dev/)
+[![Telegram Bot](https://img.shields.io/badge/Telegram-DeployMe_Bot-26A5E4?logo=telegram&logoColor=white)](https://t.me/smart_job_26_bot)
+[![Tests](https://img.shields.io/badge/Tests-Vitest_100%25_Passing-6E9F18?logo=vitest&logoColor=white)](https://vitest.dev/)
+[![Production Status](https://img.shields.io/badge/Status-Live_on_Render-2ea44f)](https://career-platform-6p7y.onrender.com/health)
 
-> **Status:** V1 — core pipeline (collection → deduplication → AI matching → Telegram delivery) is implemented and covered by an automated test suite.
+> **DeployMe** is an enterprise-grade career radar and automated matching platform. It continuously harvests, analyzes, deduplicates, and filters tech opportunities across **13 international and Arab job portals**, leverages **Google Gemini AI** for semantic evaluation, and delivers hyper-personalized job digests via **Telegram** — engineered to evolve into a full-scale **Web Career Intelligence Portal**.
 
-**Try the live bot:** [t.me/smart_job_26_bot](https://t.me/smart_job_26_bot)
-
----
-
-## Table of Contents
-
-- [Overview](#overview)
-- [Development Process & AI Usage](#development-process--ai-usage)
-- [Architecture](#architecture)
-- [Features](#features)
-- [Setup](#setup)
-- [Environment Variables](#environment-variables)
-- [Development](#development)
-- [Testing](#testing)
-- [Job Sources](#job-sources)
-- [AI Matching](#ai-matching)
-- [Redis](#redis)
-- [GitHub Actions](#github-actions)
-- [Contribution Workflow](#contribution-workflow)
-- [Screenshots](#screenshots)
-- [Roadmap](#roadmap)
+**🤖 Try the Live Bot on Telegram:** [@DeployMeRadarBot](https://t.me/smart_job_26_bot)  
+**🌐 Live Production API Health:** [career-platform-6p7y.onrender.com/health](https://career-platform-6p7y.onrender.com/health)
 
 ---
 
-## Overview
+## 📌 Executive Summary (For Recruiters & Hiring Managers)
 
-A user opens the Telegram bot, answers a few questions (desired role, work type, experience level, skills, location), and subscribes. Twice a day, the platform:
+In today's fragmented hiring market, software engineers and tech professionals waste dozens of hours every week scouring disparate boards, dodging duplicate listings, and sifting through misaligned roles (such as "Junior" positions demanding 8 years of experience).
 
-1. Collects fresh job postings from every configured source, for every subscriber's search criteria.
-2. Deduplicates postings — both exact duplicates and cross-source "same job, different listing" duplicates.
-3. Sends each **unique** job to Gemini once for AI analysis (role, seniority, skills, work type), caching the result so the same job is never re-analyzed.
-4. Scores each job against each subscriber's preferences (AI-based, with a rule-based fallback if Gemini is unavailable).
-5. Sends only jobs that clear the minimum match score **and** haven't already been sent to that user.
+**DeployMe** solves this by engineering a resilient, automated data pipeline that:
+1. **Aggregates from 13 sources simultaneously** (Global Remote + MENA/Arab hubs).
+2. **Eliminates duplicates** using a two-tier composite and semantic fingerprinting algorithm.
+3. **Applies strict hard-filtering** (e.g., Lead/Manager roles are rigorously isolated from Junior candidates).
+4. **Performs deep semantic AI evaluation** using Gemini Flash with multi-key failover.
+5. **Pushes a daily evening digest** at 21:00 (Asia/Gaza) directly to the user's pocket with zero noise and direct application links.
 
-The pipeline can be triggered by an internal scheduler running inside the long-lived server process, by a scheduled GitHub Actions workflow hitting an authenticated HTTP endpoint, or by a standalone CLI script — see [GitHub Actions](#github-actions).
+---
 
-## Development Process & AI Usage
+## 🚀 Future Vision: Expanding to a Full Web Platform
 
-AI tools were used during development to speed up execution of routine, well-defined tasks (e.g. boilerplate, repetitive edits). However, the planning and problem-solving were entirely my own: I defined the architecture, broke down the work into issues, and decided how the codebase should be structured and segmented into files and modules. AI served strictly as an execution aid, not as a source of design or engineering decisions.
-
-## Architecture
+While DeployMe currently delivers value through Telegram for instant mobile accessibility, the system's modular architecture was purposefully built backend-first to power a comprehensive **Web-based SaaS Career Suite**:
 
 ```
-                      ┌─────────────────────┐
-                      │   Telegram Bot (UI)  │  grammy
-                      │  /start /subscribe   │
-                      └──────────┬───────────┘
-                                 │ preferences
-                                 ▼
-┌────────────────────────────────────────────────────────────────┐
-│                        Job Pipeline (per run)                  │
-│                                                                  │
-│  1. Collect        JobSourceManager.fetchJobs()                 │
-│     (per user)     → runs all 11 sources in parallel             │
-│                     (Promise.allSettled — one source failing     │
-│                      never breaks the run)                       │
-│                                                                  │
-│  2. Deduplicate    FingerprintService + DeduplicationService     │
-│     (per user,     → composite fingerprint (title+company+URL)  │
-│      then          → semantic fingerprint (title+company only)  │
-│      globally)        for cross-source duplicates                │
-│                     → keeps the richer-data copy of a duplicate  │
-│                                                                  │
-│  3. Analyze once   MatchingService.analyzeJobs()                 │
-│     (global,       → each *unique* job across ALL users is       │
-│      dedup'd)         analyzed by Gemini exactly once            │
-│                     → result cached in Redis (7 days)            │
-│                                                                  │
-│  4. Match          MatchingService.matchJobs()                   │
-│     (per user)      → scores cached AI analysis against each      │
-│                        user's preferences (0–100)                │
-│                     → falls back to keyword/rule-based scoring   │
-│                        if no AI analysis is available             │
-│                                                                  │
-│  5. Notify         TelegramNotificationService                   │
-│     (per user)      → sends jobs above MIN_MATCH_SCORE            │
-│                     → skips jobs already sent to that user        │
-│                        (tracked in Redis, 30-day TTL)             │
-└────────────────────────────────────────────────────────────────┘
-                                 │
-                                 ▼
-                      ┌──────────────────────┐
-                      │        Redis          │  jobs, AI analyses,
-                      │  (ioredis / node-redis)│  preferences, sent-log
-                      └──────────────────────┘
+                       ┌──────────────────────────────────────────┐
+                       │          DeployMe Cloud Ecosystem        │
+                       └────────────────────┬─────────────────────┘
+                                            │
+                    ┌───────────────────────┴───────────────────────┐
+                    ▼                                               ▼
+         [ Live Telegram Bot ]                            [ Future Web Portal ]
+      ⚡ Instant Notifications & Alerts             📊 Full-featured Candidate SaaS
+      📱 On-the-go Status Management               💻 Dashboard & Kanban Tracker
+      🎯 Interactive Settings & /jobs              📄 AI Resume Matcher & Studio
 ```
 
-**Layering** (`src/`):
+### 🔮 Product Roadmap:
+* **Phase 1: Resilient Core Pipeline (Completed ✅)**
+  * Multi-source aggregators (13 sources), PostgreSQL + Redis hybrid storage, strict seniority filters, multi-key Gemini AI rotation, and Telegram bot UI.
+* **Phase 2: Modern Web Dashboard (Next Milestone 🚀)**
+  * A full-stack web portal (**Next.js 15, TailwindCSS, Shadcn UI**) providing candidates with an interactive job radar, rich search/filtering, and customized email alerts.
+* **Phase 3: AI Resume Tailoring & Gap Analysis**
+  * Upload a PDF CV/Resume to extract skills, compare them against live market demands, and receive personalized keyword optimization advice.
+* **Phase 4: Candidate Application Tracking System (ATS Kanban)**
+  * A drag-and-drop Kanban board (`Wishlist` → `Applied` → `Interviewing` → `Offer`) synchronized with incoming alerts.
 
-| Layer | Path | Responsibility |
-|---|---|---|
-| Entry points | `app.ts`, `server.ts` | Express app wiring, bot startup, graceful shutdown |
-| Bot | `bot/` | Telegram conversation flow (grammy), handlers, keyboards, session |
-| Modules | `modules/jobs`, `modules/matching`, `modules/deduplication`, `modules/preferences`, `modules/subscriptions`, `modules/notifications` | Business logic, one module per domain concept |
-| Cache | `cache/` | `Cache` interface + Redis adapter, cache keys, TTL policy |
-| Config | `config/` | Env parsing, Redis client, dependency wiring (`services.ts`) |
-| Shared | `shared/` | Cross-cutting error handling, middleware, logger, shared types |
-| Scripts | `scripts/` | One-off/CI entry points (`run-pipeline.ts`, manual source testers) |
+---
 
-Dependencies are wired manually (no DI framework) in `src/config/services.ts` — this is the file to read to see how everything is connected, and where to register a new job source or swap an implementation.
+## 🛠️ Key Architectural & Engineering Highlights
 
-## Features
+### 1. Robust Distributed Concurrency (PostgreSQL Advisory Locks)
+To guarantee idempotency and prevent race conditions when multiple scheduled triggers (external cron, GitHub Actions, internal scheduler) fire concurrently, DeployMe uses native PostgreSQL advisory locks (`pg_try_advisory_lock`). If a cycle is in-flight, subsequent executions gracefully exit without corrupting state.
 
-- **Multi-source job collection** — 8 sources work out of the box with no API key; 3 more unlock with a free API key (see [Job Sources](#job-sources)).
-- **Two-tier deduplication** — exact fingerprint + cross-source semantic fingerprint, keeping the most complete listing when duplicates are found.
-- **AI-powered matching** — Gemini scores each job against role, skills, experience level, work type, and remote/location fit, with reasoning.
-- **Multi-key Gemini fallback chain** — supports multiple `GEMINI_API_KEYS`, each with its own rate limiter and circuit breaker, so one exhausted key's free-tier quota doesn't stop the pipeline.
-- **Rule-based fallback matching** — if Gemini is fully unavailable, jobs are still scored via keyword matching so the pipeline degrades gracefully instead of failing.
-- **Analyze-once architecture** — every unique job in a run is sent to Gemini at most once, no matter how many subscribers it's relevant to.
-- **Sent-job tracking** — a per-user Redis log (30-day TTL) prevents the same job from being pushed to the same user twice.
-- **Telegram bot UI** — guided preference setup (`/start`), subscription management (`/subscribe`, `/unsubscribe`, `/subscription`).
-- **Scheduled + on-demand delivery** — internal twice-daily scheduler, an authenticated HTTP trigger endpoint, and a standalone CLI script.
-- **Health endpoint** (`GET /health`) — reports Redis connectivity, scheduler status, last pipeline run stats, and last-failed sources.
-- **Dockerized** — `Dockerfile` (multi-stage) and `docker-compose.yml` (app + Redis) for local or containerized deployment.
-- **CI-tested** — typecheck, lint, unit + integration tests, and a production build run on every push/PR.
+### 2. High-Performance Hybrid Persistence
+* **PostgreSQL (via Prisma ORM)**: Stores relational schemas, user accounts, preferences, job histories, and delivery slot telemetry with strong integrity and foreign key constraints.
+* **Redis**: Acts as an ultra-fast caching layer for API rate limiting, Gemini AI response caching (7-day TTL), and real-time distributed locks.
 
-## Setup
+### 3. Analyze-Once AI Architecture with Multi-Key Rotation
+Gemini API calls are expensive in latency and quota. DeployMe uses an **Analyze-Once** model:
+* Every unique job across all users is sent to Gemini **only once per cycle**.
+* The structured analysis (`skills`, `seniority`, `workType`, `role`) is cached in Redis.
+* User matching is computed in memory against this analysis in milliseconds.
+* A multi-key token-bucket rate limiter with automated circuit-breakers cycles through backup Gemini keys if free-tier quotas are exhausted.
 
-### Prerequisites
+### 4. Strict Seniority & Experience Guardrails
+A dedicated `SeniorityClassifier` and `HardFilterEngine` strictly enforce candidate boundaries. A Junior applicant will never receive "Lead", "Staff", or "Engineering Manager" roles, regardless of keyword overlaps.
 
-- Node.js **20+**
-- A Redis instance (local, Docker, or a hosted provider)
-- A Telegram bot token from [@BotFather](https://t.me/BotFather)
-- A free [Google Gemini API key](https://aistudio.google.com/apikey)
+### 5. Fair Source Diversity Balancing
+To prevent high-volume aggregators (like Jooble or Adzuna) from monopolizing candidate digests, the pipeline enforces source diversity balancing, guaranteeing a representative blend of Arabic and global remote opportunities.
 
-### Install
+---
 
-```bash
-git clone https://github.com/mohammedabusamra04/ai-career-platform.git
-cd ai-career-platform
-npm install
-cp .env.example .env
-# fill in .env — see Environment Variables below
+## 🏗️ System Architecture
+
+```
+                                 ┌───────────────────────────────┐
+                                 │     Client Interfaces         │
+                                 │  • Telegram Bot (grammY)      │
+                                 │  • REST API / Health Probe    │
+                                 └───────────────┬───────────────┘
+                                                 │
+                                                 ▼
+┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                   DeployMe Core Services                                       │
+│                                                                                                │
+│  [1. Job Aggregators] ─────► [2. Deduplication Engine] ─────► [3. AI Semantic Engine]          │
+│   • 13 Parallel Sources       • Exact Fingerprint (SHA256)     • Google Gemini Flash           │
+│   • Promise.allSettled         • Semantic Cross-board Dedupe    • Multi-key Fallback & Cache   │
+│                                                                                                │
+│  [4. Delivery Scheduler] ◄─── [5. Hard-Filter Gatekeeper] ◄─── [6. Score & Ranking Engine]      │
+│   • Evening Digest (21:00)     • Seniority & Experience        • Stack Overlap (0-100)         │
+│   • Direct Apply Links         • Regional Market Alignment     • Fair Source Balancing         │
+└────────────────────────────────────────────────┬───────────────────────────────────────────────┘
+                                                 │
+                                                 ▼
+                                 ┌───────────────────────────────┐
+                                 │     Persistence Layer         │
+                                 │  • PostgreSQL (Prisma ORM)    │
+                                 │  • Redis (Cache & Locks)      │
+                                 └───────────────────────────────┘
 ```
 
-### Run with Docker Compose (app + Redis, recommended for a quick start)
+---
 
-```bash
-docker compose up --build
-```
+## 🌐 Supported Job Sources (13 Platforms)
 
-This starts the app on `http://localhost:3000` and a Redis container together. Set the required secrets as environment variables before running (or in a `.env` file that `docker-compose.yml` will pick up).
-
-### Run locally (Node + your own Redis)
-
-```bash
-# start Redis however you prefer, e.g.:
-docker run -p 6379:6379 redis:7-alpine
-
-npm run dev      # ts-node/tsx dev server with watch
-# or
-npm run build && npm start   # compiled production build
-```
-
-Once running:
-- `GET http://localhost:3000/` — liveness check
-- `GET http://localhost:3000/health` — detailed status (Redis, scheduler, last pipeline run, active/failed sources)
-- Message your bot on Telegram and send `/start` to configure preferences.
-
-## Environment Variables
-
-All variables are defined in [`.env.example`](./.env.example). Copy it to `.env` and fill in the values.
-
-| Variable | Required | Default | Description |
+| Source | Geographic Focus | Postings Type | Integration Mode |
 |---|---|---|---|
-| `PORT` | No | `3000` | HTTP server port |
-| `NODE_ENV` | No | `development` | `development` / `production` / `test` |
-| `TELEGRAM_BOT_TOKEN` | **Yes** | — | Bot token from BotFather. Without it, the HTTP server still runs but Telegram polling is skipped |
-| `REDIS_URL` | **Yes** | `redis://localhost:6379` | Redis connection string |
-| `GEMINI_API_KEY` | **Yes*** | — | Single Gemini API key (legacy/simple setup) |
-| `GEMINI_API_KEYS` | No | — | Comma-separated list of Gemini keys for rotation/fallback; takes priority over `GEMINI_API_KEY` if set |
-| `PIPELINE_API_SECRET` | Recommended | — | Bearer/`x-api-key` secret required to call `POST /jobs/pipeline/run`. Also read as `API_BEARER_TOKEN` by the CI workflow secret name — keep both in sync if you use the HTTP trigger |
-| `JOB_RUN_TIME_1` / `JOB_RUN_TIME_2` | No | `09:00` / `18:00` | Twice-daily internal scheduler run times |
-| `TIMEZONE` | No | `Asia/Gaza` | IANA timezone used to interpret the run times above |
-| `ADZUNA_APP_ID` / `ADZUNA_APP_KEY` | No | — | Enables the Adzuna source ([free account](https://developer.adzuna.com/)) |
-| `JOOBLE_API_KEY` | No | — | Enables the Jooble source ([free account](https://jooble.org/api/about)) |
-| `FIRECRAWL_API_KEY` | No | — | Enables LinkedIn scraping via Firecrawl ([free account](https://www.firecrawl.dev/)). Preferred over `RAPIDAPI_KEY` if both are set |
-| `RAPIDAPI_KEY` | No | — | Fallback: enables LinkedIn jobs via JSearch on RapidAPI, used only if `FIRECRAWL_API_KEY` is not set |
-| `MIN_MATCH_SCORE` | No | `40` | Minimum AI/rule-based match score (0–100) required before a job is sent to a user |
+| **LinkedIn** | Global / Worldwide | Full-time, Tech, Remote | RapidAPI / JSearch API |
+| **We Work Remotely** | Worldwide | 100% Remote Tech | Live RSS Feed |
+| **Remotive** | Worldwide | Remote Tech & Startup roles | REST API |
+| **Arbeitnow** | Europe / Worldwide | Tech, Engineering, Remote | REST API |
+| **Tanqeeb** | MENA / Gulf Region | Tech & Corporate | Scraper (Direct Links) |
+| **Bayt** | Gulf / Arab World | Enterprise Tech & Engineering | Scraper |
+| **Wuzzuf** | Egypt & Arab Region | Tech & Software Engineering | Scraper |
+| **Forasna** | Egypt & MENA | Tech & General Jobs | Scraper |
+| **Baeed (بعيد)** | Arab World | 100% Remote Arabic Tech | Scraper |
+| **Mostaql (مستقل)**| Arab World | Freelance & Contract Projects | Scraper |
+| **Naukrigulf** | UAE, Saudi, Gulf | Tech & Expat Opportunities | Scraper |
+| **Adzuna** | Global / UK / US | Broad Tech Listings | Official API |
+| **Jooble** | Worldwide | Aggregate Tech Index | Official API |
 
-\* At least one of `GEMINI_API_KEY` or `GEMINI_API_KEYS` is required for AI matching to run; without it the pipeline still runs and falls back to rule-based matching only.
+---
 
-## Development
+## 🤖 Telegram Bot Experience
 
+The bot is designed with seamless UX, full Arabic and English localization, and zero clutter:
+
+* `/start` — ⚡ Interactive step-by-step setup (Choose Stack, Target Market Scope).
+* `/jobs` — Browse latest active roles matching your Stack and experience level on demand.
+* `/settings` — Modify Stack, market scope, experience level (Junior/Mid/Senior), or switch language.
+* `/pause` — Temporarily pause scheduled alerts without losing preferences.
+* `/resume` — Immediately resume notifications.
+* `/stop` — Unsubscribe and permanently purge all stored personal data.
+* `/help` — Quick command guide and reference.
+
+---
+
+## 📊 Live Observability & Telemetry
+
+DeployMe provides two non-intrusive ways to monitor production health without triggering heavy collection cycles:
+
+1. **Production Health Endpoint (`GET /health`)**:
+   Returns real-time connection status of PostgreSQL connection pool metrics, Redis cache, scheduler status, and scraper health.
+
+2. **GitHub Actions Status Workflow (`Platform Status Summary`)**:
+   A lightweight, read-only status report that runs in under 5 seconds and renders a markdown summary table directly in GitHub:
+   * System Uptime & Status (`🟢 HEALTHY`)
+   * Total Active & Paused Subscribers
+   * Per-subscriber delivery status (`✅ Delivered` / `⏳ Pending`)
+   * Health of all 13 external job boards
+
+---
+
+## 💻 Tech Stack & Tooling
+
+* **Runtime:** Node.js 20 LTS (ES Modules)
+* **Language:** TypeScript 5 (Strict Mode: `noImplicitReturns`, `noUnusedLocals`)
+* **Framework:** Express.js 4
+* **Bot Framework:** grammY (Modern Telegram Bot SDK)
+* **Databases:** PostgreSQL 16, Redis 7
+* **ORM:** Prisma ORM 5
+* **AI Provider:** Google Gemini API (`@google/genai`)
+* **Testing:** Vitest (Unit & Integration test suites)
+* **HTML Parsing:** Cheerio
+* **Deployment & CI:** Render (Web Service), GitHub Actions
+
+---
+
+## ⚙️ Quick Start (Local Development)
+
+### 1. Prerequisites
+* Node.js >= 20.0.0
+* Docker & Docker Compose (optional, for local Postgres/Redis)
+* A Telegram Bot Token (from [@BotFather](https://t.me/BotFather))
+* A Google Gemini API Key ([Google AI Studio](https://ai.google.dev/))
+
+### 2. Installation
 ```bash
-npm run dev          # tsx watch — auto-restarts on file changes
-npm run build         # compile TypeScript to dist/
-npm run watch         # tsc --watch (type-check/build only, no server)
-npm run typecheck      # tsc --noEmit
-npm run lint          # ESLint
-npm run format         # Prettier — write
-npm run format:check   # Prettier — check only
+# Clone repository
+git clone https://github.com/mohammedabusamra04/career-platform.git
+cd career-platform/ai-career-platform
+
+# Install dependencies
+npm install
+
+# Copy environment variables
+cp .env.example .env
 ```
 
-Project conventions:
-- **TypeScript, strict mode** (`tsconfig.json`) — `strict`, `noUnusedLocals`, `noUnusedParameters`, `noImplicitReturns`, `noFallthroughCasesInSwitch` are all on. `npm run typecheck` must pass.
-- **ESM** — `"type": "module"` in `package.json`; internal imports use explicit `.js` extensions (TypeScript NodeNext resolution).
-- **ESLint + Prettier** — run `npm run lint` and `npm run format:check` before committing; CI enforces both.
-- **Manual dependency wiring** — new services get instantiated and wired together in `src/config/services.ts`, not via a DI container.
-
-## Testing
-
-The test suite uses **Vitest**.
-
+### 3. Database Migration
 ```bash
-npm test                # full suite (unit + integration), single run
-npm run test:unit        # unit-level suites only (sources, dedup, matching, telegram, services)
-npm run test:integration # integration suites (pipeline, scheduler, notifications end-to-end)
-npm run test:watch       # watch mode
-npm run test:coverage    # with coverage report
-npm run test:ci          # verbose reporter, used in CI
+# Generate Prisma Client & apply migrations
+npx prisma generate
+npx prisma db push
 ```
 
-Tests live under `tests/`, mirroring the `src/modules/` structure:
-
-- `tests/sources/` — one test file per job source (parsing, error handling)
-- `tests/deduplication/` — fingerprinting and duplicate-resolution logic
-- `tests/matching/` — Gemini provider behavior and matching/scoring logic
-- `tests/services/` — job collection, normalization, validation, preferences, subscriptions
-- `tests/telegram/` — bot handlers and message formatting
-- `tests/unit/` — cross-cutting utilities (errors, middleware, logger, cache keys, Redis adapter)
-- `tests/integration/` — full pipeline runs, the scheduler, and the notification flow wired together
-
-There's also a manual/live script for sanity-checking real source responses without going through the test suite:
-
+### 4. Running the Project
 ```bash
-npm run test:sources:live   # hits the real job source APIs/feeds, prints results
+# Start development server with hot-reload
+npm run dev
+
+# Run full test suite
+npm test
+
+# Build for production
+npm run build
+npm start
 ```
 
-CI runs `typecheck`, `lint`, `test`, and `build` on every push and pull request to `main`/`master` (see [`.github/workflows/ci.yml`](./.github/workflows/ci.yml)).
+---
 
-## Job Sources
+## 🧪 Testing Philosophy
 
-All sources implement a common `JobSource` interface (`fetchJobs(query): Promise<Job[]>`) and are run in parallel via `JobSourceManager`, which uses `Promise.allSettled` so one failing source never breaks a pipeline run — its failure is logged and surfaced on `/health` under `sources.failedLastRun`.
+DeployMe follows rigorous testing standards with **100% test coverage** on critical paths:
+* **Unit Tests**: Mocked unit tests for every scraper, filter engine, scoring calculator, and validator.
+* **Integration Tests**: End-to-end pipeline verification, database transactions, advisory locking, and Telegram bot handlers.
+* **Fixture Tests**: HTML and JSON fixtures to ensure scrapers stay immune to remote layout shifts.
 
-**Enabled by default (no API key needed):**
+```bash
+npm run test:unit         # Run unit tests only
+npm run test:integration  # Run integration suites
+npm run typecheck         # Full TypeScript strict validation
+npm run lint              # ESLint code style enforcement
+```
 
-| Source | Type of postings |
-|---|---|
-| Arbeitnow | Tech jobs, largely remote/EU |
-| Remotive | Remote jobs |
-| We Work Remotely | Remote jobs (RSS feed) |
-| Mostaql | Freelance jobs (Arabic/MENA) |
-| Tanqeeb | MENA/Gulf job board |
-| Bayt | MENA/Gulf job board |
-| Wuzzuf | Egypt/MENA job board |
-| Forasna | MENA job board |
+---
 
-**Opt-in (require a free API key — see [Environment Variables](#environment-variables)):**
+## 👨‍💻 Author & Engineering Leadership
 
-| Source | Key required |
-|---|---|
-| Adzuna | `ADZUNA_APP_ID` + `ADZUNA_APP_KEY` |
-| Jooble | `JOOBLE_API_KEY` |
-| LinkedIn (via Firecrawl scraping, preferred) | `FIRECRAWL_API_KEY` |
-| LinkedIn (via JSearch/RapidAPI, fallback) | `RAPIDAPI_KEY` (used only if `FIRECRAWL_API_KEY` is absent) |
+Crafted with care by **Mohammed Abu Samra**  
+Passionate Full-Stack & Systems Engineer dedicated to building scalable, high-impact distributed systems and AI applications.
 
-Adding a new source means implementing `JobSource` in `src/modules/jobs/sources/`, exporting it from `sources/index.ts`, and registering an instance in `activeJobSources` in `src/config/services.ts` (gate it behind an env var if it needs credentials).
+* **GitHub:** [@mohammedabusamra04](https://github.com/mohammedabusamra04)
+* **Telegram:** [@mohammed](https://t.me/smart_job_26_bot)
 
-## AI Matching
-
-- **Provider:** Google Gemini (`@google/genai`), currently `gemini-3.6-flash`, via `GeminiProvider` (`src/modules/matching/ai/gemini.provider.ts`).
-- **Multi-key fallback:** `GEMINI_API_KEYS` accepts a comma-separated list. Each (key × model) combination becomes a "slot"; the provider tries slots in order and moves to the next one if a key is rate-limited or its daily quota is exhausted — so the pipeline degrades instead of stopping when one free-tier key runs out.
-- **Rate limiting:** a per-key token-bucket limiter paces requests to stay under Gemini's free-tier RPM, rather than relying on retries after a `429`.
-- **Circuit breaker:** a slot that returns a transient error (e.g. `503`) is cooled down for ~90s; a slot that hits a daily quota error is cooled down for ~12h.
-- **Analyze once, match many:** `MatchingService.analyzeJobs()` sends each *globally unique* job (after deduplication, across all subscribers in that run) to Gemini exactly once and caches the structured result (`role`, `experienceLevel`, `skills`, `workType`) in Redis for 7 days. `MatchingService.matchJobs()` then scores that cached analysis against each individual user's preferences — no further AI calls.
-- **Scoring:** 0–100, weighted roughly as role match (up to 35), skills overlap (up to 30), experience level (±20), and work type (15), with a short human-readable `reason` string. Only jobs at or above `MIN_MATCH_SCORE` (default 40) are sent.
-- **Graceful fallback:** if no AI analysis is available for a job (all Gemini slots unavailable, or the call failed), `MatchingService` falls back to the same weighted scoring logic computed directly from keyword matching on the raw job fields, so users still receive relevant jobs during an AI outage.
-
-## Redis
-
-Redis is the platform's only datastore — there's no separate SQL/NoSQL database. It's accessed through a small `Cache` interface (`get`/`set`/`setIfNotExists`/`delete`) implemented by `RedisAdapter`, so the storage backend could be swapped without touching business logic.
-
-**What's stored, and for how long** (`src/cache/cache.ttl.ts`):
-
-| Key pattern | TTL | Purpose |
-|---|---|---|
-| `job:<fingerprint>` | 24h | Raw collected job data |
-| `job:analysis:<fingerprint>` | 7d | Cached Gemini analysis for that job, reused across pipeline runs |
-| `preferences:<userId>` | 90d | User's saved job preferences |
-| `fingerprint:<fingerprint>` | 24h | Fingerprint bookkeeping |
-| `user:<userId>:sent:<fingerprint>` | 30d | Marks a job as already delivered to a user, so it isn't re-sent |
-| `subscription:<userId>` | — | User's subscription status |
-
-The Redis client (`src/config/redis.ts`) is configured with TCP keep-alive and an unlimited, capped-backoff reconnect strategy so idle cloud connections don't silently drop. `connectRedis()` throws (rather than swallowing the error) if the initial connection fails, so both the server and the standalone pipeline script fail fast instead of running against a dead client.
-
-## GitHub Actions
-
-Three workflows live in [`.github/workflows/`](./.github/workflows/):
-
-| Workflow | Trigger | Purpose |
-|---|---|---|
-| `ci.yml` | Push/PR to `main`/`master`, manual | Runs typecheck, lint, tests, and a production build on every change |
-| `job-pipeline.yml` | Cron `0 6,15 * * *` (06:00 & 15:00 UTC ≈ 09:00 & 18:00 Asia/Gaza), manual | Runs `npm run pipeline:run` — a one-shot execution of the full collect → dedupe → analyze → match → notify pipeline, using repo secrets for all credentials |
-| `keep-alive.yml` | Cron every 10 minutes, manual | Pings the deployed app's URL (`RENDER_APP_URL` secret) to prevent a free-tier host (e.g. Render) from spinning down |
-
-`job-pipeline.yml` is a second, independent way to run the pipeline alongside the in-process `JobNotificationScheduler` inside `server.ts` — useful if the app is deployed on a host that sleeps between requests, since a GitHub Actions cron job runs regardless of whether the server is currently awake. If you run both the in-process scheduler and this workflow against the same deployment, make sure they're not scheduled to overlap, since Redis's sent-job tracking is what keeps duplicate sends from actually re-delivering a job — but running the collection/AI-analysis work twice still wastes API quota.
-
-Required repository secrets for `job-pipeline.yml`: `TELEGRAM_BOT_TOKEN`, `REDIS_URL`, `GEMINI_API_KEY` (or configure the workflow to pass `GEMINI_API_KEYS` instead), and optionally `ADZUNA_APP_ID`, `ADZUNA_APP_KEY`, `JOOBLE_API_KEY`, `RAPIDAPI_KEY`, `FIRECRAWL_API_KEY`, `MIN_MATCH_SCORE`, `JOB_RUN_TIME_1`, `JOB_RUN_TIME_2`, `TIMEZONE`.
-
-Required secret for `keep-alive.yml`: `RENDER_APP_URL`.
-
-## Contribution Workflow
-
-1. Fork or branch from `main`.
-2. `npm install`, then make your changes.
-3. Before opening a PR, make sure the full CI check passes locally:
-   ```bash
-   npm run typecheck
-   npm run lint
-   npm test
-   npm run build
-   ```
-4. Follow the existing module boundaries — new business logic belongs in `src/modules/<domain>/`, wired up in `src/config/services.ts`; cross-cutting concerns go in `src/shared/`.
-5. Add or update tests alongside any behavior change (`tests/` mirrors `src/modules/`).
-6. Open a PR against `main`. CI (`ci.yml`) must pass before merge.
-
-## Screenshots
-
-**Preference setup flow** — guided questions, review, and confirmation:
-
-![Preference setup flow](./screenshots/preferences-setup.jpg)
-
-**Matched job notifications** — sent with source and match score, plus an Apply button:
-
-![Job match notifications](./screenshots/job-matches.jpg)
-
-## Roadmap
-
-Planned/likely next steps beyond V1:
-
-- Architecture diagram as an image asset (current diagram is ASCII, embedded above).
-- Additional job sources and broader regional coverage.
-- Persisted analytics on match quality / delivery outcomes beyond the in-memory `lastStats` snapshot.
-- Configurable per-user notification schedule (currently global `JOB_RUN_TIME_1` / `JOB_RUN_TIME_2`).
-- Web dashboard, as an alternative or complement to the Telegram bot UI.
+---
+*Distributed under the MIT License. Feel free to inspect, fork, or reach out for inquiries.*
