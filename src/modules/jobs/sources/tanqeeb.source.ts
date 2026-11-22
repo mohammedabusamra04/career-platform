@@ -43,14 +43,15 @@ export class TanqeebJobSource implements JobSource {
   private parseJobs(html: string, query: JobSearchQuery): Job[] {
     const $ = cheerio.load(html);
     const jobs: Job[] = [];
+    const seenUrls = new Set<string>();
 
-    $('.card-list-item, .job-listing, .card-item, div[class*="job"], article').each((_, el) => {
+    $('.card-list-item, .job-listing, .card-item, article').each((_, el) => {
       if (jobs.length >= 15) {
         return;
       }
 
       const titleEl = $(el)
-        .find('h2 a, .card-title a, a[href*="/jobs/"], a[href*="/job/"]')
+        .find('.search-job-title a, h2 a, .card-title a, a[href*=".html"], a[href*="/jobs/"], a[href*="/job/"]')
         .first();
       const title = titleEl.text().trim();
       let link = titleEl.attr('href');
@@ -59,20 +60,32 @@ export class TanqeebJobSource implements JobSource {
         return;
       }
 
+      // Filter out non-job navigation links, category pages, search filters, and share URLs
+      const isNavOrCategory = /job_list|with-salaries|search\?|create_job|create_widget|change_lang|order_by|sharer|\/s\/jobs\//i.test(link);
+      const isNavTitle = /^(manage my jobs|reset filter|jobs with salaries|add job|العربية|most recent|relevance)$/i.test(title);
+      if (isNavOrCategory || isNavTitle) {
+        return;
+      }
+
       if (!link.startsWith('http')) {
         link = `https://www.tanqeeb.com${link.startsWith('/') ? '' : '/'}${link}`;
       }
 
+      if (seenUrls.has(link)) {
+        return;
+      }
+      seenUrls.add(link);
+
       const company =
         $(el)
-          .find('.card-company, .company, span[class*="company"], .t-company')
+          .find('.search-job-company-name, .card-company, .company, span[class*="company"], .t-company')
           .first()
           .text()
           .trim() || 'Tanqeeb Employer';
 
       const location =
         $(el)
-          .find('.card-location, .location, span[class*="location"], .t-location')
+          .find('.search-job-workplace-location, .card-location, .location, span[class*="location"], .t-location')
           .first()
           .text()
           .trim() ||
@@ -80,7 +93,7 @@ export class TanqeebJobSource implements JobSource {
         'Middle East';
 
       const description =
-        $(el).find('.card-desc, p, .snippet').first().text().trim() ||
+        $(el).find('.job-card-description-source, .card-desc, p, .snippet').first().text().trim() ||
         `${title} at ${company} in ${location}`;
 
       const isRemote =

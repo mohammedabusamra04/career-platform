@@ -65,10 +65,10 @@ export const activeJobSources: JobSource[] = [
     ? [new AdzunaJobSource(env.adzunaAppId, env.adzunaAppKey)]
     : []),
   ...(env.joobleApiKey ? [new JoobleJobSource(env.joobleApiKey, { maxAgeDays: 3 })] : []),
-  ...(env.firecrawlApiKey
-    ? [new FirecrawlLinkedInSource(env.firecrawlApiKey)]
-    : env.rapidApiKey
-      ? [new LinkedinJobSource(env.rapidApiKey)]
+  ...(env.rapidApiKey
+    ? [new LinkedinJobSource(env.rapidApiKey)]
+    : env.firecrawlApiKey
+      ? [new FirecrawlLinkedInSource(env.firecrawlApiKey)]
       : []),
 ];
 
