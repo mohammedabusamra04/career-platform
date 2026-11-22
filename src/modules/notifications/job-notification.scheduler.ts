@@ -44,7 +44,7 @@ export class JobNotificationScheduler {
 
     this.isRunning = true;
     logger.info(
-      `JobNotificationScheduler started (Timezone: ${env.timezone}, Times: ${env.jobRunTime1}, ${env.jobRunTime2})`,
+      `JobNotificationScheduler started (Timezone: ${env.timezone}, Time: ${env.dailyDigestTime})`,
     );
 
     void this.scheduleNextRun();
@@ -70,7 +70,7 @@ export class JobNotificationScheduler {
       lastRun: this.lastRunDate,
       nextRun: this.nextRunDate,
       timezone: env.timezone,
-      notificationTimes: [env.jobRunTime1, env.jobRunTime2],
+      notificationTimes: [env.dailyDigestTime],
     };
   }
 
@@ -92,9 +92,10 @@ export class JobNotificationScheduler {
         continue;
       }
 
+      // Enforce evening daily digest time (21:00) strictly to prevent unwanted morning triggers
       const isDue = this.scheduleService.isNotificationDue(
         preferences.timezone || env.timezone,
-        preferences.notificationTimes || [env.jobRunTime1, env.jobRunTime2],
+        [env.dailyDigestTime],
         now,
       );
 
@@ -115,10 +116,10 @@ export class JobNotificationScheduler {
 
     const nextRuns: Date[] = [];
 
-    // Global default scheduled run times from env
+    // Global default scheduled run times from env (strictly dailyDigestTime)
     const globalNextRun = this.scheduleService.getNextNotificationTime(
       env.timezone,
-      [env.jobRunTime1, env.jobRunTime2],
+      [env.dailyDigestTime],
       now,
     );
     nextRuns.push(globalNextRun);
@@ -132,7 +133,7 @@ export class JobNotificationScheduler {
 
       const nextRun = this.scheduleService.getNextNotificationTime(
         preferences.timezone || env.timezone,
-        preferences.notificationTimes || [env.jobRunTime1, env.jobRunTime2],
+        [env.dailyDigestTime],
         now,
       );
 

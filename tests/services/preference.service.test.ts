@@ -31,7 +31,7 @@ describe('PreferenceService', () => {
       skills: ['Node.js', 'TypeScript', 'Redis'],
       timezone: 'Asia/Gaza',
     });
-    expect(preferences.notificationTimes).toHaveLength(2);
+    expect(preferences.notificationTimes).toEqual(['21:00']);
   });
 
   it('should reject invalid job title', () => {

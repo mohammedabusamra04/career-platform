@@ -1,0 +1,122 @@
+name: Platform Status Summary
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 6,18 * * *' # Twice daily status heartbeat (read-only)
+
+jobs:
+  status:
+    name: Check Live Platform Status
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Fetch Telemetry and Generate Summary
+        env:
+          PLATFORM_URL: ${{ vars.DEPLOYME_API_URL || 'https://career-platform-6p7y.onrender.com' }}
+        run: |
+          node -e '
+          const fs = require("fs");
+          const platformUrl = (process.env.PLATFORM_URL || "https://career-platform-6p7y.onrender.com").replace(/\/+$/, "");
+          const healthUrl = `${platformUrl}/health`;
+
+          async function generateSummary() {
+            try {
+              console.log(`Pinging live health endpoint at: ${healthUrl}`);
+              const res = await fetch(healthUrl);
+              if (!res.ok) {
+                throw new Error(`HTTP Error: ${res.status} ${res.statusText}`);
+              }
+              const json = await res.json();
+              const d = json.data || {};
+
+              const statusIcon = d.status === "ok" ? "🟢 HEALTHY (200 OK)" : `⚠️ ${d.status}`;
+              const uptimeHours = d.uptime ? (d.uptime / 3600).toFixed(1) + " hrs" : "Unknown";
+              const dbStatus = d.database?.status === "connected" ? "🟢 Connected" : "🔴 Disconnected";
+              const redisStatus = d.redis === "connected" ? "🟢 Connected" : "🔴 Disconnected";
+              const schedulerRunning = d.scheduler?.isRunning ? "🟢 Active" : "⏸ Paused";
+              const nextRun = d.scheduler?.nextScheduledRun ? new Date(d.scheduler.nextScheduledRun).toLocaleString("en-GB", { timeZone: d.timezone || "Asia/Gaza" }) + " (Asia/Gaza)" : "None scheduled";
+              const lastRun = d.scheduler?.lastRun ? new Date(d.scheduler.lastRun).toLocaleString("en-GB", { timeZone: d.timezone || "Asia/Gaza" }) + " (Asia/Gaza)" : "None yet";
+              
+              const sourcesCount = d.sourcesSummary?.totalCount || 0;
+              const activeSources = (d.sourcesSummary?.active || []).join(", ");
+              const failedSources = (d.sourcesSummary?.failedLastRun || []).join(", ") || "None (All 100% operational)";
+
+              // Last digest delivery info
+              const slotInfo = d.lastDigestSlot;
+              const slotText = slotInfo 
+                ? `**Slot:** \`${slotInfo.slotKey}\` | **Status:** ${slotInfo.status} | **Sent:** ${slotInfo.sentCount ?? 0} / ${slotInfo.totalRecipients ?? 0}`
+                : "No completed digest slot recorded yet today.";
+
+              // Last pipeline run info
+              const pipeInfo = d.pipeline;
+              const pipeText = pipeInfo
+                ? `**Last Run:** ${pipeInfo.lastRunAt} | **Subscribers:** ${pipeInfo.subscribers} | **Delivered:** ${pipeInfo.notifiedWithJobs} | **Errors:** ${pipeInfo.errors}`
+                : "No pipeline cycle recorded in current memory cycle.";
+
+              const markdown = `
+          # ⚡ DeployMe Platform & Pipeline Status Report
+
+          > **Read-only Snapshot:** This workflow inspects the live production status on Render without triggering background scrapers, AI matching, or notifications.
+
+          ---
+
+          ### 🌐 Core System Health
+          | Metric | Status / Value |
+          | :--- | :--- |
+          | **Overall Platform Status** | **${statusIcon}** |
+          | **Service URL** | \`${platformUrl}\` |
+          | **Uptime** | ${uptimeHours} (\`${d.uptime || 0}s\`) |
+          | **Timezone** | \`${d.timezone || "Asia/Gaza"}\` |
+          | **PostgreSQL Database** | ${dbStatus} (Pool: \`${d.database?.pool?.active ?? 1}\` active / \`${d.database?.pool?.maxPoolSize ?? 20}\` max) |
+          | **Redis Cache** | ${redisStatus} |
+
+          ---
+
+          ### ⏰ Scheduler & Evening Digest (21:00)
+          | Parameter | Details |
+          | :--- | :--- |
+          | **Scheduler Service** | ${schedulerRunning} |
+          | **Notification Slot** | Strictly Evening \`21:00\` Asia/Gaza |
+          | **Next Scheduled Run** | \`${nextRun}\` |
+          | **Last Scheduled Run** | \`${lastRun}\` |
+
+          ---
+
+          ### 📬 Latest Digest & Pipeline Telemetry
+          - **Last Digest Slot:** ${slotText}
+          - **Last Pipeline Execution:** ${pipeText}
+
+          ---
+
+          ### 🔌 Job Scraper Sources (${sourcesCount} Active)
+          - **Integrated Sources:** \`${activeSources}\`
+          - **Failed Sources:** \`${failedSources}\`
+
+          ---
+          *Report generated at: \`${new Date().toISOString()}\`*
+          `;
+
+              console.log(markdown);
+              if (process.env.GITHUB_STEP_SUMMARY) {
+                fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, markdown);
+              }
+            } catch (err) {
+              const errorMd = `
+          # ❌ DeployMe Platform Status: UNREACHABLE
+
+          > **Error contacting Render health endpoint:**
+          \`${err.message}\`
+
+          Please verify that Render is up and not spinning up from sleep.
+          `;
+              console.error(errorMd);
+              if (process.env.GITHUB_STEP_SUMMARY) {
+                fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, errorMd);
+              }
+              process.exit(1);
+            }
+          }
+
+          generateSummary();
+          '

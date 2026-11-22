@@ -53,7 +53,7 @@ export class PreferenceService {
       location: input.location ? normalizeLocation(input.location) : undefined,
       skills: input.skills ? normalizeSkills(input.skills) : undefined,
       timezone: input.timezone || env.timezone || 'Asia/Gaza',
-      notificationTimes: input.notificationTimes || [env.jobRunTime1, env.jobRunTime2],
+      notificationTimes: input.notificationTimes || [env.dailyDigestTime],
     };
   }
 

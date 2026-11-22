@@ -84,8 +84,7 @@ export async function executePipelineWorker(
 
     const scheduleService = deps?.scheduleService ?? new NotificationScheduleService();
     const slot = scheduleService.getLatestDueSlot(env.timezone, [
-      env.jobRunTime1,
-      env.jobRunTime2,
+      env.dailyDigestTime,
     ]);
 
     await connectRedis();
