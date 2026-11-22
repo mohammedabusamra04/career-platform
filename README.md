@@ -1,23 +1,49 @@
-# ⚡ DeployMe — AI-Powered Career Intelligence Platform
+# ⚡ DeployMe — Automated Career Intelligence Platform
 
 [![Node.js](https://img.shields.io/badge/Node.js-20.x-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 [![Prisma ORM](https://img.shields.io/badge/Prisma-ORM-2D3748?logo=prisma&logoColor=white)](https://www.prisma.io/)
 [![Redis](https://img.shields.io/badge/Redis-Cache-DC382D?logo=redis&logoColor=white)](https://redis.io/)
-[![Google Gemini AI](https://img.shields.io/badge/Google_Gemini-Flash-8E75B2?logo=google&logoColor=white)](https://ai.google.dev/)
-[![Telegram Bot](https://img.shields.io/badge/Telegram-DeployMe_Bot-26A5E4?logo=telegram&logoColor=white)](https://t.me/smart_job_26_bot)
+[![Google Gemini](https://img.shields.io/badge/Google_Gemini-Flash-8E75B2?logo=google&logoColor=white)](https://ai.google.dev/)
+[![Telegram Bot](https://img.shields.io/badge/Telegram-@DeployMeRadarBot-26A5E4?logo=telegram&logoColor=white)](https://t.me/DeployMeRadarBot)
 [![Tests](https://img.shields.io/badge/Tests-Vitest_100%25_Passing-6E9F18?logo=vitest&logoColor=white)](https://vitest.dev/)
 [![Production Status](https://img.shields.io/badge/Status-Live_on_Render-2ea44f)](https://career-platform-6p7y.onrender.com/health)
 
-> **DeployMe** is an enterprise-grade career radar and automated matching platform. It continuously harvests, analyzes, deduplicates, and filters tech opportunities across **13 international and Arab job portals**, leverages **Google Gemini AI** for semantic evaluation, and delivers hyper-personalized job digests via **Telegram** — engineered to evolve into a full-scale **Web Career Intelligence Portal**.
+> **DeployMe** is an enterprise-grade career radar and automated matching platform. It continuously harvests, analyzes, deduplicates, and filters tech opportunities across **13 international and Arab job portals**, leverages **Google Gemini** for deep semantic evaluation, and delivers hyper-personalized job digests via **Telegram** — engineered to evolve into a full-scale **Web Career Intelligence Portal**.
 
-**🤖 Try the Live Bot on Telegram:** [@DeployMeRadarBot](https://t.me/smart_job_26_bot)  
+**🤖 Try the Live Bot on Telegram:** [https://t.me/DeployMeRadarBot](https://t.me/DeployMeRadarBot)  
 **🌐 Live Production API Health:** [career-platform-6p7y.onrender.com/health](https://career-platform-6p7y.onrender.com/health)
 
 ---
 
-## 📌 Executive Summary (For Recruiters & Hiring Managers)
+## 📑 Table of Contents
+
+- [Live Demo & Experience](#-live-demo--interactive-experience)
+- [Overview & Value Proposition](#-overview--value-proposition)
+- [Future Vision: Expanding to a Full Web Platform](#-future-vision-expanding-to-a-full-web-platform)
+- [Key Architectural & Engineering Highlights](#-key-architectural--engineering-highlights)
+- [System Architecture](#-system-architecture)
+- [Supported Job Sources (13 Platforms)](#-supported-job-sources-13-platforms)
+- [Telegram Bot Experience & Commands](#-telegram-bot-experience)
+- [Live Observability & Telemetry](#-live-observability--telemetry)
+- [Tech Stack & Tooling](#-tech-stack--tooling)
+- [Quality Assurance & Testing Standards](#-quality-assurance--testing-standards)
+- [Author & Engineering Leadership](#-author--engineering-leadership)
+
+---
+
+## 🚀 Live Demo & Interactive Experience
+
+DeployMe is continuously deployed and running live 24/7 in production. You can immediately experience the candidate onboarding, customize your technical Stack preferences, and explore real-time matched opportunities:
+
+👉 **[Launch DeployMe on Telegram (@DeployMeRadarBot)](https://t.me/DeployMeRadarBot)**
+
+*No local setup, database configuration, or API keys required to test — simply click the link above, send `/start`, and select your specialization.*
+
+---
+
+## 📌 Overview & Value Proposition
 
 In today's fragmented hiring market, software engineers and tech professionals waste dozens of hours every week scouring disparate boards, dodging duplicate listings, and sifting through misaligned roles (such as "Junior" positions demanding 8 years of experience).
 
@@ -25,12 +51,12 @@ In today's fragmented hiring market, software engineers and tech professionals w
 1. **Aggregates from 13 sources simultaneously** (Global Remote + MENA/Arab hubs).
 2. **Eliminates duplicates** using a two-tier composite and semantic fingerprinting algorithm.
 3. **Applies strict hard-filtering** (e.g., Lead/Manager roles are rigorously isolated from Junior candidates).
-4. **Performs deep semantic AI evaluation** using Gemini Flash with multi-key failover.
+4. **Performs deep semantic evaluation** using Gemini Flash with multi-key failover.
 5. **Pushes a daily evening digest** at 21:00 (Asia/Gaza) directly to the user's pocket with zero noise and direct application links.
 
 ---
 
-## 🚀 Future Vision: Expanding to a Full Web Platform
+## 🔮 Future Vision: Expanding to a Full Web Platform
 
 While DeployMe currently delivers value through Telegram for instant mobile accessibility, the system's modular architecture was purposefully built backend-first to power a comprehensive **Web-based SaaS Career Suite**:
 
@@ -44,15 +70,15 @@ While DeployMe currently delivers value through Telegram for instant mobile acce
          [ Live Telegram Bot ]                            [ Future Web Portal ]
       ⚡ Instant Notifications & Alerts             📊 Full-featured Candidate SaaS
       📱 On-the-go Status Management               💻 Dashboard & Kanban Tracker
-      🎯 Interactive Settings & /jobs              📄 AI Resume Matcher & Studio
+      🎯 Interactive Settings & /jobs              📄 Resume Matcher & Studio
 ```
 
-### 🔮 Product Roadmap:
+### 🗺️ Product Roadmap:
 * **Phase 1: Resilient Core Pipeline (Completed ✅)**
-  * Multi-source aggregators (13 sources), PostgreSQL + Redis hybrid storage, strict seniority filters, multi-key Gemini AI rotation, and Telegram bot UI.
+  * Multi-source aggregators (13 sources), PostgreSQL + Redis hybrid storage, strict seniority filters, multi-key Gemini rotation, and Telegram bot UI.
 * **Phase 2: Modern Web Dashboard (Next Milestone 🚀)**
   * A full-stack web portal (**Next.js 15, TailwindCSS, Shadcn UI**) providing candidates with an interactive job radar, rich search/filtering, and customized email alerts.
-* **Phase 3: AI Resume Tailoring & Gap Analysis**
+* **Phase 3: Automated Resume Tailoring & Skills Gap Analysis**
   * Upload a PDF CV/Resume to extract skills, compare them against live market demands, and receive personalized keyword optimization advice.
 * **Phase 4: Candidate Application Tracking System (ATS Kanban)**
   * A drag-and-drop Kanban board (`Wishlist` → `Applied` → `Interviewing` → `Offer`) synchronized with incoming alerts.
@@ -66,14 +92,14 @@ To guarantee idempotency and prevent race conditions when multiple scheduled tri
 
 ### 2. High-Performance Hybrid Persistence
 * **PostgreSQL (via Prisma ORM)**: Stores relational schemas, user accounts, preferences, job histories, and delivery slot telemetry with strong integrity and foreign key constraints.
-* **Redis**: Acts as an ultra-fast caching layer for API rate limiting, Gemini AI response caching (7-day TTL), and real-time distributed locks.
+* **Redis**: Acts as an ultra-fast caching layer for API rate limiting, Gemini response caching (7-day TTL), and real-time distributed locks.
 
-### 3. Analyze-Once AI Architecture with Multi-Key Rotation
-Gemini API calls are expensive in latency and quota. DeployMe uses an **Analyze-Once** model:
-* Every unique job across all users is sent to Gemini **only once per cycle**.
+### 3. Analyze-Once Architecture with Multi-Key Rotation
+LLM calls are computationally heavy and subject to rate limits. DeployMe uses an **Analyze-Once** model:
+* Every unique job across all users is evaluated **only once per cycle**.
 * The structured analysis (`skills`, `seniority`, `workType`, `role`) is cached in Redis.
 * User matching is computed in memory against this analysis in milliseconds.
-* A multi-key token-bucket rate limiter with automated circuit-breakers cycles through backup Gemini keys if free-tier quotas are exhausted.
+* A multi-key token-bucket rate limiter with automated circuit-breakers cycles through backup keys if quotas are exhausted.
 
 ### 4. Strict Seniority & Experience Guardrails
 A dedicated `SeniorityClassifier` and `HardFilterEngine` strictly enforce candidate boundaries. A Junior applicant will never receive "Lead", "Staff", or "Engineering Manager" roles, regardless of keyword overlaps.
@@ -96,7 +122,7 @@ To prevent high-volume aggregators (like Jooble or Adzuna) from monopolizing can
 ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
 │                                   DeployMe Core Services                                       │
 │                                                                                                │
-│  [1. Job Aggregators] ─────► [2. Deduplication Engine] ─────► [3. AI Semantic Engine]          │
+│  [1. Job Aggregators] ─────► [2. Deduplication Engine] ─────► [3. Semantic Analysis Engine]    │
 │   • 13 Parallel Sources       • Exact Fingerprint (SHA256)     • Google Gemini Flash           │
 │   • Promise.allSettled         • Semantic Cross-board Dedupe    • Multi-key Fallback & Cache   │
 │                                                                                                │
@@ -151,7 +177,7 @@ The bot is designed with seamless UX, full Arabic and English localization, and 
 
 ## 📊 Live Observability & Telemetry
 
-DeployMe provides two non-intrusive ways to monitor production health without triggering heavy collection cycles:
+DeployMe provides two non-intrusive ways to monitor production health:
 
 1. **Production Health Endpoint (`GET /health`)**:
    Returns real-time connection status of PostgreSQL connection pool metrics, Redis cache, scheduler status, and scraper health.
@@ -173,79 +199,30 @@ DeployMe provides two non-intrusive ways to monitor production health without tr
 * **Bot Framework:** grammY (Modern Telegram Bot SDK)
 * **Databases:** PostgreSQL 16, Redis 7
 * **ORM:** Prisma ORM 5
-* **AI Provider:** Google Gemini API (`@google/genai`)
+* **Semantic Engine:** Google Gemini (`@google/genai`)
 * **Testing:** Vitest (Unit & Integration test suites)
 * **HTML Parsing:** Cheerio
 * **Deployment & CI:** Render (Web Service), GitHub Actions
 
 ---
 
-## ⚙️ Quick Start (Local Development)
+## 🧪 Quality Assurance & Testing Standards
 
-### 1. Prerequisites
-* Node.js >= 20.0.0
-* Docker & Docker Compose (optional, for local Postgres/Redis)
-* A Telegram Bot Token (from [@BotFather](https://t.me/BotFather))
-* A Google Gemini API Key ([Google AI Studio](https://ai.google.dev/))
-
-### 2. Installation
-```bash
-# Clone repository
-git clone https://github.com/mohammedabusamra04/career-platform.git
-cd career-platform/ai-career-platform
-
-# Install dependencies
-npm install
-
-# Copy environment variables
-cp .env.example .env
-```
-
-### 3. Database Migration
-```bash
-# Generate Prisma Client & apply migrations
-npx prisma generate
-npx prisma db push
-```
-
-### 4. Running the Project
-```bash
-# Start development server with hot-reload
-npm run dev
-
-# Run full test suite
-npm test
-
-# Build for production
-npm run build
-npm start
-```
-
----
-
-## 🧪 Testing Philosophy
-
-DeployMe follows rigorous testing standards with **100% test coverage** on critical paths:
+DeployMe enforces high software engineering quality through comprehensive testing:
 * **Unit Tests**: Mocked unit tests for every scraper, filter engine, scoring calculator, and validator.
 * **Integration Tests**: End-to-end pipeline verification, database transactions, advisory locking, and Telegram bot handlers.
-* **Fixture Tests**: HTML and JSON fixtures to ensure scrapers stay immune to remote layout shifts.
-
-```bash
-npm run test:unit         # Run unit tests only
-npm run test:integration  # Run integration suites
-npm run typecheck         # Full TypeScript strict validation
-npm run lint              # ESLint code style enforcement
-```
+* **Fixture Tests**: HTML and JSON fixtures ensuring scrapers remain immune to layout shifts.
+* **Automated CI**: GitHub Actions runs TypeScript typecheck, ESLint, and Vitest test suites on every pull request.
 
 ---
 
 ## 👨‍💻 Author & Engineering Leadership
 
 Crafted with care by **Mohammed Abu Samra**  
-Passionate Full-Stack & Systems Engineer dedicated to building scalable, high-impact distributed systems and AI applications.
+Passionate Full-Stack & Systems Engineer dedicated to building scalable, high-impact distributed systems and modern web applications.
 
+* **Telegram Bot:** [@DeployMeRadarBot](https://t.me/DeployMeRadarBot)
 * **GitHub:** [@mohammedabusamra04](https://github.com/mohammedabusamra04)
-* **Telegram:** [@mohammed](https://t.me/smart_job_26_bot)
 
 ---
 *Distributed under the MIT License. Feel free to inspect, fork, or reach out for inquiries.*
