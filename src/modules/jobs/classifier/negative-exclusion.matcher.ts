@@ -36,10 +36,24 @@ export class NegativeExclusionMatcher {
     // 5. Native Arabic non-technical patterns
     {
       pattern:
-        /(?:مسؤول توظيف|أخصائي توظيف|استقطاب مواهب|مدير مبيعات|مندوب مبيعات|أخصائي تسويق|خدمة عملاء|كاتب محتوى|كاتب مقال|كتابة مقال|كتابة مقالات|كتابة نصوص|إعادة صياغة|مساعد تنفيذي|ترجمة|مترجم|تفريغ صوتي|تعليق صوتي|معلق صوتي|تفريغ نصوص|إدخال بيانات|ادخال بيانات|تصميم شعار|تصميم لوجو|هوية بصرية|مصمم جرافيك|تصميم جرافيك|جرافيك ديزاين|مونتاج|مونتير|تعديل فيديو|محاسبة|محاسب|تسويق إلكتروني|تسويق الكتروني|تسويق رقمي|إدارة حسابات|ادارة حسابات|إدارة صفحات|ادارة صفحات|باحث|باحثة|مقابلات هاتفية|إجراء مقابلات|اجراء مقابلات|استبيان|استبيانات|محركات البحث|تحسين محركات البحث|سيو)/i,
+        /(?:مسؤول توظيف|اخصائي توظيف|استقطاب مواهب|مدير مبيعات|مندوب مبيعات|اخصائي تسويق|خدمة عملاء|كاتب محتوى|كتابة محتوى|صانع محتوى|صناعة محتوى|كاتب مقال|كتابة مقال|كتابة مقالات|كتابة نصوص|اعادة صياغة|مساعد تنفيذي|ترجمة|مترجم|مترجمة|تفريغ صوتي|تعليق صوتي|معلق صوتي|معلقة صوتية|تسجيل صوتي|شرح صوتي|صوتي|تفريغ نصوص|ادخال بيانات|تصميم شعار|تصميم لوجو|هوية بصرية|مصمم جرافيك|تصميم جرافيك|جرافيك ديزاين|مونتاج|مونتير|تعديل فيديو|انميشن|انيميشن|رسوم متحركة|محاسبة|محاسب|تسويق الكتروني|تسويق رقمي|ادارة حسابات|ادارة صفحات|نشر محتوى|باحث|باحثة|مقابلات هاتفية|اجراء مقابلات|استبيان|استبيانات|محركات البحث|تحسين محركات البحث|سيو|تدريس|معلم|معلمة|منهج دراسي|شرح منهج)/i,
       label: 'arabic_non_technical',
     },
   ];
+
+  /**
+   * Normalizes Arabic text by removing diacritics/tashkeel, unifying alef, and removing separators.
+   */
+  public static normalizeArabic(text: string): string {
+    return text
+      // Remove tashkeel / diacritics (fatha, damma, kasra, shadda, sukun, tanween)
+      .replace(/[\u064B-\u065F\u0670]/g, '')
+      // Unify alef forms (أ, إ, آ -> ا)
+      .replace(/[أإآ]/g, 'ا')
+      // Replace slashes, dashes, brackets with space (e.g. مُعلّق/ة -> معلق ة)
+      .replace(/[\/\\()_\-]/g, ' ')
+      .toLowerCase();
+  }
 
   /**
    * Evaluates a job title against explicit negative exclusion patterns.
@@ -51,8 +65,10 @@ export class NegativeExclusionMatcher {
     }
 
     const clean = title.trim();
+    const normalized = NegativeExclusionMatcher.normalizeArabic(clean);
+
     for (const entry of NegativeExclusionMatcher.EXCLUSION_PATTERNS) {
-      if (entry.pattern.test(clean)) {
+      if (entry.pattern.test(clean) || entry.pattern.test(normalized)) {
         return {
           isExcluded: true,
           reason: `Matched negative pattern: ${entry.label}`,
