@@ -16,7 +16,14 @@ describe('MostaqlJobSource (TASK-25.2: Fixture Testing & Robust Filtering)', () 
     expect(source.type).toBe(JobSourceType.MOSTAQEL);
   });
 
-  it('builds category=design URL for UI/UX queries and category=development for other tech queries', () => {
+  it('builds category=design URL for UI/UX queries, category=ai-machine-learning for AI queries, and category=development for other tech queries', () => {
+    const aiUrl = source.buildSearchUrl({ jobTitle: 'مهندس ذكاء اصطناعي' });
+    expect(aiUrl).toContain('category=ai-machine-learning');
+
+    const mlUrl = source.buildSearchUrl({ jobTitle: 'Machine Learning Engineer' });
+    expect(mlUrl).toContain('category=ai-machine-learning');
+    expect(mlUrl).toContain('keyword=Machine+Learning+Engineer');
+
     const uiuxUrl = source.buildSearchUrl({ jobTitle: 'UI/UX Designer' });
     expect(uiuxUrl).toContain('category=design');
     expect(uiuxUrl).toContain('keyword=UI%2FUX+Designer');

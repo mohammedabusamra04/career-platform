@@ -63,20 +63,31 @@ export class MostaqlJobSource implements JobSource {
 
   /**
    * Scopes Mostaql category and keyword based on search query.
-   * UI/UX queries use category=design, technical roles use category=development.
+   * AI/ML queries use category=ai-machine-learning,
+   * UI/UX queries use category=design,
+   * Technical / development roles use category=development.
    */
   public buildSearchUrl(query?: JobSearchQuery): string {
+    const isAiMl =
+      Boolean(query?.jobTitle) &&
+      /\b(?:ai|ml|machine\s*learning|deep\s*learning|nlp|llm|gpt|chatbot)\b|ذكاء\s*اصطناعي|تعلم\s*الآلة|تعلم\s*عميق|شات\s*بوت/i.test(
+        query!.jobTitle,
+      );
     const isUiUx =
       Boolean(query?.jobTitle) &&
       /\b(?:ui|ux|ui\/ux|design|figma)\b|تصميم|واجهات/i.test(query!.jobTitle);
-    const category = isUiUx ? 'design' : 'development';
+    const category = isAiMl
+      ? 'ai-machine-learning'
+      : isUiUx
+        ? 'design'
+        : 'development';
     const keyword = query?.jobTitle?.trim() || '';
 
     const params = new URLSearchParams();
     params.set('category', category);
 
     // Only inject keyword if it is not a generic category term
-    if (keyword && !/^(?:برمجة|تطوير|developer|software)$/i.test(keyword)) {
+    if (keyword && !/^(?:برمجة|تطوير|developer|software|ذكاء اصطناعي)$/i.test(keyword)) {
       params.set('keyword', keyword);
     }
 
