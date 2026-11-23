@@ -19,4 +19,6 @@ export const cacheKeys = {
     userId: string | number,
     fingerprint: string,
   ) => `user:${userId}:sent:${fingerprint}`,
+
+  linkLiveness: (hash: string) => `link:liveness:${hash}`,
 };

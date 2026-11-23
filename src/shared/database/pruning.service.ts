@@ -1,25 +1,33 @@
 import type { PrismaClient } from '@prisma/client';
 import ms from 'ms';
 import { prisma as defaultPrisma } from './prisma.service.js';
+import { verifyJobLinkLiveness } from '../../modules/jobs/job.link-verifier.js';
+import type { Cache } from '../../cache/cache.interface.js';
 import logger from '../utils/logger.js';
 
 export const RETENTION_POLICIES = {
   SENT_JOBS: ms('60d'),
   CLOSED_JOBS: ms('30d'),
   DELIVERY_SLOTS: ms('30d'),
+  ACTIVE_JOB_MAX_AGE_DAYS: 21,
 } as const;
 
 export interface PruningOptions {
   sentJobsRetentionMs?: number;
   closedJobsRetentionMs?: number;
   deliverySlotsRetentionMs?: number;
+  activeJobMaxAgeDays?: number;
   now?: Date;
+  cache?: Cache | null;
+  verifyAggregatorLinks?: boolean;
 }
 
 export interface PruningResult {
   sentJobsDeleted: number;
   closedJobsDeleted: number;
   deliverySlotsDeleted: number;
+  staleJobsExpired: number;
+  deadLinksExpired: number;
   totalDeleted: number;
   durationMs: number;
 }
@@ -90,6 +98,85 @@ export class PruningService {
   }
 
   /**
+   * Marks stored ACTIVE jobs older than retention threshold (default: 21 days) as EXPIRED.
+   */
+  public async markStaleActiveJobsAsExpired(
+    retentionDays: number = RETENTION_POLICIES.ACTIVE_JOB_MAX_AGE_DAYS,
+    now: Date = new Date(),
+  ): Promise<number> {
+    const cutoff = new Date(now.getTime() - retentionDays * 24 * 60 * 60 * 1000);
+
+    const result = await this.db.job.updateMany({
+      where: {
+        status: 'ACTIVE',
+        publishedAt: { lt: cutoff },
+      },
+      data: {
+        status: 'EXPIRED',
+      },
+    });
+
+    return result.count;
+  }
+
+  /**
+   * Verifies existing stored aggregator links (adzuna, jooble, linkedin, career, euremotejobs, dailyremote)
+   * with verifyJobLinkLiveness, marking dead/expired ones as EXPIRED.
+   */
+  public async verifyAndExpireDeadAggregatorLinks(
+    cache?: Cache | null,
+    batchSize: number = 5,
+  ): Promise<number> {
+    const aggregatorJobs = await this.db.job.findMany({
+      where: {
+        status: 'ACTIVE',
+        source: {
+          in: ['adzuna', 'jooble', 'linkedin', 'career', 'euremotejobs', 'dailyremote'],
+        },
+      },
+      select: {
+        id: true,
+        title: true,
+        url: true,
+        applicationUrl: true,
+        source: true,
+      },
+    });
+
+    if (aggregatorJobs.length === 0) {
+      return 0;
+    }
+
+    let expiredCount = 0;
+
+    for (let i = 0; i < aggregatorJobs.length; i += batchSize) {
+      const batch = aggregatorJobs.slice(i, i + batchSize);
+      const results = await Promise.all(
+        batch.map(async (job) => {
+          const targetUrl = job.applicationUrl || job.url;
+          const liveness = await verifyJobLinkLiveness(targetUrl, cache);
+          return { job, liveness };
+        }),
+      );
+
+      for (const { job, liveness } of results) {
+        if (!liveness.isAlive) {
+          await this.db.job.update({
+            where: { id: job.id },
+            data: { status: 'EXPIRED' },
+          });
+          logger.info(
+            `[PruningService] Marked dead/expired job as EXPIRED: "${job.title}" (${liveness.reason})`,
+          );
+          expiredCount++;
+        }
+      }
+    }
+
+    return expiredCount;
+  }
+
+  /**
    * Runs all automated pruning lifecycle routines and returns aggregated counts.
    */
   public async runAllPruning(options?: PruningOptions): Promise<PruningResult> {
@@ -99,24 +186,33 @@ export class PruningService {
     const sentRetention = options?.sentJobsRetentionMs ?? RETENTION_POLICIES.SENT_JOBS;
     const closedRetention = options?.closedJobsRetentionMs ?? RETENTION_POLICIES.CLOSED_JOBS;
     const slotRetention = options?.deliverySlotsRetentionMs ?? RETENTION_POLICIES.DELIVERY_SLOTS;
+    const maxAgeDays = options?.activeJobMaxAgeDays ?? RETENTION_POLICIES.ACTIVE_JOB_MAX_AGE_DAYS;
 
     logger.info(`Starting automated data retention pruning...`);
 
     const sentJobsDeleted = await this.pruneSentJobs(sentRetention, now);
     const closedJobsDeleted = await this.pruneClosedJobs(closedRetention, now);
     const deliverySlotsDeleted = await this.pruneDeliverySlots(slotRetention, now);
+    const staleJobsExpired = await this.markStaleActiveJobsAsExpired(maxAgeDays, now);
+
+    let deadLinksExpired = 0;
+    if (options?.verifyAggregatorLinks !== false) {
+      deadLinksExpired = await this.verifyAndExpireDeadAggregatorLinks(options?.cache);
+    }
 
     const totalDeleted = sentJobsDeleted + closedJobsDeleted + deliverySlotsDeleted;
     const durationMs = Date.now() - startTime;
 
     logger.info(
-      `Pruning completed in ${durationMs}ms: ${sentJobsDeleted} sent jobs, ${closedJobsDeleted} closed jobs, ${deliverySlotsDeleted} delivery slots deleted (Total: ${totalDeleted}).`,
+      `Pruning completed in ${durationMs}ms: ${sentJobsDeleted} sent jobs deleted, ${closedJobsDeleted} closed jobs deleted, ${deliverySlotsDeleted} delivery slots deleted, ${staleJobsExpired} stale jobs marked EXPIRED, ${deadLinksExpired} dead links marked EXPIRED (Total deleted: ${totalDeleted}).`,
     );
 
     return {
       sentJobsDeleted,
       closedJobsDeleted,
       deliverySlotsDeleted,
+      staleJobsExpired,
+      deadLinksExpired,
       totalDeleted,
       durationMs,
     };

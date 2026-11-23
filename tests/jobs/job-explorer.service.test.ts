@@ -107,6 +107,79 @@ describe('JobExplorerService (TASK-44.1)', () => {
       service = new JobExplorerService(mockPrisma as unknown as PrismaClient);
     });
 
+    it('should filter out stale jobs older than 21 days and non-ACTIVE jobs', async () => {
+      mockPrisma.userPreference.findUnique.mockResolvedValueOnce({
+        userId: 'user-uuid-stale-test',
+        specializations: [Specialization.BACKEND],
+        regionPreference: RegionPreference.BOTH,
+        experienceLevel: 'SENIOR',
+        workType: 'FULL_TIME',
+        preferenceHash: 'hash-stale-filter-test',
+      });
+
+      const now = Date.now();
+      const testPool = [
+        {
+          id: 'job-fresh',
+          title: 'Senior Backend Engineer Fresh',
+          company: 'TechCorp',
+          url: 'https://example.com/fresh',
+          applicationUrl: 'https://apply.example.com/fresh',
+          location: 'Dubai, UAE',
+          country: 'AE',
+          remoteScope: 'WORLDWIDE',
+          primarySpecialization: Specialization.BACKEND,
+          secondarySpecialization: null,
+          experienceLevel: 'SENIOR',
+          workType: 'FULL_TIME',
+          publishedAt: new Date(now - 2 * 24 * 3600000), // 2 days old
+          status: 'ACTIVE',
+        },
+        {
+          id: 'job-old',
+          title: 'Senior Backend Engineer Old',
+          company: 'TechCorp',
+          url: 'https://example.com/old',
+          applicationUrl: 'https://apply.example.com/old',
+          location: 'Dubai, UAE',
+          country: 'AE',
+          remoteScope: 'WORLDWIDE',
+          primarySpecialization: Specialization.BACKEND,
+          secondarySpecialization: null,
+          experienceLevel: 'SENIOR',
+          workType: 'FULL_TIME',
+          publishedAt: new Date(now - 30 * 24 * 3600000), // 30 days old (> 21d)
+          status: 'ACTIVE',
+        },
+        {
+          id: 'job-expired-status',
+          title: 'Senior Backend Engineer Expired Status',
+          company: 'TechCorp',
+          url: 'https://example.com/expired',
+          applicationUrl: 'https://apply.example.com/expired',
+          location: 'Dubai, UAE',
+          country: 'AE',
+          remoteScope: 'WORLDWIDE',
+          primarySpecialization: Specialization.BACKEND,
+          secondarySpecialization: null,
+          experienceLevel: 'SENIOR',
+          workType: 'FULL_TIME',
+          publishedAt: new Date(now - 1 * 24 * 3600000),
+          status: 'EXPIRED',
+        },
+      ];
+
+      mockPrisma.job.findMany.mockResolvedValueOnce(testPool);
+
+      const result = await service.getJobsForUser('user-uuid-1', {
+        page: 1,
+        pageSize: 10,
+      });
+
+      expect(result.jobs).toHaveLength(1);
+      expect(result.jobs[0].id).toBe('job-fresh');
+    });
+
     it('should query PostgreSQL directly filtered by user preferences and paginate 5 jobs per page', async () => {
       const result = await service.getJobsForUser('user-uuid-1', {
         page: 1,

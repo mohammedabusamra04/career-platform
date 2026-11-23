@@ -1,8 +1,19 @@
 import type { Job } from './job.types.js';
 import logger from '../../shared/utils/logger.js';
 
-export function validateJob(job: Job): boolean {
+export const MAX_JOB_AGE_DAYS = 21;
+
+export function validateJob(job: Job, now?: unknown): boolean {
+  const referenceTime = now instanceof Date ? now.getTime() : Date.now();
   const url = job.applicationUrl || job.url;
+  const maxAgeMs = MAX_JOB_AGE_DAYS * 24 * 60 * 60 * 1000;
+  const cutoffTime = referenceTime - maxAgeMs;
+
+  const hasValidPublicationDate =
+    job.publicationDate instanceof Date &&
+    !Number.isNaN(job.publicationDate.getTime()) &&
+    job.publicationDate.getTime() >= cutoffTime;
+
   return (
     typeof job.title === 'string' &&
     job.title.trim().length > 0 &&
@@ -11,8 +22,7 @@ export function validateJob(job: Job): boolean {
     isValidUrl(url) &&
     typeof job.source === 'string' &&
     job.source.trim().length > 0 &&
-    job.publicationDate instanceof Date &&
-    !Number.isNaN(job.publicationDate.getTime()) &&
+    hasValidPublicationDate &&
     job.scrapedAt instanceof Date &&
     !Number.isNaN(job.scrapedAt.getTime())
   );

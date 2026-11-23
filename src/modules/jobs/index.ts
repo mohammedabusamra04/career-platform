@@ -4,6 +4,7 @@ export * from './repositories/prisma-job.repository.js';
 export * from './job.normalizer.js';
 export * from './job.sanitizer.js';
 export * from './job.validator.js';
+export * from './job.link-verifier.js';
 export * from './job.collection.service.js';
 export * from './job.pipeline.service.js';
 export * from './sources/index.js';

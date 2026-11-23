@@ -12,6 +12,7 @@ import type {
   Job,
   JobSearchQuery,
 } from './job.types.js';
+import { filterLiveJobs } from './job.link-verifier.js';
 
 import type { MatchedJob } from '../matching/matching.service.js';
 import { MAX_DIGEST_TOTAL_JOBS } from '../notifications/telegram/digest-card.formatter.js';
@@ -285,9 +286,15 @@ export class JobPipelineService {
             jobs,
           );
 
+        /*
+         * Verify link liveness for deduplicated candidate jobs (e.g. adzuna, jooble)
+         * before caching, matching, and notifying.
+         */
+        const liveCandidateJobs = await filterLiveJobs(uniqueJobs, this.cache);
+
         userJobs.set(
           userId,
-          uniqueJobs,
+          liveCandidateJobs,
         );
 
         /*
@@ -296,7 +303,7 @@ export class JobPipelineService {
          * If another user already collected the same job,
          * Map.set() is avoided.
          */
-        for (const job of uniqueJobs) {
+        for (const job of liveCandidateJobs) {
           const fingerprint =
             this.fingerprintService.generate(job);
 

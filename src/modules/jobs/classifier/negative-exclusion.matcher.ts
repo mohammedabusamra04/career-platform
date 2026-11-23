@@ -51,7 +51,7 @@ export class NegativeExclusionMatcher {
       // Unify alef forms (أ, إ, آ -> ا)
       .replace(/[أإآ]/g, 'ا')
       // Replace slashes, dashes, brackets with space (e.g. مُعلّق/ة -> معلق ة)
-      .replace(/[\/\\()_\-]/g, ' ')
+      .replace(/[\\/()_-]/g, ' ')
       .toLowerCase();
   }
 

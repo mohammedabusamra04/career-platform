@@ -12,6 +12,8 @@ async function main(): Promise<void> {
     console.log(`Sent Jobs pruned (>60d):       ${result.sentJobsDeleted}`);
     console.log(`Closed Jobs pruned (>30d):     ${result.closedJobsDeleted}`);
     console.log(`Delivery Slots pruned (>30d):  ${result.deliverySlotsDeleted}`);
+    console.log(`Stale Active Jobs marked EXPIRED (>21d): ${result.staleJobsExpired}`);
+    console.log(`Dead/Expired Links marked EXPIRED:      ${result.deadLinksExpired}`);
     console.log(`Total records cleaned:         ${result.totalDeleted}`);
     console.log(`Duration:                      ${result.durationMs}ms (${ms(result.durationMs)})`);
     console.log('--------------------------------');

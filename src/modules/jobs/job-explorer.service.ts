@@ -23,6 +23,7 @@ import {
 } from '../preferences/preference.taxonomy.js';
 import { JobSourceRegistry } from './sources/job-source.registry.js';
 import { negativeExclusionMatcher } from './classifier/negative-exclusion.matcher.js';
+import { MAX_JOB_AGE_DAYS } from './job.validator.js';
 import logger from '../../shared/utils/logger.js';
 
 export type JobSortOrder = 'BEST_MATCH' | 'LATEST';
@@ -208,7 +209,11 @@ export class JobExplorerService {
     // 2. Direct query against PostgreSQL shared pool using composite index:
     // (primarySpecialization, remoteScope, status) and (status, publishedAt DESC).
     // Push regional eligibility directly into database query to avoid truncating candidates.
+    // Strictly filter out non-ACTIVE jobs and jobs older than MAX_JOB_AGE_DAYS (21 days).
     const regionFilter = buildDatabaseRegionFilter(regionPref);
+    const maxAgeMs = MAX_JOB_AGE_DAYS * 24 * 60 * 60 * 1000;
+    const cutoffDate = new Date(Date.now() - maxAgeMs);
+
     const whereConditions: Prisma.JobWhereInput[] = [
       {
         status: 'ACTIVE',
@@ -216,6 +221,11 @@ export class JobExplorerService {
         OR: [
           { primarySpecialization: { in: specs } },
           { secondarySpecialization: { in: specs } },
+        ],
+        AND: [
+          {
+            publishedAt: { gte: cutoffDate },
+          },
         ],
       },
     ];
@@ -243,6 +253,8 @@ export class JobExplorerService {
         experienceLevel: true,
         workType: true,
         publishedAt: true,
+        scrapedAt: true,
+        status: true,
       },
       orderBy: [
         { publishedAt: 'desc' },
@@ -250,33 +262,43 @@ export class JobExplorerService {
       ],
     });
 
-    // 3. Filter jobs by regional and experience level compatibility (excluding navigation URLs and non-technical roles)
-    const regionallyFiltered = rawJobs.filter((job) =>
-      !/job_list|with-salaries|search\?|create_job|create_widget/i.test(job.url) &&
-      !negativeExclusionMatcher.evaluate(job.title).isExcluded &&
-      hardFilterEngine.isRegionCompatible(
-        {
-          id: job.id,
-          title: job.title,
-          primarySpecialization: (job.primarySpecialization as Specialization) ?? null,
-          secondarySpecialization: (job.secondarySpecialization as Specialization) ?? null,
-          remoteScope: job.remoteScope,
-          country: job.country,
-          location: job.location,
-          workType: job.workType,
-          experienceLevel: job.experienceLevel,
-        },
-        regionPref,
-      ) &&
-      hardFilterEngine.isExperienceCompatible(
-        {
-          id: job.id,
-          title: job.title,
-          experienceLevel: job.experienceLevel,
-        },
-        userPref.experienceLevel,
-      ),
-    );
+    // 3. Filter jobs by regional and experience level compatibility (strictly ACTIVE, not stale, excluding navigation URLs and non-technical roles)
+    const regionallyFiltered = rawJobs.filter((job) => {
+      if (job.status && job.status !== 'ACTIVE') {
+        return false;
+      }
+      const jobDate = job.publishedAt ?? job.scrapedAt;
+      if (jobDate && jobDate.getTime() < cutoffDate.getTime()) {
+        return false;
+      }
+
+      return (
+        !/job_list|with-salaries|search\?|create_job|create_widget/i.test(job.url) &&
+        !negativeExclusionMatcher.evaluate(job.title).isExcluded &&
+        hardFilterEngine.isRegionCompatible(
+          {
+            id: job.id,
+            title: job.title,
+            primarySpecialization: (job.primarySpecialization as Specialization) ?? null,
+            secondarySpecialization: (job.secondarySpecialization as Specialization) ?? null,
+            remoteScope: job.remoteScope,
+            country: job.country,
+            location: job.location,
+            workType: job.workType,
+            experienceLevel: job.experienceLevel,
+          },
+          regionPref,
+        ) &&
+        hardFilterEngine.isExperienceCompatible(
+          {
+            id: job.id,
+            title: job.title,
+            experienceLevel: job.experienceLevel,
+          },
+          userPref.experienceLevel,
+        )
+      );
+    });
 
     if (regionallyFiltered.length === 0) {
       return {

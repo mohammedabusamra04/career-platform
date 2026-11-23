@@ -19,6 +19,9 @@ describe('PruningService - Data Retention & Pruning Lifecycle (TASK-24.2)', () =
       },
       job: {
         deleteMany: vi.fn(),
+        updateMany: vi.fn().mockResolvedValue({ count: 0 }),
+        findMany: vi.fn().mockResolvedValue([]),
+        update: vi.fn().mockResolvedValue({}),
       },
       deliverySlot: {
         deleteMany: vi.fn(),
@@ -137,6 +140,26 @@ describe('PruningService - Data Retention & Pruning Lifecycle (TASK-24.2)', () =
         },
       });
       expect(deletedCount).toBe(5);
+    });
+  });
+
+  describe('markStaleActiveJobsAsExpired', () => {
+    it('marks stored ACTIVE jobs older than 21 days as EXPIRED', async () => {
+      mockPrisma.job.updateMany.mockResolvedValue({ count: 18 });
+
+      const count = await service.markStaleActiveJobsAsExpired(21, fixedNow);
+
+      const expectedCutoff = new Date(fixedNow.getTime() - 21 * 24 * 60 * 60 * 1000);
+      expect(mockPrisma.job.updateMany).toHaveBeenCalledWith({
+        where: {
+          status: 'ACTIVE',
+          publishedAt: { lt: expectedCutoff },
+        },
+        data: {
+          status: 'EXPIRED',
+        },
+      });
+      expect(count).toBe(18);
     });
   });
 

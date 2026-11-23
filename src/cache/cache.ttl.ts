@@ -11,4 +11,6 @@ export const CACHE_TTL = {
   FINGERPRINT: ms('24h') / 1000,
 
   SENT_JOB: ms('30d') / 1000,
+
+  LINK_LIVENESS: ms('24h') / 1000,
 };
