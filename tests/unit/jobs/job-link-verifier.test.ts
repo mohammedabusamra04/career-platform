@@ -158,10 +158,73 @@ describe('JobLinkVerifier (Expired & Stale Link Detection)', () => {
       expect(result.reason).toContain('Stale job age');
     });
 
-    it('gracefully keeps job on HTTP 403 / 429 bot-block (inconclusive)', async () => {
+    it('rejects HTTP 403 when small WAF / Access Denied block page is detected', async () => {
       global.fetch = vi.fn().mockResolvedValue({
         status: 403,
         ok: false,
+        text: async () => `
+          <html>
+            <head><title>Access Denied</title></head>
+            <body>
+              <h1>403 Forbidden</h1>
+              <p>You don't have permission to access on this server. Reference #18.edgesuite.net</p>
+            </body>
+          </html>
+        `,
+      });
+
+      const result = await verifyJobLinkLiveness('https://totaljobs.com/job/waf-blocked');
+
+      expect(result.isAlive).toBe(false);
+      expect(result.statusCode).toBe(403);
+      expect(result.reason).toContain('WAF / Access Denied');
+    });
+
+    it('rejects structural soft-404 when closure stem is in <title> (e.g. Workable)', async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        status: 200,
+        ok: true,
+        text: async () => `
+          <html>
+            <head><title>This job is not available anymore - Acme Corp</title></head>
+            <body>
+              <div>Explore other opportunities at Acme</div>
+            </body>
+          </html>
+        `,
+      });
+
+      const result = await verifyJobLinkLiveness('https://jobs.workable.com/view/123');
+
+      expect(result.isAlive).toBe(false);
+      expect(result.reason).toContain('heading closure stem');
+    });
+
+    it('rejects structural soft-404 when closure stem is in <h1> or <h2>', async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        status: 200,
+        ok: true,
+        text: async () => `
+          <html>
+            <body>
+              <h1>Position Filled</h1>
+              <p>This vacancy is no longer accepting applicants.</p>
+            </body>
+          </html>
+        `,
+      });
+
+      const result = await verifyJobLinkLiveness('https://reed.co.uk/jobs/closed-job');
+
+      expect(result.isAlive).toBe(false);
+      expect(result.reason).toContain('heading closure stem');
+    });
+
+    it('gracefully keeps job on HTTP 403 / 429 bot-block when body has no WAF signals (inconclusive)', async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        status: 403,
+        ok: false,
+        text: async () => `<html><body>Generic enterprise gate without block signature</body></html>`,
       });
 
       const result = await verifyJobLinkLiveness('https://protected-site.com/job');

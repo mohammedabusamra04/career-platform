@@ -1,5 +1,6 @@
 import crypto from 'node:crypto';
-import type { Cache } from '../../cache/cache.interface.js';
+import ms from 'ms';
+import type { Cache, ICache } from '../../cache/cache.interface.js';
 import { cacheKeys } from '../../cache/cache.keys.js';
 import { CACHE_TTL } from '../../cache/cache.ttl.js';
 import logger from '../../shared/utils/logger.js';
@@ -17,7 +18,13 @@ export const EXPIRED_JOB_REGEX =
 export const STALE_POSTING_REGEX =
   /\bposted\s+(?:almost\s+)?(?:\d+\s+years?|(?:[2-9]|\d{2,})\s+months?)\s+ago\b/i;
 
-export const LINK_VERIFIER_TIMEOUT_MS = 3500;
+export const CLOSURE_STEM_REGEX =
+  /\b(?:expired|no\s+longer\s+(?:available|accepting|open|active)|not\s+available(?:\s+anymore)?|anymore|has\s+been\s+filled|position\s+filled|job\s+not\s+found|listing\s+(?:was\s+)?removed|page\s+not\s+found|404\s+not\s+found|job\s+closed|vacancy\s+closed)\b/i;
+
+export const WAF_BLOCK_REGEX =
+  /\b(?:access\s+denied|403\s+forbidden|forbidden|edgesuite\.net|cloudflare|attention\s+required|security\s+service|pardon\s+our\s+interruption|request\s+blocked|unauthorized\s+access|geo-?blocked)\b/i;
+
+export const LINK_VERIFIER_TIMEOUT_MS = ms('3.5s');
 export const LINK_VERIFIER_SAMPLE_BYTES = 25 * 1024; // ~25KB
 
 function hashUrl(url: string): string {
@@ -34,13 +41,12 @@ export function normalizeHtmlText(htmlSnippet: string): string {
 /**
  * Verifies the liveness of a job application/detail URL.
  * Checks Redis cache first (TTL 24h).
- * Uses native fetch with 3.5s timeout.
- * Rejects 404/410, soft-404 expired text, and stale age text.
- * Inconclusive results (timeouts, 403, 429) keep the job to prevent false drops.
+ * Uses native fetch with 3.5s timeout and realistic browser headers.
+ * Rejects 404/410, 403 WAF/access-denied block pages, soft-404 expired text, and stale age text.
  */
 export async function verifyJobLinkLiveness(
   url: string,
-  cache?: Cache | null,
+  cache?: Cache | ICache | null,
 ): Promise<JobLivenessResult> {
   if (!url || !url.startsWith('http')) {
     return { isAlive: false, reason: 'Invalid or missing URL' };
@@ -71,9 +77,17 @@ export async function verifyJobLinkLiveness(
       method: 'GET',
       headers: {
         'User-Agent':
-          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36',
-        Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+        Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
         'Accept-Language': 'en-US,en;q=0.9,ar;q=0.8',
+        'Sec-Ch-Ua': '"Chromium";v="124", "Google Chrome";v="124", "Not-A.Brand";v="99"',
+        'Sec-Ch-Ua-Mobile': '?0',
+        'Sec-Ch-Ua-Platform': '"Windows"',
+        'Sec-Fetch-Dest': 'document',
+        'Sec-Fetch-Mode': 'navigate',
+        'Sec-Fetch-Site': 'none',
+        'Sec-Fetch-User': '?1',
+        'Upgrade-Insecure-Requests': '1',
       },
       signal: AbortSignal.timeout(LINK_VERIFIER_TIMEOUT_MS),
       redirect: 'follow',
@@ -92,8 +106,39 @@ export async function verifyJobLinkLiveness(
       return result;
     }
 
-    // Bot protection / rate limit / forbidden -> treat as inconclusive (keep the job)
-    if (status === 403 || status === 429) {
+    // Check HTTP 403 for WAF / Access Denied block pages (e.g. totaljobs, sherlocktalent, Cloudflare)
+    if (status === 403) {
+      try {
+        const rawHtml = await response.text();
+        const htmlSnippet = rawHtml.slice(0, LINK_VERIFIER_SAMPLE_BYTES);
+        const text = normalizeHtmlText(htmlSnippet);
+        if (text.length < 15000 && WAF_BLOCK_REGEX.test(text)) {
+          const result: JobLivenessResult = {
+            isAlive: false,
+            statusCode: 403,
+            reason: 'WAF / Access Denied block page detected (HTTP 403)',
+          };
+          await saveToCache(cache, cacheKey, result);
+          return result;
+        }
+      } catch (bodyErr: unknown) {
+        logger.debug(
+          `[JobLinkVerifier] Failed reading 403 response body for ${url}: ${
+            bodyErr instanceof Error ? bodyErr.message : String(bodyErr)
+          }`,
+        );
+      }
+
+      return {
+        isAlive: true,
+        statusCode: 403,
+        inconclusive: true,
+        reason: 'HTTP 403 protection block (inconclusive, keeping job)',
+      };
+    }
+
+    // Rate limit -> treat as inconclusive (keep the job)
+    if (status === 429) {
       return {
         isAlive: true,
         statusCode: status,
@@ -107,8 +152,33 @@ export async function verifyJobLinkLiveness(
     const htmlSnippet = rawHtml.slice(0, LINK_VERIFIER_SAMPLE_BYTES);
     const text = normalizeHtmlText(htmlSnippet);
 
-    // Soft-404 / Expired Job Check (e.g. dailyremote "This Job Has Expired")
-    if (EXPIRED_JOB_REGEX.test(text)) {
+    // Structural Stems: inspect <title>, <h1>, <h2>, and normalized headings
+    const titleMatch = /<title[^>]*>([\s\S]*?)<\/title>/i.exec(rawHtml);
+    const titleText = titleMatch ? normalizeHtmlText(titleMatch[1]) : '';
+
+    const h1Matches = Array.from(rawHtml.matchAll(/<h1[^>]*>([\s\S]*?)<\/h1>/gi))
+      .map((m) => normalizeHtmlText(m[1]))
+      .join(' ');
+
+    const h2Matches = Array.from(rawHtml.matchAll(/<h2[^>]*>([\s\S]*?)<\/h2>/gi))
+      .map((m) => normalizeHtmlText(m[1]))
+      .join(' ');
+
+    const structuralHeadings = `${titleText} ${h1Matches} ${h2Matches}`.toLowerCase();
+
+    // Check structural headings against closure stems
+    if (CLOSURE_STEM_REGEX.test(structuralHeadings)) {
+      const result: JobLivenessResult = {
+        isAlive: false,
+        statusCode: status,
+        reason: 'Expired/closed job posting indicator found in HTML (heading closure stem)',
+      };
+      await saveToCache(cache, cacheKey, result);
+      return result;
+    }
+
+    // Soft-404 / Expired Job Check (e.g. dailyremote "This Job Has Expired" or short pages with closure stems)
+    if (EXPIRED_JOB_REGEX.test(text) || (text.length < 5000 && CLOSURE_STEM_REGEX.test(text))) {
       const result: JobLivenessResult = {
         isAlive: false,
         statusCode: status,
@@ -205,3 +275,35 @@ export async function filterLiveJobs<
 
   return liveJobs;
 }
+
+export interface IJobLinkVerifier {
+  filterLiveJobs<T extends { url: string; applicationUrl?: string | null; title?: string }>(
+    jobs: T[],
+    cache?: Cache | ICache | null,
+    batchSize?: number,
+  ): Promise<T[]>;
+  verifyJobLinkLiveness(
+    url: string,
+    cache?: Cache | ICache | null,
+  ): Promise<JobLivenessResult>;
+}
+
+export class JobLinkVerifier implements IJobLinkVerifier {
+  public filterLiveJobs<T extends { url: string; applicationUrl?: string | null; title?: string }>(
+    jobs: T[],
+    cache?: Cache | ICache | null,
+    batchSize?: number,
+  ): Promise<T[]> {
+    return filterLiveJobs(jobs, cache, batchSize);
+  }
+
+  public verifyJobLinkLiveness(
+    url: string,
+    cache?: Cache | ICache | null,
+  ): Promise<JobLivenessResult> {
+    return verifyJobLinkLiveness(url, cache);
+  }
+}
+
+export const jobLinkVerifier: IJobLinkVerifier = new JobLinkVerifier();
+

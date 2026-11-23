@@ -7,3 +7,6 @@ export interface Cache {
 
   delete(key: string): Promise<void>;
 }
+
+export type ICache = Cache;
+
