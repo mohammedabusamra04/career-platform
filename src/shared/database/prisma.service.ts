@@ -26,7 +26,6 @@ export function buildDatabaseUrl(
 }
 
 declare global {
-  // eslint-disable-next-line no-var
   var __prisma_singleton__: PrismaService | undefined;
 }
 

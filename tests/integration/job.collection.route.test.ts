@@ -42,6 +42,16 @@ vi.mock('../../src/shared/middleware/auth.middleware.js', () => ({
   }),
 }));
 
+vi.mock('../../src/shared/database/prisma.service.js', () => ({
+  prisma: {
+    $queryRawUnsafe: vi.fn().mockResolvedValue([{ '?column?': 1 }]),
+    getPoolMetrics: vi.fn().mockResolvedValue({ total: 5, active: 1, idle: 4, maxPoolSize: 20 }),
+    deliverySlot: { findFirst: vi.fn().mockResolvedValue(null) },
+    user: { findMany: vi.fn().mockResolvedValue([]) },
+    setHealthSnapshot: vi.fn(),
+  },
+}));
+
 describe('Job Collection Route & Concurrency Guard (TASK-26.1 & TASK-26.2)', () => {
   let mockRequest: Partial<Request>;
   let mockResponse: {
@@ -138,7 +148,7 @@ describe('Job Collection Route & Concurrency Guard (TASK-26.1 & TASK-26.2)', () 
   });
 
   describe('GET /health Collection Metrics Visibility (TASK-26.2)', () => {
-    it('exposes lastCollectionStats in /health payload', () => {
+    it('exposes lastCollectionStats in /health payload', async () => {
       const mockStats = {
         runId: 'col_health_test',
         durationMs: 150,
@@ -165,7 +175,7 @@ describe('Job Collection Route & Concurrency Guard (TASK-26.1 & TASK-26.2)', () 
         success: vi.fn(),
       };
 
-      healthHandler({} as Request, healthRes as unknown as Response);
+      await healthHandler({} as Request, healthRes as unknown as Response, () => {});
 
       expect(healthRes.success).toHaveBeenCalledWith(
         expect.objectContaining({

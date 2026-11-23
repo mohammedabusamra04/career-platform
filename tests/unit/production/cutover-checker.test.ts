@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ProductionCutoverChecker } from '../../../src/modules/production/cutover-checker.js';
+import env from '../../../src/config/env.js';
 
 describe('TASK-49.1: ProductionCutoverChecker Unit Tests (#136)', () => {
   let mockPrisma: any;
@@ -8,6 +9,16 @@ describe('TASK-49.1: ProductionCutoverChecker Unit Tests (#136)', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+
+    if (!env.telegramBotToken) {
+      (env as any).telegramBotToken = 'mock_telegram_bot_token_for_ci_test';
+    }
+    if (!env.databaseUrl) {
+      (env as any).databaseUrl = 'postgresql://postgres:postgres@localhost:5432/career_platform?schema=public';
+    }
+    if (!env.redisUrl) {
+      (env as any).redisUrl = 'redis://localhost:6379';
+    }
 
     mockPrisma = {
       connect: vi.fn().mockResolvedValue(undefined),

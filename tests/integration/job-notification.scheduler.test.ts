@@ -11,8 +11,8 @@ describe('JobNotificationScheduler', () => {
   it('should run due notifications at the next scheduled time', async () => {
     vi.useFakeTimers();
 
-    // 09:00 Asia/Gaza = 06:00 UTC
-    vi.setSystemTime(new Date('2026-09-05T05:59:59.000Z'));
+    // 21:00 Asia/Gaza = 18:00 UTC (1 second before 18:00 UTC)
+    vi.setSystemTime(new Date('2026-09-05T17:59:59.000Z'));
 
     const pipelineService = {
       run: vi.fn().mockResolvedValue(undefined),
@@ -55,7 +55,8 @@ describe('JobNotificationScheduler', () => {
   it('should not start multiple schedules', async () => {
     vi.useFakeTimers();
 
-    vi.setSystemTime(new Date('2026-09-05T05:00:00.000Z'));
+    // Set to 20:00 Asia/Gaza = 17:00 UTC (1 hour before 21:00 Asia/Gaza)
+    vi.setSystemTime(new Date('2026-09-05T17:00:00.000Z'));
 
     const pipelineService = {
       run: vi.fn().mockResolvedValue(undefined),

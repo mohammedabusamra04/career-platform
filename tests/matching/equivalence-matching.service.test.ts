@@ -61,7 +61,7 @@ describe('EquivalenceMatchingService (TASK-39.1)', () => {
     preferenceHash: 'hash-backend-senior',
     specializations: [Specialization.BACKEND],
     regionPreference: RegionPreference.BOTH,
-    experienceLevel: 'SENIOR',
+    experienceLevel: 'ALL',
     workType: 'FULL_TIME',
     userIds: ['user-1', 'user-2', 'user-3'],
   };
