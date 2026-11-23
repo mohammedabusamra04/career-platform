@@ -234,6 +234,40 @@ describe('JobLinkVerifier (Expired & Stale Link Detection)', () => {
       expect(result.statusCode).toBe(403);
     });
 
+    it('rejects Adzuna generic search fallback pages when ad has expired', async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        status: 200,
+        ok: true,
+        url: 'https://www.adzuna.co.uk/jobs/search?q=Data+Analyst',
+        text: async () => `
+          <html>
+            <head><title>Adzuna Jobs Search</title></head>
+            <body>
+              <h1>Search jobs on Adzuna</h1>
+            </body>
+          </html>
+        `,
+      });
+
+      const result = await verifyJobLinkLiveness(
+        'https://www.adzuna.co.uk/jobs/land/ad/5973010751?se=abc',
+      );
+
+      expect(result.isAlive).toBe(false);
+      expect(result.reason).toContain('Aggregator search fallback page detected');
+    });
+
+    it('rejects Adzuna tracking URLs that time out / drop connection', async () => {
+      global.fetch = vi.fn().mockRejectedValue(new Error('Connect Timeout Error (UND_ERR_CONNECT_TIMEOUT)'));
+
+      const result = await verifyJobLinkLiveness(
+        'https://www.adzuna.co.uk/jobs/land/ad/5973010751?se=xyz',
+      );
+
+      expect(result.isAlive).toBe(false);
+      expect(result.reason).toContain('Aggregator link unreachable or timed out');
+    });
+
     it('gracefully keeps job on network timeout / fetch exception (inconclusive)', async () => {
       global.fetch = vi.fn().mockRejectedValue(new Error('The operation was aborted due to timeout'));
 

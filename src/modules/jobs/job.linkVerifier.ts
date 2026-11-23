@@ -21,6 +21,9 @@ export const STALE_POSTING_REGEX =
 export const CLOSURE_STEM_REGEX =
   /\b(?:expired|no\s+longer\s+(?:available|accepting|open|active)|not\s+available(?:\s+anymore)?|anymore|has\s+been\s+filled|position\s+filled|job\s+not\s+found|listing\s+(?:was\s+)?removed|page\s+not\s+found|404\s+not\s+found|job\s+closed|vacancy\s+closed)\b/i;
 
+export const AGGREGATOR_FALLBACK_PAGE_REGEX =
+  /\b(?:adzuna\s+jobs\s+search|search\s+jobs\s+on\s+adzuna|search\s+jobs\s+[-–—:]\s*adzuna|no\s+longer\s+available|this\s+job\s+ad\s+is\s+closed)\b/i;
+
 export const WAF_BLOCK_REGEX =
   /\b(?:access\s+denied|403\s+forbidden|forbidden|edgesuite\.net|cloudflare|attention\s+required|security\s+service|pardon\s+our\s+interruption|request\s+blocked|unauthorized\s+access|geo-?blocked|awswaf|gokuprops|challenge-platform|aws-waf)\b/i;
 
@@ -203,6 +206,23 @@ export async function verifyJobLinkLiveness(
       return result;
     }
 
+    // Aggregator fallback search page detection (e.g. Adzuna redirects expired ads to "Adzuna Jobs Search")
+    const isAdzunaUrl = url.includes('adzuna.');
+    const isSearchFallback =
+      AGGREGATOR_FALLBACK_PAGE_REGEX.test(structuralHeadings) ||
+      (isAdzunaUrl &&
+        (/adzuna\s+jobs\s+search/i.test(rawHtml) || response.url.includes('/search')));
+
+    if (isSearchFallback) {
+      const result: JobLivenessResult = {
+        isAlive: false,
+        statusCode: status,
+        reason: 'Aggregator search fallback page detected (job posting is closed/expired)',
+      };
+      await saveToCache(cache, cacheKey, result);
+      return result;
+    }
+
     // Soft-404 / Expired Job Check (e.g. dailyremote "This Job Has Expired" or short pages with closure stems)
     if (EXPIRED_JOB_REGEX.test(text) || (text.length < 5000 && CLOSURE_STEM_REGEX.test(text))) {
       const result: JobLivenessResult = {
@@ -235,6 +255,24 @@ export async function verifyJobLinkLiveness(
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
     logger.debug(`[JobLinkVerifier] Probe error for ${url}: ${message}`);
+
+    // If an aggregator tracking redirect (e.g. Adzuna) fails with connect timeout or connection refused,
+    // the tracking link is broken / unreachable for users.
+    if (
+      url.includes('adzuna.') &&
+      (message.includes('timeout') ||
+        message.includes('Timeout') ||
+        message.includes('ECONNREFUSED') ||
+        message.includes('UND_ERR_CONNECT_TIMEOUT'))
+    ) {
+      const result: JobLivenessResult = {
+        isAlive: false,
+        reason: `Aggregator link unreachable or timed out (${message})`,
+      };
+      await saveToCache(cache, cacheKey, result);
+      return result;
+    }
+
     // Timeout or transient network error: treat as inconclusive (keep job)
     return {
       isAlive: true,

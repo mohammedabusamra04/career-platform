@@ -39,6 +39,12 @@ export class NegativeExclusionMatcher {
         /(?:مسؤول توظيف|اخصائي توظيف|استقطاب مواهب|مدير مبيعات|مندوب مبيعات|اخصائي تسويق|خدمة عملاء|كاتب محتوى|كتابة محتوى|صانع محتوى|صناعة محتوى|كاتب مقال|كتابة مقال|كتابة مقالات|كتابة نصوص|اعادة صياغة|مساعد تنفيذي|ترجمة|مترجم|مترجمة|تفريغ صوتي|تعليق صوتي|معلق صوتي|معلقة صوتية|تسجيل صوتي|شرح صوتي|صوتي|تفريغ نصوص|ادخال بيانات|تصميم شعار|تصميم لوجو|هوية بصرية|مصمم جرافيك|تصميم جرافيك|جرافيك ديزاين|مونتاج|مونتير|تعديل فيديو|انميشن|انيميشن|رسوم متحركة|محاسبة|محاسب|تسويق الكتروني|تسويق رقمي|ادارة حسابات|ادارة صفحات|نشر محتوى|باحث|باحثة|مقابلات هاتفية|اجراء مقابلات|استبيان|استبيانات|محركات البحث|تحسين محركات البحث|سيو|تدريس|معلم|معلمة|منهج دراسي|شرح منهج)/i,
       label: 'arabic_non_technical',
     },
+    // 6. Trainee & Course Placement Programmes (e.g. "Trainee Data Analyst", "Data Analyst Trainee")
+    {
+      pattern:
+        /\b(?:trainee\s+(?:data\s+analyst|software|developer|engineer|programmer|qa|web|it|analyst)|(?:data\s+analyst|software|developer|engineer|programmer|qa|web|it)\s+trainee|placement\s+programme|training\s+programme|job\s+guarantee\s+programme)\b/i,
+      label: 'trainee_placement',
+    },
   ];
 
   /**

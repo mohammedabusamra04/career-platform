@@ -72,7 +72,20 @@ export class AdzunaJobSource extends BaseJobSource {
         return [];
       }
 
-      return data.results.map((item) => this.mapToJob(item, effectiveQuery));
+      const filteredResults = data.results.filter((item) => {
+        const title = (item.title || '').trim();
+        // Filter out course sellers and UK trainee/apprenticeship ads
+        if (
+          /\b(?:trainee|apprentice|apprenticeship|placement programme|training programme)\b/i.test(
+            title,
+          )
+        ) {
+          return false;
+        }
+        return true;
+      });
+
+      return filteredResults.map((item) => this.mapToJob(item, effectiveQuery));
     } catch (err: unknown) {
       logger.warn(`[AdzunaJobSource] Fetch error: ${(err as Error).message}`);
       return [];

@@ -188,10 +188,14 @@ export class RemoteScopeClassifier {
 
     // Detect if title/location/metadata claims broad remote or worldwide
     const titleHasRemote = /\b(?:remote|عن\s+بعد)\b/i.test(title);
+    const locationIsRemote =
+      /^\s*(?:remote|عن\s*بعد|telecommute|work\s+from\s+home)\s*$/i.test(location);
     const hasBroadWorldwideEvidence =
       RemoteScopeClassifier.WORLDWIDE_REGEX.test(fullText) ||
       /\b(?:anywhere|everywhere)\b/i.test(location) ||
-      Boolean(job.remote);
+      Boolean(job.remote) ||
+      titleHasRemote ||
+      locationIsRemote;
 
     // 1. Check for explicit Country restrictions (Highest Precedence - overrides generic remote)
     const countryResult = this.extractCountryConstraint(
@@ -277,13 +281,13 @@ export class RemoteScopeClassifier {
       };
     }
 
-    // 4. Source remote flag without restrictions
-    if (job.remote) {
+    // 4. Remote position without geographic restrictions (e.g. source remote flag, title has "Remote", or location is "Remote")
+    if (job.remote || titleHasRemote || locationIsRemote) {
       return {
         scope: RemoteScope.WORLDWIDE,
         country: null,
         confidence: 0.8,
-        evidence: 'Source remote flag without geographic restrictions',
+        evidence: 'Remote position without geographic restrictions',
         hasContradiction: false,
       };
     }

@@ -362,6 +362,19 @@ describe('DeterministicJobClassifier - 10-Domain Specialization Classifier (TASK
       expect(classifier.classifyTitle('Technical Recruiter')).toBeNull();
     });
 
+    it('rejects Trainee and course placement schemes (e.g. Trainee Data Analyst, Data Analyst Trainee)', () => {
+      const trainee1 = classifier.classify({ title: 'Trainee Data Analyst' });
+      expect(trainee1.isExcluded).toBe(true);
+      expect(trainee1.classificationMethod).toBe('NEGATIVE_EXCLUSION');
+
+      const trainee2 = classifier.classify({ title: 'Data Analyst Trainee' });
+      expect(trainee2.isExcluded).toBe(true);
+      expect(trainee2.classificationMethod).toBe('NEGATIVE_EXCLUSION');
+
+      const prog = classifier.classify({ title: 'Software Developer Placement Programme' });
+      expect(prog.isExcluded).toBe(true);
+    });
+
     it('does NOT exclude legitimate engineering titles containing test/sales/support context', () => {
       const qa = classifier.classify({ title: 'QA Automation Engineer' });
       expect(qa.isExcluded).toBe(false);
@@ -1060,6 +1073,21 @@ describe('DeterministicJobClassifier - 10-Domain Specialization Classifier (TASK
           location: 'Anywhere',
         });
         expect(result.remoteScope).toBe(RemoteScope.WORLDWIDE);
+      });
+
+      it('classifies unconstrained remote positions as WORLDWIDE even without explicit "worldwide" token', () => {
+        const titleRemote = classifier.classify({
+          title: 'Senior Backend Developer (Remote)',
+        });
+        expect(titleRemote.remoteScope).toBe(RemoteScope.WORLDWIDE);
+        expect(titleRemote.country).toBeNull();
+
+        const locRemote = classifier.classify({
+          title: 'Fullstack Engineer',
+          location: 'Remote',
+        });
+        expect(locRemote.remoteScope).toBe(RemoteScope.WORLDWIDE);
+        expect(locRemote.country).toBeNull();
       });
     });
 
