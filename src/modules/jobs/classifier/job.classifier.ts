@@ -281,6 +281,11 @@ export class DeterministicJobClassifier {
     ['user experience', { spec: Specialization.UIUX, weight: 95, isDirectRole: true }],
     ['interaction designer', { spec: Specialization.UIUX, weight: 100, isDirectRole: true }],
     ['مصمم واجهات', { spec: Specialization.UIUX, weight: 110, isDirectRole: true }],
+    ['مصمم مواقع', { spec: Specialization.UIUX, weight: 110, isDirectRole: true }],
+    ['مصمم موقع', { spec: Specialization.UIUX, weight: 110, isDirectRole: true }],
+    ['مصمم مواقع الكترونية', { spec: Specialization.UIUX, weight: 115, isDirectRole: true }],
+    ['مصمم مواقع إلكترونية', { spec: Specialization.UIUX, weight: 115, isDirectRole: true }],
+    ['مصمم ويب', { spec: Specialization.UIUX, weight: 110, isDirectRole: true }],
     ['تجربة المستخدم', { spec: Specialization.UIUX, weight: 105, isDirectRole: true }],
     ['تصميم تطبيق', { spec: Specialization.UIUX, weight: 100, isDirectRole: true }],
     ['تصميم موقع', { spec: Specialization.UIUX, weight: 95, isDirectRole: true }],
@@ -423,7 +428,7 @@ export class DeterministicJobClassifier {
     {
       spec: Specialization.UIUX,
       titleRegex:
-        /\b(?:ui\/ux|ui ux|ux\/ui|ux designer|ui designer|product designer|user experience|interaction designer)\b/i,
+        /\b(?:ui\/ux|ui ux|ux\/ui|ux designer|ui designer|product designer|user experience|interaction designer|مصمم مواقع|مصمم موقع|مصمم ويب|مصمم واجهات)\b/i,
       skillsRegex: /\b(?:figma|sketch|adobe xd|invision|wireframing|prototyping)\b/i,
       weight: 8,
     },
@@ -593,7 +598,7 @@ export class DeterministicJobClassifier {
     text = text.replace(/\s+-\s+/g, ' ');
 
     // Normalize Arabic conjunction 'و' (waw) attached to role stems (e.g. 'وذكاء' -> 'ذكاء')
-    text = text.replace(/(?:^|\s)و(ذكاء|بيانات|أمن|امن|تصميم|تطوير|محلل|مهندس|سحابية|نظم|لارافيل|فلاتر|رياكت|نود|فيو|شات)/g, ' $1');
+    text = text.replace(/(?:^|\s)و(ذكاء|بيانات|أمن|امن|تصميم|مصمم|تطوير|محلل|مهندس|سحابية|نظم|لارافيل|فلاتر|رياكت|نود|فيو|شات)/g, ' $1');
 
     // Collapse multiple whitespace
     return text.trim();

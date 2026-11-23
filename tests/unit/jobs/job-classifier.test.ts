@@ -99,6 +99,27 @@ describe('DeterministicJobClassifier - 10-Domain Specialization Classifier (TASK
       expect(result.classificationMethod).toBe('RULE_TITLE');
     });
 
+    it('classifies Arabic website designer titles as UIUX rather than Backend or Frontend', () => {
+      const result = classifier.classify({
+        title: 'مصمم مواقع الكترونية لمكتب محاماة بالقاهرة',
+        skills: ['Laravel', 'Postgresql', 'redis', 'php'],
+      });
+
+      expect(result.primarySpecialization).toBe(Specialization.UIUX);
+      expect(result.confidence).toBe(0.95);
+      expect(result.classificationMethod).toBe('RULE_TITLE');
+    });
+
+    it('classifies "مصمم ويب" as UIUX', () => {
+      const result = classifier.classify({
+        title: 'مطلوب مصمم ويب محترف',
+        skills: ['Figma'],
+      });
+
+      expect(result.primarySpecialization).toBe(Specialization.UIUX);
+      expect(result.classificationMethod).toBe('RULE_TITLE');
+    });
+
     it('classifies Frontend web development jobs', () => {
       const result = classifier.classify({
         title: 'Senior React / Frontend Developer',
