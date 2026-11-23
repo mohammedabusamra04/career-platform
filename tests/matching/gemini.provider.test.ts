@@ -7,7 +7,7 @@ import { ExperienceLevel, WorkType } from '../../src/shared/types/job.js';
 
 import type { UserPreferences } from '../../src/modules/preferences/preference.types.js';
 
-import { AIProviderError } from '../../src/modules/matching/ai/ai-provider.error.js';
+import { AIProviderError } from '../../src/modules/matching/ai/aiProvider.error.js';
 import { GeminiProvider } from '../../src/modules/matching/ai/gemini.provider.js';
 
 const { generateContentMock } = vi.hoisted(() => ({

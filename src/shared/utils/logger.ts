@@ -3,7 +3,7 @@ import {
   structuredLogger,
   type StructuredLogOptions,
   type StructuredLogEntry,
-} from './structured-logger.js';
+} from './structuredLogger.js';
 
 export { StructuredLogger, structuredLogger, type StructuredLogOptions, type StructuredLogEntry };
 

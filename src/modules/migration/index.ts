@@ -1,3 +1,3 @@
-export * from './taxonomy-mapper.js';
-export * from './redis-preference-extractor.js';
-export * from './migration-reconciler.js';
+export * from './taxonomyMapper.js';
+export * from './redisPreferenceExtractor.js';
+export * from './migrationReconciler.js';

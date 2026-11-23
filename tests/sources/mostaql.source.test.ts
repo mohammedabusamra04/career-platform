@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { MostaqlJobSource } from '../../src/modules/jobs/sources/mostaql.source.js';
 import { JobSourceType } from '../../src/modules/jobs/job.types.js';
 import { ExperienceLevel, WorkType } from '../../src/shared/types/job.js';
-import { loadSourceFixture } from '../helpers/fixture-loader.js';
+import { loadSourceFixture } from '../helpers/fixtureLoader.js';
 
 describe('MostaqlJobSource (TASK-25.2: Fixture Testing & Robust Filtering)', () => {
   let source: MostaqlJobSource;

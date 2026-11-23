@@ -6,7 +6,7 @@ import {
 import {
   hardFilterEngine,
   type FilterableJob,
-} from './hard-filter.engine.js';
+} from './hardFilter.engine.js';
 
 export const MIN_DIGEST_SCORE_THRESHOLD = env.minDigestScoreThreshold ?? 55;
 

@@ -1,21 +1,21 @@
 import type { Bot } from 'grammy';
 import type { BotContext } from '../context.js';
 import type { IUserRepository } from '../../modules/users/repositories/user.repository.interface.js';
-import type { IUserPreferenceRepository } from '../../modules/preferences/repositories/user-preference.repository.interface.js';
-import { PrismaUserRepository } from '../../modules/users/repositories/prisma-user.repository.js';
-import { PrismaUserPreferenceRepository } from '../../modules/preferences/repositories/prisma-user-preference.repository.js';
+import type { IUserPreferenceRepository } from '../../modules/preferences/repositories/userPreference.repository.interface.js';
+import { PrismaUserRepository } from '../../modules/users/repositories/prismaUser.repository.js';
+import { PrismaUserPreferenceRepository } from '../../modules/preferences/repositories/prismaUserPreference.repository.js';
 import {
   RegionPreference,
   Specialization,
 } from '../../modules/preferences/preference.taxonomy.js';
 import { buildSpecializationKeyboard } from '../keyboards/specialization.keyboard.js';
-import { buildDigestPaginationKeyboard } from '../keyboards/digest-pagination.keyboard.js';
+import { buildDigestPaginationKeyboard } from '../keyboards/digestPagination.keyboard.js';
 import { getWelcomeMessage } from './start.handler.js';
 import type { SupportedLanguage } from '../session.js';
 import {
   firstDigestService,
   type FirstDigestService,
-} from '../../modules/delivery/first-digest.service.js';
+} from '../../modules/delivery/firstDigest.service.js';
 import logger from '../../shared/utils/logger.js';
 
 export interface ConfirmationHandlerDependencies {

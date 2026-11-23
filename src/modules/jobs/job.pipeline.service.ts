@@ -6,7 +6,7 @@ import logger from '../../shared/utils/logger.js';
 import {
   JOB_PIPELINE_ADVISORY_LOCK_ID,
   type IAdvisoryLockService,
-} from '../../shared/database/advisory-lock.service.js';
+} from '../../shared/database/advisoryLock.service.js';
 
 import type {
   Job,
@@ -15,10 +15,10 @@ import type {
 import {
   type IJobLinkVerifier,
   jobLinkVerifier,
-} from './job.link-verifier.js';
+} from './job.linkVerifier.js';
 
 import type { MatchedJob } from '../matching/matching.service.js';
-import { MAX_DIGEST_TOTAL_JOBS } from '../notifications/telegram/digest-card.formatter.js';
+import { MAX_DIGEST_TOTAL_JOBS } from '../notifications/telegram/digestCard.formatter.js';
 
 import type { UserPreferences } from '../preferences/preference.types.js';
 

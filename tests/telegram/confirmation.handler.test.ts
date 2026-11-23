@@ -4,7 +4,7 @@ import {
   registerConfirmationHandler,
   formatSummaryCard,
 } from '../../src/bot/handlers/confirmation.handler.js';
-import type { FirstDigestService } from '../../src/modules/delivery/first-digest.service.js';
+import type { FirstDigestService } from '../../src/modules/delivery/firstDigest.service.js';
 import type { BotContext } from '../../src/bot/context.js';
 import {
   RegionPreference,

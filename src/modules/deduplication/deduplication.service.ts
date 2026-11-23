@@ -2,7 +2,7 @@ import type { Job } from '../jobs/job.types.js';
 import type { Cache } from '../../cache/cache.interface.js';
 import type { DeduplicationResult } from './deduplication.types.js';
 import { FingerprintService } from './fingerprint.service.js';
-import { ListingMergerService, listingMergerService } from './listing-merger.service.js';
+import { ListingMergerService, listingMergerService } from './listingMerger.service.js';
 
 export class DeduplicationService {
   constructor(

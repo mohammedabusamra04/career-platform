@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { BaeedJobSource } from '../../src/modules/jobs/sources/baeed.source.js';
 import { JobSourceType } from '../../src/modules/jobs/job.types.js';
 import { ExperienceLevel, WorkType } from '../../src/shared/types/job.js';
-import { loadSourceFixture } from '../helpers/fixture-loader.js';
+import { loadSourceFixture } from '../helpers/fixtureLoader.js';
 
 describe('BaeedJobSource (TASK-25.2: Arabic Remote Jobs)', () => {
   let source: BaeedJobSource;

@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { NaukrigulfJobSource } from '../../src/modules/jobs/sources/naukrigulf.source.js';
 import { JobSourceType } from '../../src/modules/jobs/job.types.js';
 import { ExperienceLevel, WorkType } from '../../src/shared/types/job.js';
-import { loadSourceFixture } from '../helpers/fixture-loader.js';
+import { loadSourceFixture } from '../helpers/fixtureLoader.js';
 
 describe('NaukrigulfJobSource (TASK-25.2: GCC & Gulf Job Board)', () => {
   let source: NaukrigulfJobSource;

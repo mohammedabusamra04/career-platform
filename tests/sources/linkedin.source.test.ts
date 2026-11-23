@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { LinkedinJobSource } from '../../src/modules/jobs/sources/linkedin.source.js';
 import { JobSourceType } from '../../src/modules/jobs/job.types.js';
 import { ExperienceLevel, WorkType } from '../../src/shared/types/job.js';
-import { loadSourceJsonFixture } from '../helpers/fixture-loader.js';
+import { loadSourceJsonFixture } from '../helpers/fixtureLoader.js';
 
 describe('LinkedinJobSource (TASK-25.2: Fixture Testing)', () => {
   let source: LinkedinJobSource;

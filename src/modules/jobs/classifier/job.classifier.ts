@@ -9,16 +9,16 @@ import {
   NegativeExclusionMatcher,
   negativeExclusionMatcher,
   type ExclusionResult,
-} from './negative-exclusion.matcher.js';
+} from './negativeExclusion.matcher.js';
 
 import { SeniorityClassifier, seniorityClassifier } from './seniority.classifier.js';
-import { WorkTypeClassifier, workTypeClassifier } from './work-type.classifier.js';
+import { WorkTypeClassifier, workTypeClassifier } from './workType.classifier.js';
 import logger from '../../../shared/utils/logger.js';
 import {
   RemoteScopeClassifier,
   remoteScopeClassifier,
   type RemoteScopeClassification,
-} from './remote-scope.classifier.js';
+} from './remoteScope.classifier.js';
 
 export { NegativeExclusionMatcher, negativeExclusionMatcher, type ExclusionResult };
 export { SeniorityClassifier, seniorityClassifier };
@@ -29,7 +29,7 @@ export {
   geminiAmbiguityResolver,
   AIAmbiguityResolutionSchema,
   type AIAmbiguityResolution,
-} from './gemini-ambiguity.resolver.js';
+} from './geminiAmbiguity.resolver.js';
 
 export interface TitleClassificationResult {
   primarySpecialization: Specialization;

@@ -25,7 +25,7 @@ import {
   BaeedJobSource,
   NaukrigulfJobSource,
 } from '../modules/jobs/sources/index.js';
-import type { JobSource } from '../modules/jobs/sources/job-source.interface.js';
+import type { JobSource } from '../modules/jobs/sources/jobSource.interface.js';
 
 import { DeduplicationService } from '../modules/deduplication/deduplication.service.js';
 
@@ -35,18 +35,18 @@ import { GeminiProvider } from '../modules/matching/ai/gemini.provider.js';
 
 import { MatchingService } from '../modules/matching/matching.service.js';
 
-import { JobNotificationScheduler } from '../modules/notifications/job-notification.scheduler.js';
+import { JobNotificationScheduler } from '../modules/notifications/jobNotification.scheduler.js';
 
 import { NotificationScheduleService } from '../modules/notifications/notification.schedule.js';
 
-import { TelegramNotificationService } from '../modules/notifications/telegram/telegram-notification.service.js';
+import { TelegramNotificationService } from '../modules/notifications/telegram/telegramNotification.service.js';
 
 import { preferenceService } from '../modules/preferences/preference.service.js';
 
 import { subscriptionService } from '../modules/subscriptions/subscription.service.js';
 
 import { bot } from '../bot/bot.js';
-import { advisoryLockService } from '../shared/database/advisory-lock.service.js';
+import { advisoryLockService } from '../shared/database/advisoryLock.service.js';
 
 export const cache = new RedisAdapter(redisClient);
 
@@ -72,7 +72,7 @@ export const activeJobSources: JobSource[] = [
       : []),
 ];
 
-import { PrismaJobRepository } from '../modules/jobs/repositories/prisma-job.repository.js';
+import { PrismaJobRepository } from '../modules/jobs/repositories/prismaJob.repository.js';
 
 export const jobSourceManager = new JobSourceManager(activeJobSources);
 
@@ -120,8 +120,8 @@ export const jobNotificationScheduler = new JobNotificationScheduler(
   preferenceService,
 );
 
-import { ScheduledDigestRunner } from '../modules/delivery/scheduled-digest.runner.js';
-import { MissedSlotWatchdogService } from '../modules/delivery/missed-slot-watchdog.service.js';
+import { ScheduledDigestRunner } from '../modules/delivery/scheduledDigest.runner.js';
+import { MissedSlotWatchdogService } from '../modules/delivery/missedSlotWatchdog.service.js';
 
 export const scheduledDigestRunner = new ScheduledDigestRunner();
 export const missedSlotWatchdogService = new MissedSlotWatchdogService({

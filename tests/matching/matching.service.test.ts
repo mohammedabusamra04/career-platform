@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { MatchingService } from '../../src/modules/matching/matching.service.js';
-import type { AIProvider } from '../../src/modules/matching/ai/ai-provider.interface.js';
+import type { AIProvider } from '../../src/modules/matching/ai/aiProvider.interface.js';
 import { ExperienceLevel, WorkType } from '../../src/shared/types/job.js';
 import { JobSourceType, type Job } from '../../src/modules/jobs/job.types.js';
 

@@ -1,6 +1,6 @@
 import ms from 'ms';
 import type { JobSearchQuery, JobSourceType, RawJobListing } from '../job.types.js';
-import type { JobSource, SourceDisplayName } from './job-source.interface.js';
+import type { JobSource, SourceDisplayName } from './jobSource.interface.js';
 import logger from '../../../shared/utils/logger.js';
 
 export interface BaseFetchOptions extends RequestInit {

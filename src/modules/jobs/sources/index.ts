@@ -4,7 +4,7 @@ export {
   DEFAULT_SOURCE_TIMEOUT_MS,
   type SourceTelemetry,
   type CollectionExecutionSummary,
-} from './job-source.manager.js';
+} from './jobSource.manager.js';
 export {
   CircuitBreaker,
   CircuitState,
@@ -19,16 +19,16 @@ export {
   DEFAULT_BASE_DELAY_MS,
   DEFAULT_MAX_DELAY_MS,
   DEFAULT_BACKOFF_FACTOR,
-} from './circuit-breaker.js';
+} from './circuitBreaker.js';
 export {
   SourceHealthMonitor,
   type SourceHealthStatus,
   type HealthStatusLevel,
   type RecordRunParams,
-} from './source-health-monitor.js';
-export { JobSourceRegistry } from './job-source.registry.js';
-export type { JobSource } from './job-source.interface.js';
-export { JobSourceError } from './job-source.error.js';
+} from './sourceHealthMonitor.js';
+export { JobSourceRegistry } from './jobSource.registry.js';
+export type { JobSource } from './jobSource.interface.js';
+export { JobSourceError } from './jobSource.error.js';
 export { ArbeitnowJobSource } from './arbeitnow.source.js';
 export { AdzunaJobSource } from './adzuna.source.js';
 export { JoobleJobSource } from './jooble.source.js';
@@ -40,6 +40,6 @@ export { BaytJobSource } from './bayt.source.js';
 export { WuzzufJobSource } from './wuzzuf.source.js';
 export { ForasnaJobSource } from './forasna.source.js';
 export { LinkedinJobSource } from './linkedin.source.js';
-export { FirecrawlLinkedInSource } from './firecrawl-linkedin.source.js';
+export { FirecrawlLinkedInSource } from './firecrawlLinkedin.source.js';
 export { BaeedJobSource } from './baeed.source.js';
 export { NaukrigulfJobSource } from './naukrigulf.source.js';

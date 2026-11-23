@@ -5,7 +5,7 @@ import {
   STOP_MESSAGES,
 } from '../../src/bot/handlers/stop.handler.js';
 import type { IUserRepository } from '../../src/modules/users/repositories/user.repository.interface.js';
-import type { IUserPreferenceRepository } from '../../src/modules/preferences/repositories/user-preference.repository.interface.js';
+import type { IUserPreferenceRepository } from '../../src/modules/preferences/repositories/userPreference.repository.interface.js';
 import { UserStatus } from '../../src/modules/users/user.types.js';
 
 describe('TASK-36.3: /stop Two-Step Confirmation & Data Anonymization (#107)', () => {

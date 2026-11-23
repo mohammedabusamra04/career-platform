@@ -1,8 +1,8 @@
 import type { PrismaClient } from '@prisma/client';
 import ms from 'ms';
 import { prisma as defaultPrisma } from './prisma.service.js';
-import { verifyJobLinkLiveness } from '../../modules/jobs/job.link-verifier.js';
-import { negativeExclusionMatcher } from '../../modules/jobs/classifier/negative-exclusion.matcher.js';
+import { verifyJobLinkLiveness } from '../../modules/jobs/job.linkVerifier.js';
+import { negativeExclusionMatcher } from '../../modules/jobs/classifier/negativeExclusion.matcher.js';
 import type { Cache } from '../../cache/cache.interface.js';
 import logger from '../utils/logger.js';
 

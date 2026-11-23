@@ -1,16 +1,16 @@
 import type { Bot } from 'grammy';
 import type { BotContext } from '../context.js';
 import type { IUserRepository } from '../../modules/users/repositories/user.repository.interface.js';
-import { PrismaUserRepository } from '../../modules/users/repositories/prisma-user.repository.js';
+import { PrismaUserRepository } from '../../modules/users/repositories/prismaUser.repository.js';
 import {
   jobExplorerService as defaultJobExplorerService,
   type JobExplorerService,
   type JobSortOrder,
-} from '../../modules/jobs/job-explorer.service.js';
+} from '../../modules/jobs/jobExplorer.service.js';
 import {
   buildJobExplorerKeyboard,
   buildJobExplorerEmptyKeyboard,
-} from '../keyboards/job-explorer.keyboard.js';
+} from '../keyboards/jobExplorer.keyboard.js';
 import type { SupportedLanguage } from '../session.js';
 import logger from '../../shared/utils/logger.js';
 

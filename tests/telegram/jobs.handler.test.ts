@@ -4,7 +4,7 @@ import {
   registerJobsHandler,
   type JobsHandlerDependencies,
 } from '../../src/bot/handlers/jobs.handler.js';
-import type { JobExplorerService, JobExplorerResult } from '../../src/modules/jobs/job-explorer.service.js';
+import type { JobExplorerService, JobExplorerResult } from '../../src/modules/jobs/jobExplorer.service.js';
 import type { IUserRepository } from '../../src/modules/users/repositories/user.repository.interface.js';
 import { UserStatus } from '../../src/modules/users/user.types.js';
 

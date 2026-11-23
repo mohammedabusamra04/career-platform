@@ -6,7 +6,7 @@ import {
 } from '../../modules/preferences/preference.taxonomy.js';
 import { buildRegionKeyboard } from '../keyboards/region.keyboard.js';
 import { buildExperienceKeyboard } from '../keyboards/experience.keyboard.js';
-import { getExperienceStepPromptMessage } from './experience-step.handler.js';
+import { getExperienceStepPromptMessage } from './experienceStep.handler.js';
 import { buildSpecializationKeyboard } from '../keyboards/specialization.keyboard.js';
 import { getWelcomeMessage } from './start.handler.js';
 import type { SupportedLanguage } from '../session.js';

@@ -5,7 +5,7 @@ import type { SupportedLanguage } from '../session.js';
 
 import { buildConfirmationKeyboard, confirmationKeyboard } from '../keyboards/confirmation.keyboard.js';
 import { experienceKeyboard } from '../keyboards/experience.keyboard.js';
-import { workTypeKeyboard } from '../keyboards/work-type.keyboard.js';
+import { workTypeKeyboard } from '../keyboards/workType.keyboard.js';
 
 import {
   isValidExperienceLevel,

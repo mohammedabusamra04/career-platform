@@ -2,8 +2,8 @@ import { GoogleGenAI } from '@google/genai';
 import ms from 'ms';
 import env from '../../../config/env.js';
 import logger from '../../../shared/utils/logger.js';
-import type { AIProvider } from './ai-provider.interface.js';
-import { AIProviderError } from './ai-provider.error.js';
+import type { AIProvider } from './aiProvider.interface.js';
+import { AIProviderError } from './aiProvider.error.js';
 import type {
   JobAnalysisResult,
   MatchingInput,

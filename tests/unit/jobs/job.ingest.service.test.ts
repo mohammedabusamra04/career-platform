@@ -1,6 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { JobCollectionService } from '../../../src/modules/jobs/job.collection.service.js';
-import { JobSourceManager } from '../../../src/modules/jobs/sources/job-source.manager.js';
+import { JobSourceManager } from '../../../src/modules/jobs/sources/jobSource.manager.js';
 import type { IJobRepository } from '../../../src/modules/jobs/repositories/job.repository.interface.js';
 import { DeduplicationService } from '../../../src/modules/deduplication/deduplication.service.js';
 import { FingerprintService } from '../../../src/modules/deduplication/fingerprint.service.js';

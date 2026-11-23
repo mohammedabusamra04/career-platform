@@ -5,7 +5,7 @@ import type { Job } from '../jobs/job.types.js';
 import type { UserPreferences } from '../preferences/preference.types.js';
 import logger from '../../shared/utils/logger.js';
 
-import type { AIProvider } from './ai/ai-provider.interface.js';
+import type { AIProvider } from './ai/aiProvider.interface.js';
 import type { JobAnalysis } from './matching.types.js';
 
 export interface MatchedJob {

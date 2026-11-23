@@ -7,20 +7,20 @@ import type { BotContext } from './context.js';
 import type { PreferenceSession } from './session.js';
 
 import { registerPreferencesHandler } from './handlers/preferences.handler.js';
-import { registerDigestPaginationHandler } from './handlers/digest-pagination.handler.js';
-import { registerDigestFeedbackHandler } from './handlers/digest-feedback.handler.js';
+import { registerDigestPaginationHandler } from './handlers/digestPagination.handler.js';
+import { registerDigestFeedbackHandler } from './handlers/digestFeedback.handler.js';
 import { registerJobsHandler } from './handlers/jobs.handler.js';
 import { registerStartHandler } from './handlers/start.handler.js';
 import { registerSpecializationHandler } from './handlers/specialization.handler.js';
 import { registerRegionHandler } from './handlers/region.handler.js';
-import { registerExperienceStepHandler } from './handlers/experience-step.handler.js';
+import { registerExperienceStepHandler } from './handlers/experienceStep.handler.js';
 import { registerConfirmationHandler } from './handlers/confirmation.handler.js';
 import { registerSettingsHandler } from './handlers/settings.handler.js';
-import { registerPauseResumeHandler } from './handlers/pause-resume.handler.js';
+import { registerPauseResumeHandler } from './handlers/pauseResume.handler.js';
 import { registerStopHandler } from './handlers/stop.handler.js';
 import { registerHelpHandler } from './handlers/help.handler.js';
 import { deduplicateMiddleware } from './middleware/deduplicate.middleware.js';
-import { callbackValidationMiddleware } from './middleware/callback-validation.middleware.js';
+import { callbackValidationMiddleware } from './middleware/callbackValidation.middleware.js';
 
 if (!env.telegramBotToken) {
   throw new Error('TELEGRAM_BOT_TOKEN is not configured');

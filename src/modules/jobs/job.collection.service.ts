@@ -1,6 +1,6 @@
 import ms from 'ms';
 import { JobSourceType, type Job, type JobSearchQuery } from './job.types.js';
-import { JobSourceManager } from './sources/job-source.manager.js';
+import { JobSourceManager } from './sources/jobSource.manager.js';
 import { validateJob } from './job.validator.js';
 import { normalizeJob, type RawJob } from './job.normalizer.js';
 import type { IJobRepository, NormalizedJobInput } from './repositories/job.repository.interface.js';
@@ -15,7 +15,7 @@ import {
   AdvisoryLockService,
   JOB_COLLECTION_ADVISORY_LOCK_ID,
   type IAdvisoryLockService,
-} from '../../shared/database/advisory-lock.service.js';
+} from '../../shared/database/advisoryLock.service.js';
 import logger from '../../shared/utils/logger.js';
 
 export interface SourceExecutionStat {

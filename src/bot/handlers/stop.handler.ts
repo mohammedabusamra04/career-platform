@@ -1,9 +1,9 @@
 import type { Bot } from 'grammy';
 import type { BotContext } from '../context.js';
 import type { IUserRepository } from '../../modules/users/repositories/user.repository.interface.js';
-import type { IUserPreferenceRepository } from '../../modules/preferences/repositories/user-preference.repository.interface.js';
-import { PrismaUserRepository } from '../../modules/users/repositories/prisma-user.repository.js';
-import { PrismaUserPreferenceRepository } from '../../modules/preferences/repositories/prisma-user-preference.repository.js';
+import type { IUserPreferenceRepository } from '../../modules/preferences/repositories/userPreference.repository.interface.js';
+import { PrismaUserRepository } from '../../modules/users/repositories/prismaUser.repository.js';
+import { PrismaUserPreferenceRepository } from '../../modules/preferences/repositories/prismaUserPreference.repository.js';
 import { UserStatus } from '../../modules/users/user.types.js';
 import { buildStopKeyboard } from '../keyboards/stop.keyboard.js';
 import type { SupportedLanguage } from '../session.js';
