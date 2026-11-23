@@ -12,7 +12,10 @@ import type {
   Job,
   JobSearchQuery,
 } from './job.types.js';
-import { filterLiveJobs } from './job.link-verifier.js';
+import {
+  type IJobLinkVerifier,
+  jobLinkVerifier,
+} from './job.link-verifier.js';
 
 import type { MatchedJob } from '../matching/matching.service.js';
 import { MAX_DIGEST_TOTAL_JOBS } from '../notifications/telegram/digest-card.formatter.js';
@@ -146,6 +149,7 @@ export class JobPipelineService {
     private readonly matchingService: JobMatcher,
     private readonly notificationService: JobNotifier,
     private readonly advisoryLock?: IAdvisoryLockService,
+    private readonly linkVerifier: IJobLinkVerifier = jobLinkVerifier,
   ) {}
 
   getLastStats(): LastPipelineStats | null {
@@ -290,7 +294,7 @@ export class JobPipelineService {
          * Verify link liveness for deduplicated candidate jobs (e.g. adzuna, jooble)
          * before caching, matching, and notifying.
          */
-        const liveCandidateJobs = await filterLiveJobs(uniqueJobs, this.cache);
+        const liveCandidateJobs = await this.linkVerifier.filterLiveJobs(uniqueJobs, this.cache);
 
         userJobs.set(
           userId,
@@ -461,146 +465,15 @@ export class JobPipelineService {
               MINIMUM_MATCH_SCORE,
           );
 
-        if (qualityMatches.length === 0) {
-          logger.info(
-            `No matches met the minimum score (${MINIMUM_MATCH_SCORE}) for user ${userId}. Sending no-match notification.`,
-          );
+        const outcome = await this.deliverMatchesToUser(userId, qualityMatches, {
+          balanceSource: true,
+        });
 
-          await this.notificationService.sendJobs(
-            userId,
-            [],
-          );
-
+        if (outcome === 'sent_jobs') {
+          result.notifiedWithJobs += 1;
+        } else {
           result.notifiedNoMatch += 1;
-
-          continue;
         }
-
-        /*
-         * -----------------------------------------------------
-         * Check which jobs were already sent.
-         *
-         * We use Promise.all so Redis checks happen in parallel.
-         * -----------------------------------------------------
-         */
-
-        const sentChecks =
-          await Promise.all(
-            qualityMatches.map(
-              async (match) => {
-                const fingerprint =
-                  this.fingerprintService.generate(
-                    match.job,
-                  );
-
-                const sentKey =
-                  cacheKeys.userSentJob(
-                    userId,
-                    fingerprint,
-                  );
-
-                const alreadySent =
-                  await this.cache.get(
-                    sentKey,
-                  );
-
-                return {
-                  match,
-                  fingerprint,
-                  alreadySent:
-                    alreadySent !== null &&
-                    alreadySent !== undefined,
-                };
-              },
-            ),
-          );
-
-        /*
-         * Set gives O(1) average lookup if we ever
-         * need to check these fingerprints again.
-         */
-        const sentFingerprints =
-          new Set<string>();
-
-        for (const item of sentChecks) {
-          if (item.alreadySent) {
-            sentFingerprints.add(
-              item.fingerprint,
-            );
-          }
-        }
-
-        const unsentMatches =
-          sentChecks
-            .filter(
-              (item) =>
-                !sentFingerprints.has(
-                  item.fingerprint,
-                ),
-            )
-            .map(
-              (item) => item.match,
-            );
-
-        if (unsentMatches.length === 0) {
-          logger.info(
-            `All ${qualityMatches.length} matching jobs were already sent to user ${userId} previously.`,
-          );
-
-          result.notifiedNoMatch += 1;
-
-          continue;
-        }
-
-        const jobsToNotify = balanceMatchesBySource(
-          unsentMatches,
-          MAX_DIGEST_TOTAL_JOBS,
-          4,
-        );
-
-        logger.info(
-          `Sending ${jobsToNotify.length} of ${unsentMatches.length} new matched jobs to user ${userId}.`,
-        );
-
-        await this.notificationService.sendJobs(
-          userId,
-          jobsToNotify,
-        );
-
-        /*
-         * Record only notified jobs in Redis so overflow jobs remain available in /jobs.
-         */
-        await Promise.all(
-          jobsToNotify.map(
-            async (match) => {
-              const fingerprint =
-                this.fingerprintService.generate(
-                  match.job,
-                );
-
-              const sentKey =
-                cacheKeys.userSentJob(
-                  userId,
-                  fingerprint,
-                );
-
-              await this.cache.set(
-                sentKey,
-                {
-                  sentAt:
-                    new Date().toISOString(),
-                  jobTitle:
-                    match.job.title,
-                  company:
-                    match.job.company,
-                },
-                CACHE_TTL.SENT_JOB,
-              );
-            },
-          ),
-        );
-
-        result.notifiedWithJobs += 1;
       } catch (error) {
         result.errors += 1;
 
@@ -716,18 +589,29 @@ export class JobPipelineService {
         return 'no_match';
       }
 
+      const liveCandidateJobs = await this.linkVerifier.filterLiveJobs(uniqueJobs, this.cache);
+
+      if (liveCandidateJobs.length === 0) {
+        await this.notificationService.sendJobs(
+          userId,
+          [],
+        );
+
+        return 'no_match';
+      }
+
       await this.cacheJobs(
-        uniqueJobs,
+        liveCandidateJobs,
       );
 
       const analyses =
         await this.matchingService.analyzeJobs(
-          uniqueJobs,
+          liveCandidateJobs,
         );
 
       const matchedJobs =
         await this.matchingService.matchJobs(
-          uniqueJobs,
+          liveCandidateJobs,
           preferences,
           analyses,
         );
@@ -739,97 +623,9 @@ export class JobPipelineService {
             MINIMUM_MATCH_SCORE,
         );
 
-      if (qualityMatches.length === 0) {
-        await this.notificationService.sendJobs(
-          userId,
-          [],
-        );
-
-        return 'no_match';
-      }
-
-      const sentChecks =
-        await Promise.all(
-          qualityMatches.map(
-            async (match) => {
-              const fingerprint =
-                this.fingerprintService.generate(
-                  match.job,
-                );
-
-              const sentKey =
-                cacheKeys.userSentJob(
-                  userId,
-                  fingerprint,
-                );
-
-              const alreadySent =
-                await this.cache.get(
-                  sentKey,
-                );
-
-              return {
-                match,
-                fingerprint,
-                alreadySent:
-                  alreadySent !== null &&
-                  alreadySent !== undefined,
-              };
-            },
-          ),
-        );
-
-      const unsentMatches =
-        sentChecks
-          .filter(
-            (item) => !item.alreadySent,
-          )
-          .map(
-            (item) => item.match,
-          );
-
-      if (unsentMatches.length === 0) {
-        return 'no_match';
-      }
-
-      const jobsToNotify = unsentMatches.slice(0, MAX_DIGEST_TOTAL_JOBS);
-
-      await this.notificationService.sendJobs(
-        userId,
-        jobsToNotify,
-      );
-
-      await Promise.all(
-        jobsToNotify.map(
-          async (match) => {
-            const fingerprint =
-              this.fingerprintService.generate(
-                match.job,
-              );
-
-            const sentKey =
-              cacheKeys.userSentJob(
-                userId,
-                fingerprint,
-              );
-
-            await this.cache.set(
-              sentKey,
-              {
-                sentAt:
-                  new Date().toISOString(),
-                jobTitle:
-                  match.job.title,
-                company:
-                  match.job.company,
-              },
-              CACHE_TTL.SENT_JOB,
-            );
-          },
-        ),
-      );
-
-      return 'sent_jobs';
+      return await this.deliverMatchesToUser(userId, qualityMatches, {
+        balanceSource: false,
+      });
     } catch (error) {
       logger.error(
         `Failed to process job pipeline for user ${userId}: ${
@@ -841,6 +637,71 @@ export class JobPipelineService {
 
       return 'error';
     }
+  }
+
+  private async deliverMatchesToUser(
+    userId: number,
+    qualityMatches: MatchedJob[],
+    options?: { balanceSource?: boolean },
+  ): Promise<'sent_jobs' | 'no_match'> {
+    if (qualityMatches.length === 0) {
+      await this.notificationService.sendJobs(userId, []);
+      return 'no_match';
+    }
+
+    const sentChecks = await Promise.all(
+      qualityMatches.map(async (match) => {
+        const fingerprint = this.fingerprintService.generate(match.job);
+        const sentKey = cacheKeys.userSentJob(userId, fingerprint);
+        const alreadySent = await this.cache.get(sentKey);
+
+        return {
+          match,
+          fingerprint,
+          alreadySent: alreadySent !== null && alreadySent !== undefined,
+        };
+      }),
+    );
+
+    const unsentMatches = sentChecks
+      .filter((item) => !item.alreadySent)
+      .map((item) => item.match);
+
+    if (unsentMatches.length === 0) {
+      logger.info(
+        `All ${qualityMatches.length} matching jobs were already sent to user ${userId} previously.`,
+      );
+      return 'no_match';
+    }
+
+    const jobsToNotify = options?.balanceSource
+      ? balanceMatchesBySource(unsentMatches, MAX_DIGEST_TOTAL_JOBS, 4)
+      : unsentMatches.slice(0, MAX_DIGEST_TOTAL_JOBS);
+
+    logger.info(
+      `Sending ${jobsToNotify.length} of ${unsentMatches.length} new matched jobs to user ${userId}.`,
+    );
+
+    await this.notificationService.sendJobs(userId, jobsToNotify);
+
+    await Promise.all(
+      jobsToNotify.map(async (match) => {
+        const fingerprint = this.fingerprintService.generate(match.job);
+        const sentKey = cacheKeys.userSentJob(userId, fingerprint);
+
+        await this.cache.set(
+          sentKey,
+          {
+            sentAt: new Date().toISOString(),
+            jobTitle: match.job.title,
+            company: match.job.company,
+          },
+          CACHE_TTL.SENT_JOB,
+        );
+      }),
+    );
+
+    return 'sent_jobs';
   }
 
   private async cacheJobs(

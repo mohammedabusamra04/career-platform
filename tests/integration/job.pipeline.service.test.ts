@@ -68,6 +68,11 @@ describe('JobPipelineService', () => {
       sendJobs: vi.fn(),
     };
 
+    const linkVerifier = {
+      filterLiveJobs: vi.fn().mockImplementation(async (jobs: Job[]) => jobs),
+      verify: vi.fn().mockResolvedValue(true),
+    };
+
     const service = new JobPipelineService(
       jobCollectionService,
       deduplicationService,
@@ -77,6 +82,8 @@ describe('JobPipelineService', () => {
       preferenceService,
       matchingService,
       notificationService,
+      undefined,
+      linkVerifier,
     );
 
     return {
@@ -89,6 +96,7 @@ describe('JobPipelineService', () => {
       preferenceService,
       matchingService,
       notificationService,
+      linkVerifier,
     };
   };
 

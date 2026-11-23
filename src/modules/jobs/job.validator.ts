@@ -1,12 +1,17 @@
+import ms from 'ms';
 import type { Job } from './job.types.js';
 import logger from '../../shared/utils/logger.js';
 
 export const MAX_JOB_AGE_DAYS = 21;
 
+export interface IJobValidator {
+  validateJob(job: Job, now?: unknown): boolean;
+}
+
 export function validateJob(job: Job, now?: unknown): boolean {
   const referenceTime = now instanceof Date ? now.getTime() : Date.now();
   const url = job.applicationUrl || job.url;
-  const maxAgeMs = MAX_JOB_AGE_DAYS * 24 * 60 * 60 * 1000;
+  const maxAgeMs = ms(`${MAX_JOB_AGE_DAYS}d`);
   const cutoffTime = referenceTime - maxAgeMs;
 
   const hasValidPublicationDate =
