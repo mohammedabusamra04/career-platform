@@ -3,7 +3,7 @@ import {
   RemoteScope,
   ExperienceLevel,
   WorkType,
-} from '@prisma/client';
+} from '../../../shared/types/domain.types.js';
 import type { Job } from '../job.types.js';
 import {
   NegativeExclusionMatcher,

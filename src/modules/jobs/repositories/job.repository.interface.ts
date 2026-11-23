@@ -4,7 +4,7 @@ import type {
   Specialization,
   ExperienceLevel,
   WorkType,
-} from '@prisma/client';
+} from '../../../shared/types/domain.types.js';
 
 export interface JobEntity {
   id: string;

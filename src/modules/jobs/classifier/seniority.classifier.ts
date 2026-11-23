@@ -1,4 +1,4 @@
-import { ExperienceLevel } from '@prisma/client';
+import { ExperienceLevel } from '../../../shared/types/domain.types.js';
 
 /**
  * Seniority Heuristic Engine (TASK-32.1 / Issue #97).

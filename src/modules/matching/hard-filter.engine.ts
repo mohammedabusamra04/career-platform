@@ -1,4 +1,4 @@
-import type { RemoteScope, WorkType } from '@prisma/client';
+import type { RemoteScope, WorkType } from '../../shared/types/domain.types.js';
 import {
   Specialization,
   RegionPreference,

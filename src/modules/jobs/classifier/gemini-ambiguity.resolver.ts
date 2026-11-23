@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { Specialization } from '@prisma/client';
+import { Specialization } from '../../../shared/types/domain.types.js';
 import { GeminiProvider } from '../../matching/ai/gemini.provider.js';
 import logger from '../../../shared/utils/logger.js';
 import type {

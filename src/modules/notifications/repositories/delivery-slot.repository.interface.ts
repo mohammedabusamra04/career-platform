@@ -1,4 +1,4 @@
-import type { DeliveryStatus } from '@prisma/client';
+import type { DeliveryStatus } from '../../../shared/types/domain.types.js';
 
 export interface DeliverySlotEntity {
   id: string;

@@ -1,4 +1,4 @@
-import { WorkType } from '@prisma/client';
+import { WorkType } from '../../../shared/types/domain.types.js';
 
 /**
  * Contract & Employment Type Heuristic Engine (TASK-32.2 / Issue #98).

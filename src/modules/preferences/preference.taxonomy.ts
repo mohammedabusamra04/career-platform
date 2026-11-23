@@ -2,18 +2,12 @@
  * Approved technical specializations for SmartJobsBot V2.
  * Exactly 10 closed, curated domains.
  */
-export enum Specialization {
-  BACKEND = 'BACKEND',
-  FRONTEND = 'FRONTEND',
-  FULLSTACK = 'FULLSTACK',
-  MOBILE = 'MOBILE',
-  DEVOPS = 'DEVOPS',
-  UIUX = 'UIUX',
-  DATA = 'DATA',
-  QA = 'QA',
-  SECURITY = 'SECURITY',
-  AI_ENGINEER = 'AI_ENGINEER',
-}
+import {
+  Specialization,
+  RegionPreference,
+} from '../../shared/types/domain.types.js';
+
+export { Specialization, RegionPreference };
 
 export const APPROVED_SPECIALIZATIONS = Object.freeze(
   Object.values(Specialization) as readonly Specialization[],
@@ -21,15 +15,6 @@ export const APPROVED_SPECIALIZATIONS = Object.freeze(
 
 export function isApprovedSpecialization(value: string): value is Specialization {
   return (APPROVED_SPECIALIZATIONS as readonly string[]).includes(value.toUpperCase());
-}
-
-/**
- * Geographic region targeting preferences.
- */
-export enum RegionPreference {
-  ARAB = 'ARAB',
-  INTERNATIONAL = 'INTERNATIONAL',
-  BOTH = 'BOTH',
 }
 
 /**

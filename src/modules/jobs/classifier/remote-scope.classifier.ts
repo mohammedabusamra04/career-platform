@@ -1,4 +1,4 @@
-import { RemoteScope } from '@prisma/client';
+import { RemoteScope } from '../../../shared/types/domain.types.js';
 import type { Job } from '../job.types.js';
 
 export interface RemoteScopeClassification {

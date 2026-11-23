@@ -1,4 +1,4 @@
-import type { FeedbackType } from '@prisma/client';
+import type { FeedbackType } from '../../../shared/types/domain.types.js';
 
 export interface SentJobEntity {
   id: string;
