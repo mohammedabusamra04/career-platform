@@ -22,7 +22,7 @@ export const CLOSURE_STEM_REGEX =
   /\b(?:expired|no\s+longer\s+(?:available|accepting|open|active)|not\s+available(?:\s+anymore)?|anymore|has\s+been\s+filled|position\s+filled|job\s+not\s+found|listing\s+(?:was\s+)?removed|page\s+not\s+found|404\s+not\s+found|job\s+closed|vacancy\s+closed)\b/i;
 
 export const WAF_BLOCK_REGEX =
-  /\b(?:access\s+denied|403\s+forbidden|forbidden|edgesuite\.net|cloudflare|attention\s+required|security\s+service|pardon\s+our\s+interruption|request\s+blocked|unauthorized\s+access|geo-?blocked)\b/i;
+  /\b(?:access\s+denied|403\s+forbidden|forbidden|edgesuite\.net|cloudflare|attention\s+required|security\s+service|pardon\s+our\s+interruption|request\s+blocked|unauthorized\s+access|geo-?blocked|awswaf|gokuprops|challenge-platform|aws-waf)\b/i;
 
 export const LINK_VERIFIER_TIMEOUT_MS = ms('3.5s');
 export const LINK_VERIFIER_SAMPLE_BYTES = 25 * 1024; // ~25KB
@@ -106,6 +106,17 @@ export async function verifyJobLinkLiveness(
       return result;
     }
 
+    // Direct HTTP 202 Accepted with AWS WAF challenge (e.g. career.io anti-bot challenge)
+    if (status === 202) {
+      const result: JobLivenessResult = {
+        isAlive: false,
+        statusCode: 202,
+        reason: 'WAF anti-bot challenge page detected (HTTP 202 Challenge)',
+      };
+      await saveToCache(cache, cacheKey, result);
+      return result;
+    }
+
     // Check HTTP 403 for WAF / Access Denied block pages (e.g. totaljobs, sherlocktalent, Cloudflare)
     if (status === 403) {
       try {
@@ -151,6 +162,21 @@ export async function verifyJobLinkLiveness(
     const rawHtml = await response.text();
     const htmlSnippet = rawHtml.slice(0, LINK_VERIFIER_SAMPLE_BYTES);
     const text = normalizeHtmlText(htmlSnippet);
+
+    // Check for AWS WAF / Cloudflare anti-bot challenge scripts in HTML
+    if (
+      rawHtml.includes('awsWafCookieDomainList') ||
+      rawHtml.includes('gokuProps') ||
+      /window\.(?:awsWaf|gokuProps)/i.test(rawHtml)
+    ) {
+      const result: JobLivenessResult = {
+        isAlive: false,
+        statusCode: status,
+        reason: 'WAF anti-bot challenge page detected in HTML (AWS WAF challenge)',
+      };
+      await saveToCache(cache, cacheKey, result);
+      return result;
+    }
 
     // Structural Stems: inspect <title>, <h1>, <h2>, and normalized headings
     const titleMatch = /<title[^>]*>([\s\S]*?)<\/title>/i.exec(rawHtml);
