@@ -2,14 +2,14 @@ import * as cheerio from 'cheerio';
 
 import type { Job, JobSearchQuery } from '../job.types.js';
 import { JobSourceType } from '../job.types.js';
-import type { JobSource } from './job-source.interface.js';
+import { BaseJobSource } from './base.source.js';
 import { ExperienceLevel, WorkType } from '../../../shared/types/job.js';
 import logger from '../../../shared/utils/logger.js';
 
 /**
  * Scrapes Tanqeeb (MENA/Arabic job search engine).
  */
-export class TanqeebJobSource implements JobSource {
+export class TanqeebJobSource extends BaseJobSource {
   public readonly type = JobSourceType.TANQEEB;
   public readonly displayName = { ar: 'تنقيب (Tanqeeb)', en: 'Tanqeeb' };
 

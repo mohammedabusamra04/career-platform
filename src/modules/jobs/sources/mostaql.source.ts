@@ -2,7 +2,7 @@ import * as cheerio from 'cheerio';
 
 import type { Job, JobSearchQuery } from '../job.types.js';
 import { JobSourceType } from '../job.types.js';
-import type { JobSource } from './job-source.interface.js';
+import { BaseJobSource } from './base.source.js';
 import { ExperienceLevel, WorkType } from '../../../shared/types/job.js';
 import { negativeExclusionMatcher } from '../classifier/negative-exclusion.matcher.js';
 import logger from '../../../shared/utils/logger.js';
@@ -19,7 +19,7 @@ interface CandidateProject {
  * Enforces category scoping, non-technical exclusion, closed project filtering,
  * and concurrency-bounded page enrichment for real skill extraction.
  */
-export class MostaqlJobSource implements JobSource {
+export class MostaqlJobSource extends BaseJobSource {
   public readonly type = JobSourceType.MOSTAQEL;
   public readonly displayName = { ar: 'مستقل (Mostaql)', en: 'Mostaql' };
 
@@ -217,7 +217,12 @@ export class MostaqlJobSource implements JobSource {
         skills,
         fullDescription || candidate.briefDescription,
       );
-    } catch {
+    } catch (err: unknown) {
+      logger.debug(
+        `[MostaqlJobSource] Failed fetching project details for ${candidate.url}: ${
+          err instanceof Error ? err.message : String(err)
+        }`,
+      );
       // Gracefully fall back to candidate card data if detail fetch times out or fails
       return this.createJobFromCandidate(candidate, []);
     }

@@ -1,6 +1,6 @@
 import type { Job, JobSearchQuery } from '../job.types.js';
 import { JobSourceType } from '../job.types.js';
-import type { JobSource } from './job-source.interface.js';
+import { BaseJobSource } from './base.source.js';
 import { ExperienceLevel, WorkType } from '../../../shared/types/job.js';
 import logger from '../../../shared/utils/logger.js';
 
@@ -24,7 +24,7 @@ interface ArbeitnowApiResponse {
   };
 }
 
-export class ArbeitnowJobSource implements JobSource {
+export class ArbeitnowJobSource extends BaseJobSource {
   public readonly type = JobSourceType.ARBEITNOW;
   public readonly displayName = { ar: 'أربايتناو (Arbeitnow)', en: 'Arbeitnow' };
   private readonly apiUrl = 'https://www.arbeitnow.com/api/job-board-api';

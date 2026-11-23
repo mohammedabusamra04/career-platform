@@ -1,6 +1,6 @@
 import type { Job, JobSearchQuery } from '../job.types.js';
 import { JobSourceType } from '../job.types.js';
-import type { JobSource } from './job-source.interface.js';
+import { BaseJobSource } from './base.source.js';
 import { ExperienceLevel, WorkType } from '../../../shared/types/job.js';
 import logger from '../../../shared/utils/logger.js';
 
@@ -28,7 +28,7 @@ interface AdzunaApiResponse {
   count?: number;
 }
 
-export class AdzunaJobSource implements JobSource {
+export class AdzunaJobSource extends BaseJobSource {
   public readonly type = JobSourceType.ADZUNA;
   public readonly displayName = { ar: 'أدزونا (Adzuna)', en: 'Adzuna' };
 
@@ -36,7 +36,9 @@ export class AdzunaJobSource implements JobSource {
     private readonly appId: string,
     private readonly appKey: string,
     private readonly country = 'gb',
-  ) {}
+  ) {
+    super();
+  }
 
   async fetchJobs(query?: JobSearchQuery): Promise<Job[]> {
     if (!this.appId || !this.appKey) {

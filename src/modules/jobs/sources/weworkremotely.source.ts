@@ -1,10 +1,10 @@
 import type { Job, JobSearchQuery } from '../job.types.js';
 import { JobSourceType } from '../job.types.js';
-import type { JobSource } from './job-source.interface.js';
+import { BaseJobSource } from './base.source.js';
 import { ExperienceLevel, WorkType } from '../../../shared/types/job.js';
 import logger from '../../../shared/utils/logger.js';
 
-export class WeWorkRemotelyJobSource implements JobSource {
+export class WeWorkRemotelyJobSource extends BaseJobSource {
   public readonly type = JobSourceType.WE_WORK_REMOTELY;
   public readonly displayName = { ar: 'وي وورك ريموتلي (We Work Remotely)', en: 'We Work Remotely' };
   private readonly feedUrl =

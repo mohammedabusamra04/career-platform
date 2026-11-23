@@ -1,7 +1,7 @@
 import * as cheerio from 'cheerio';
 import type { Job, JobSearchQuery } from '../job.types.js';
 import { JobSourceType } from '../job.types.js';
-import type { JobSource } from './job-source.interface.js';
+import { BaseJobSource } from './base.source.js';
 import { ExperienceLevel, WorkType } from '../../../shared/types/job.js';
 import logger from '../../../shared/utils/logger.js';
 
@@ -9,7 +9,7 @@ import logger from '../../../shared/utils/logger.js';
  * Scrapes Naukrigulf.com (primary job search portal in the GCC / Gulf region).
  * Covers Saudi Arabia, UAE, Qatar, Kuwait, Bahrain, and Oman.
  */
-export class NaukrigulfJobSource implements JobSource {
+export class NaukrigulfJobSource extends BaseJobSource {
   public readonly type = JobSourceType.NARIGULF;
   public readonly displayName = { ar: 'نوكري جلف (Naukrigulf)', en: 'Naukrigulf' };
   private readonly baseUrl = 'https://www.naukrigulf.com';

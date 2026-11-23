@@ -1,7 +1,7 @@
 import * as cheerio from 'cheerio';
 import type { Job, JobSearchQuery } from '../job.types.js';
 import { JobSourceType } from '../job.types.js';
-import type { JobSource } from './job-source.interface.js';
+import { BaseJobSource } from './base.source.js';
 import { ExperienceLevel, WorkType } from '../../../shared/types/job.js';
 import logger from '../../../shared/utils/logger.js';
 
@@ -9,7 +9,7 @@ import logger from '../../../shared/utils/logger.js';
  * Scrapes Baeed.com (Hsoub's dedicated Arabic remote jobs platform).
  * All postings on Baeed are 100% remote positions tailored for the Arab world.
  */
-export class BaeedJobSource implements JobSource {
+export class BaeedJobSource extends BaseJobSource {
   public readonly type = JobSourceType.BAEED;
   public readonly displayName = { ar: 'بعيد (Baeed)', en: 'Baeed' };
   private readonly baseUrl = 'https://baeed.com';

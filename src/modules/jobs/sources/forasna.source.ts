@@ -2,7 +2,7 @@ import * as cheerio from 'cheerio';
 
 import type { Job, JobSearchQuery } from '../job.types.js';
 import { JobSourceType } from '../job.types.js';
-import type { JobSource } from './job-source.interface.js';
+import { BaseJobSource } from './base.source.js';
 import { ExperienceLevel, WorkType } from '../../../shared/types/job.js';
 import logger from '../../../shared/utils/logger.js';
 
@@ -11,7 +11,7 @@ import logger from '../../../shared/utils/logger.js';
  * Selectors adapted from Daily_Jobs_Bot tools/forasnaJobs.js.
  * Note: Forasna is stronger for general/manual roles than pure tech roles.
  */
-export class ForasnaJobSource implements JobSource {
+export class ForasnaJobSource extends BaseJobSource {
   public readonly type = JobSourceType.FORASNA;
   public readonly displayName = { ar: 'فرصنا (Forasna)', en: 'Forasna' };
 

@@ -9,6 +9,7 @@
  */
 
 import { JobSourceRegistry } from '../../jobs/sources/job-source.registry.js';
+import logger from '../../../shared/utils/logger.js';
 
 export interface DigestCardJob {
   id?: string;
@@ -82,7 +83,12 @@ export function sanitizeApplicationUrl(rawUrl?: string | null): string {
     if (parsed.protocol === 'https:') {
       return trimmed;
     }
-  } catch {
+  } catch (err: unknown) {
+    logger.debug(
+      `[DigestCardFormatter] Invalid application URL ${trimmed}: ${
+        err instanceof Error ? err.message : String(err)
+      }`,
+    );
     return '';
   }
   return '';

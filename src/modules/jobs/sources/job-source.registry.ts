@@ -1,4 +1,5 @@
 import type { JobSource, SourceDisplayName } from './job-source.interface.js';
+import logger from '../../../shared/utils/logger.js';
 
 export class JobSourceRegistry {
   private static readonly metadataRegistry = new Map<string, SourceDisplayName>([
@@ -65,8 +66,12 @@ export class JobSourceRegistry {
           const capitalized = domainName.charAt(0).toUpperCase() + domainName.slice(1);
           return isAr ? `المنصة: ${capitalized}` : `Platform: ${capitalized}`;
         }
-      } catch {
-        // Keep fallback
+      } catch (err: unknown) {
+        logger.debug(
+          `[JobSourceRegistry] Could not parse job URL: ${
+            err instanceof Error ? err.message : String(err)
+          }`,
+        );
       }
     }
 

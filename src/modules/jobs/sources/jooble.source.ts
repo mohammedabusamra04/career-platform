@@ -1,6 +1,6 @@
 import type { Job, JobSearchQuery } from '../job.types.js';
 import { JobSourceType } from '../job.types.js';
-import type { JobSource } from './job-source.interface.js';
+import { BaseJobSource } from './base.source.js';
 import { ExperienceLevel, WorkType } from '../../../shared/types/job.js';
 import logger from '../../../shared/utils/logger.js';
 
@@ -71,7 +71,12 @@ export function isValidSpecificLink(link?: string): boolean {
   try {
     const parsed = new URL(trimmed);
     return parsed.protocol === 'http:' || parsed.protocol === 'https:';
-  } catch {
+  } catch (err: unknown) {
+    logger.debug(
+      `[JoobleJobSource] Invalid application URL ${trimmed}: ${
+        err instanceof Error ? err.message : String(err)
+      }`,
+    );
     return false;
   }
 }
@@ -93,7 +98,12 @@ export function isJobAgeFresh(
         return false;
       }
     }
-  } catch {
+  } catch (err: unknown) {
+    logger.debug(
+      `[JoobleJobSource] Failed reading jobAge param from ${url}: ${
+        err instanceof Error ? err.message : String(err)
+      }`,
+    );
     return true;
   }
   return true;
@@ -170,7 +180,12 @@ export async function filterConcurrent<T>(
         const i = index++;
         try {
           results[i] = await predicate(items[i]);
-        } catch {
+        } catch (err: unknown) {
+          logger.debug(
+            `[JoobleJobSource] Predicate exception: ${
+              err instanceof Error ? err.message : String(err)
+            }`,
+          );
           results[i] = true;
         }
       }
@@ -188,7 +203,7 @@ export interface JoobleJobSourceOptions {
   concurrency?: number; // default: 5
 }
 
-export class JoobleJobSource implements JobSource {
+export class JoobleJobSource extends BaseJobSource {
   public readonly type = JobSourceType.JOOBLE;
   public readonly displayName = { ar: 'جوبل (Jooble)', en: 'Jooble' };
   private readonly maxAgeDays: number;
@@ -200,6 +215,7 @@ export class JoobleJobSource implements JobSource {
     private readonly apiKey: string,
     options: JoobleJobSourceOptions = {},
   ) {
+    super();
     this.maxAgeDays = options.maxAgeDays ?? DEFAULT_MAX_AGE_DAYS;
     this.verifyLinks = options.verifyLinks ?? true;
     this.linkTimeoutMs = options.linkTimeoutMs ?? DEFAULT_LINK_TIMEOUT_MS;

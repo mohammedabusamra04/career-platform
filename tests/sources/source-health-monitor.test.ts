@@ -10,6 +10,16 @@ import type { JobSource } from '../../src/modules/jobs/sources/job-source.interf
 import { JobSourceType, type Job } from '../../src/modules/jobs/job.types.js';
 import { jobSourceManager } from '../../src/config/services.js';
 
+vi.mock('../../src/shared/database/prisma.service.js', () => ({
+  prisma: {
+    $queryRawUnsafe: vi.fn().mockResolvedValue([{ '?column?': 1 }]),
+    getPoolMetrics: vi.fn().mockResolvedValue({ total: 5, active: 1, idle: 4, maxPoolSize: 20 }),
+    deliverySlot: { findFirst: vi.fn().mockResolvedValue(null) },
+    user: { findMany: vi.fn().mockResolvedValue([]) },
+    setHealthSnapshot: vi.fn(),
+  },
+}));
+
 describe('TASK-29.2: Consecutive Failure Detection & Source Health Telemetry (#90)', () => {
   const dummyJob: Job = {
     title: 'Senior Backend Engineer',

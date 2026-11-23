@@ -1,3 +1,4 @@
+export { BaseJobSource, type BaseFetchOptions } from './base.source.js';
 export {
   JobSourceManager,
   DEFAULT_SOURCE_TIMEOUT_MS,

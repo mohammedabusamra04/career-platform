@@ -1,6 +1,6 @@
 import type { Job, JobSearchQuery } from '../job.types.js';
 import { JobSourceType } from '../job.types.js';
-import type { JobSource } from './job-source.interface.js';
+import { BaseJobSource } from './base.source.js';
 import { ExperienceLevel, WorkType } from '../../../shared/types/job.js';
 import logger from '../../../shared/utils/logger.js';
 
@@ -23,11 +23,13 @@ interface FirecrawlScrapeResponse {
   error?: string;
 }
 
-export class FirecrawlLinkedInSource implements JobSource {
+export class FirecrawlLinkedInSource extends BaseJobSource {
   public readonly type = JobSourceType.LINKEDIN;
   public readonly displayName = { ar: 'لينكدإن (LinkedIn)', en: 'LinkedIn' };
 
-  constructor(private readonly apiKey?: string) {}
+  constructor(private readonly apiKey?: string) {
+    super();
+  }
 
   async fetchJobs(query?: JobSearchQuery): Promise<Job[]> {
     if (!this.apiKey || !this.apiKey.trim()) {

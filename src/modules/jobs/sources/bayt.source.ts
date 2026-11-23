@@ -2,7 +2,7 @@ import * as cheerio from 'cheerio';
 
 import type { Job, JobSearchQuery } from '../job.types.js';
 import { JobSourceType } from '../job.types.js';
-import type { JobSource } from './job-source.interface.js';
+import { BaseJobSource } from './base.source.js';
 import { ExperienceLevel, WorkType } from '../../../shared/types/job.js';
 import logger from '../../../shared/utils/logger.js';
 
@@ -10,7 +10,7 @@ import logger from '../../../shared/utils/logger.js';
  * Scrapes Bayt.com job listings.
  * Selectors adapted from Daily_Jobs_Bot tools/baytJobs.js.
  */
-export class BaytJobSource implements JobSource {
+export class BaytJobSource extends BaseJobSource {
   public readonly type = JobSourceType.BAYT;
   public readonly displayName = { ar: 'بيت.كوم (Bayt)', en: 'Bayt' };
 
