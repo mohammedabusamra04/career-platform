@@ -14,6 +14,8 @@ async function main(): Promise<void> {
     console.log(`Delivery Slots pruned (>30d):  ${result.deliverySlotsDeleted}`);
     console.log(`Stale Active Jobs marked EXPIRED (>21d): ${result.staleJobsExpired}`);
     console.log(`Dead/Expired Links marked EXPIRED:      ${result.deadLinksExpired}`);
+    console.log(`Non-Tech Jobs Closed:                   ${result.closedNonTechJobs ?? 0}`);
+    console.log(`Fake Source Badges Corrected:           ${result.correctedSources ?? 0}`);
     console.log(`Total records cleaned:         ${result.totalDeleted}`);
     console.log(`Duration:                      ${result.durationMs}ms (${ms(result.durationMs)})`);
     console.log('--------------------------------');

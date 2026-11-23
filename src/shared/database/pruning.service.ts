@@ -2,6 +2,7 @@ import type { PrismaClient } from '@prisma/client';
 import ms from 'ms';
 import { prisma as defaultPrisma } from './prisma.service.js';
 import { verifyJobLinkLiveness } from '../../modules/jobs/job.link-verifier.js';
+import { negativeExclusionMatcher } from '../../modules/jobs/classifier/negative-exclusion.matcher.js';
 import type { Cache } from '../../cache/cache.interface.js';
 import logger from '../utils/logger.js';
 
@@ -28,6 +29,8 @@ export interface PruningResult {
   deliverySlotsDeleted: number;
   staleJobsExpired: number;
   deadLinksExpired: number;
+  closedNonTechJobs?: number;
+  correctedSources?: number;
   totalDeleted: number;
   durationMs: number;
 }
@@ -104,7 +107,7 @@ export class PruningService {
     retentionDays: number = RETENTION_POLICIES.ACTIVE_JOB_MAX_AGE_DAYS,
     now: Date = new Date(),
   ): Promise<number> {
-    const cutoff = new Date(now.getTime() - retentionDays * 24 * 60 * 60 * 1000);
+    const cutoff = new Date(now.getTime() - ms(`${retentionDays}d`));
 
     const result = await this.db.job.updateMany({
       where: {
@@ -117,6 +120,65 @@ export class PruningService {
     });
 
     return result.count;
+  }
+
+  /**
+   * Cleans invalid active jobs:
+   * 1. Closes non-technical jobs matching negative exclusion patterns.
+   * 2. Corrects fake LinkedIn source badges when URLs do not point to linkedin.com.
+   */
+  public async cleanInvalidAndNonTechnicalJobs(): Promise<{
+    closedNonTechCount: number;
+    correctedSourceCount: number;
+  }> {
+    const activeJobs = await this.db.job.findMany({
+      where: { status: 'ACTIVE' },
+      select: { id: true, title: true, source: true, url: true },
+    });
+
+    let closedNonTechCount = 0;
+    let correctedSourceCount = 0;
+
+    for (const job of activeJobs) {
+      const exclusion = negativeExclusionMatcher.evaluate(job.title);
+      if (exclusion.isExcluded) {
+        await this.db.job.update({
+          where: { id: job.id },
+          data: { status: 'CLOSED' },
+        });
+        logger.info(
+          `[PruningService] Closed non-technical job: "${job.title}" (${exclusion.reason})`,
+        );
+        closedNonTechCount++;
+        continue;
+      }
+
+      if (
+        job.source.toLowerCase() === 'linkedin' &&
+        !job.url.toLowerCase().includes('linkedin.com')
+      ) {
+        try {
+          const parsed = new URL(job.url);
+          const domain = parsed.hostname.toLowerCase().replace(/^www\./, '').split('.')[0];
+          await this.db.job.update({
+            where: { id: job.id },
+            data: { source: domain || 'other' },
+          });
+          logger.info(
+            `[PruningService] Corrected fake LinkedIn source for: "${job.title}" -> ${domain} (${job.url})`,
+          );
+          correctedSourceCount++;
+        } catch (parseErr: unknown) {
+          logger.debug(
+            `[PruningService] Failed to parse URL for domain fix on job ${job.id}: ${
+              parseErr instanceof Error ? parseErr.message : String(parseErr)
+            }`,
+          );
+        }
+      }
+    }
+
+    return { closedNonTechCount, correctedSourceCount };
   }
 
   /**
@@ -194,6 +256,8 @@ export class PruningService {
     const closedJobsDeleted = await this.pruneClosedJobs(closedRetention, now);
     const deliverySlotsDeleted = await this.pruneDeliverySlots(slotRetention, now);
     const staleJobsExpired = await this.markStaleActiveJobsAsExpired(maxAgeDays, now);
+    const { closedNonTechCount, correctedSourceCount } =
+      await this.cleanInvalidAndNonTechnicalJobs();
 
     let deadLinksExpired = 0;
     if (options?.verifyAggregatorLinks !== false) {
@@ -204,7 +268,7 @@ export class PruningService {
     const durationMs = Date.now() - startTime;
 
     logger.info(
-      `Pruning completed in ${durationMs}ms: ${sentJobsDeleted} sent jobs deleted, ${closedJobsDeleted} closed jobs deleted, ${deliverySlotsDeleted} delivery slots deleted, ${staleJobsExpired} stale jobs marked EXPIRED, ${deadLinksExpired} dead links marked EXPIRED (Total deleted: ${totalDeleted}).`,
+      `Pruning completed in ${durationMs}ms: ${sentJobsDeleted} sent jobs deleted, ${closedJobsDeleted} closed jobs deleted, ${deliverySlotsDeleted} delivery slots deleted, ${staleJobsExpired} stale jobs marked EXPIRED, ${deadLinksExpired} dead links marked EXPIRED, ${closedNonTechCount} non-tech closed, ${correctedSourceCount} sources corrected (Total deleted: ${totalDeleted}).`,
     );
 
     return {
@@ -213,6 +277,8 @@ export class PruningService {
       deliverySlotsDeleted,
       staleJobsExpired,
       deadLinksExpired,
+      closedNonTechJobs: closedNonTechCount,
+      correctedSources: correctedSourceCount,
       totalDeleted,
       durationMs,
     };
