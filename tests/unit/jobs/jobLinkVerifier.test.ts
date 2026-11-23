@@ -103,6 +103,28 @@ describe('JobLinkVerifier (Expired & Stale Link Detection)', () => {
       expect(result.statusCode).toBe(404);
     });
 
+    it('rejects HTTP 504 Gateway Timeout and 502 Bad Gateway', async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        status: 504,
+        ok: false,
+      });
+
+      const result504 = await verifyJobLinkLiveness('https://tanqeeb.com/jobs/dead-504');
+      expect(result504.isAlive).toBe(false);
+      expect(result504.statusCode).toBe(504);
+      expect(result504.reason).toContain('Gateway Timeout');
+
+      global.fetch = vi.fn().mockResolvedValue({
+        status: 502,
+        ok: false,
+      });
+
+      const result502 = await verifyJobLinkLiveness('https://example.com/job/502');
+      expect(result502.isAlive).toBe(false);
+      expect(result502.statusCode).toBe(502);
+      expect(result502.reason).toContain('Bad Gateway');
+    });
+
     it('rejects soft-404 pages containing "This Job Has Expired" (e.g. dailyremote.com)', async () => {
       global.fetch = vi.fn().mockResolvedValue({
         status: 200,

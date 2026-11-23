@@ -7,6 +7,7 @@ import { transparentExplanationBuilder } from '../matching/scoreReason.builder.j
 import type { ScorableJob } from '../matching/scoring.calculator.js';
 import type { Specialization, RegionPreference } from '../preferences/preference.taxonomy.js';
 import type { DigestCardJob } from '../notifications/telegram/digestCard.formatter.js';
+import { jobLinkVerifier, type IJobLinkVerifier } from '../jobs/job.linkVerifier.js';
 import logger from '../../shared/utils/logger.js';
 
 export const HISTORICAL_SENT_WINDOW = ms('4h');
@@ -36,6 +37,7 @@ export function mapToScorableJob(job: RawDatabaseJob): ScorableJob {
   return {
     id: job.id,
     title: job.title,
+    company: job.company ?? null,
     primarySpecialization: (job.primarySpecialization as Specialization) ?? null,
     secondarySpecialization: (job.secondarySpecialization as Specialization) ?? null,
     remoteScope: job.remoteScope,
@@ -80,7 +82,10 @@ function escapeMarkdown(text: string): string {
 }
 
 export class FirstDigestService {
-  constructor(private readonly db: PrismaClient = prisma) {}
+  constructor(
+    private readonly db: PrismaClient = prisma,
+    private readonly linkVerifier: IJobLinkVerifier = jobLinkVerifier,
+  ) {}
 
   /**
    * Queries active jobs, matches them against the new user's preferences,
@@ -236,12 +241,21 @@ export class FirstDigestService {
       };
     }
 
-    // 5. Slice Page 1 (top 5 jobs) with valid IDs
-    const pageJobs = personalizedMatches.slice(0, pageSize);
-    const validPageJobs = pageJobs.filter(
-      (p) => typeof p.job.id === 'string' && p.job.id.length > 0,
+    // 5. Filter live links so new users never receive 504 / dead links
+    const topCandidates = personalizedMatches.slice(0, pageSize * 2);
+    const liveMatches = await this.linkVerifier.filterLiveJobs(
+      topCandidates.map((m) => ({
+        ...m,
+        url: m.job.url || m.job.applicationUrl || '',
+        applicationUrl: m.job.applicationUrl,
+        title: m.job.title,
+      })),
     );
-    const deliveredJobIds = validPageJobs.map((p) => p.job.id as string);
+
+    const validPageJobs = (liveMatches.length > 0 ? liveMatches : topCandidates).slice(0, pageSize);
+    const deliveredJobIds = validPageJobs
+      .map((p) => p.job.id as string)
+      .filter((id) => typeof id === 'string' && id.length > 0);
 
     const durationMs = Date.now() - startTime;
     logger.info(
@@ -447,7 +461,13 @@ export class FirstDigestService {
       const jobCards = digest.jobs
         .map((item, idx) => {
           const safeTitle = escapeMarkdown(item.title);
-          const safeCompany = escapeMarkdown(item.company);
+          const rawCompany = item.company?.trim();
+          const displayCompany =
+            rawCompany &&
+            rawCompany.toLowerCase() !== 'company' &&
+            !rawCompany.toLowerCase().includes('employer')
+              ? escapeMarkdown(rawCompany)
+              : '';
           const remoteInfo =
             item.remoteScope === 'WORLDWIDE'
               ? '🌍 Worldwide Remote'
@@ -455,13 +475,17 @@ export class FirstDigestService {
                 ? `📍 ${item.country}`
                 : '🏢 Flexible';
 
+          const companyLine = displayCompany
+            ? `🏢 *Company:* ${displayCompany} • ${remoteInfo}`
+            : remoteInfo;
+
           const titleLine = item.url
             ? `*${idx + 1}.* 💻 [${safeTitle}](${item.url})`
             : `*${idx + 1}.* 💻 *${safeTitle}*`;
 
           return [
             titleLine,
-            `🏢 *Company:* ${safeCompany} • ${remoteInfo}`,
+            companyLine,
             item.explanationEn,
             item.url ? `🔗 [Apply Here](${item.url})` : '',
           ]
@@ -485,7 +509,13 @@ export class FirstDigestService {
     const jobCards = digest.jobs
       .map((item, idx) => {
         const safeTitle = escapeMarkdown(item.title);
-        const safeCompany = escapeMarkdown(item.company);
+        const rawCompany = item.company?.trim();
+        const displayCompany =
+          rawCompany &&
+          rawCompany.toLowerCase() !== 'company' &&
+          !rawCompany.toLowerCase().includes('employer')
+            ? escapeMarkdown(rawCompany)
+            : '';
         const remoteInfo =
           item.remoteScope === 'WORLDWIDE'
             ? '🌍 عن بُعد (عالمياً)'
@@ -493,13 +523,17 @@ export class FirstDigestService {
               ? `📍 ${item.country}`
               : '🏢 مرن';
 
+        const companyLine = displayCompany
+          ? `🏢 *الشركة:* ${displayCompany} • ${remoteInfo}`
+          : remoteInfo;
+
         const titleLine = item.url
           ? `*${idx + 1}.* 💻 [${safeTitle}](${item.url})`
           : `*${idx + 1}.* 💻 *${safeTitle}*`;
 
         return [
           titleLine,
-          `🏢 *الشركة:* ${safeCompany} • ${remoteInfo}`,
+          companyLine,
           item.explanationAr,
           item.url ? `🔗 [اضغط هنا للتقديم المباشر](${item.url})` : '',
         ]

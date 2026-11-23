@@ -193,7 +193,7 @@ export class PruningService {
       where: {
         status: 'ACTIVE',
         source: {
-          in: ['adzuna', 'jooble', 'linkedin', 'career', 'euremotejobs', 'dailyremote'],
+          in: ['adzuna', 'jooble', 'linkedin', 'career', 'euremotejobs', 'dailyremote', 'tanqeeb'],
         },
       },
       select: {

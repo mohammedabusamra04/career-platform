@@ -33,6 +33,7 @@ export const DIRECT_ATS_SOURCES = new Set<string>([
 ]);
 
 export interface ScorableJob extends FilterableJob {
+  company?: string | null;
   specialization?: string | null;
   publishedAt?: Date | null;
   publicationDate?: Date | null;

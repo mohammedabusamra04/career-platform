@@ -19,7 +19,7 @@ export const STALE_POSTING_REGEX =
   /\bposted\s+(?:almost\s+)?(?:\d+\s+years?|(?:[2-9]|\d{2,})\s+months?)\s+ago\b/i;
 
 export const CLOSURE_STEM_REGEX =
-  /\b(?:expired|no\s+longer\s+(?:available|accepting|open|active)|not\s+available(?:\s+anymore)?|anymore|has\s+been\s+filled|position\s+filled|job\s+not\s+found|listing\s+(?:was\s+)?removed|page\s+not\s+found|404\s+not\s+found|job\s+closed|vacancy\s+closed)\b/i;
+  /\b(?:expired|no\s+longer\s+(?:available|accepting|open|active)|not\s+available(?:\s+anymore)?|anymore|has\s+been\s+filled|position\s+filled|job\s+not\s+found|listing\s+(?:was\s+)?removed|page\s+not\s+found|404\s+not\s+found|job\s+closed|vacancy\s+closed|504\s+gateway\s+time-?out|gateway\s+time-?out|502\s+bad\s+gateway)\b/i;
 
 export const AGGREGATOR_FALLBACK_PAGE_REGEX =
   /\b(?:adzuna\s+jobs\s+search|search\s+jobs\s+on\s+adzuna|search\s+jobs\s+[-–—:]\s*adzuna|no\s+longer\s+available|this\s+job\s+ad\s+is\s+closed)\b/i;
@@ -98,12 +98,20 @@ export async function verifyJobLinkLiveness(
 
     const status = response.status;
 
-    // Direct HTTP dead status (e.g. 404 Not Found, 410 Gone on euremotejobs)
-    if (status === 404 || status === 410) {
+    // Direct HTTP dead or gateway failure status (e.g. 404 Not Found, 410 Gone, 502 Bad Gateway, 504 Gateway Timeout)
+    if (status === 404 || status === 410 || status === 502 || status === 504) {
       const result: JobLivenessResult = {
         isAlive: false,
         statusCode: status,
-        reason: `HTTP ${status} (${status === 410 ? 'Gone' : 'Not Found'})`,
+        reason: `HTTP ${status} (${
+          status === 504
+            ? 'Gateway Timeout'
+            : status === 502
+              ? 'Bad Gateway'
+              : status === 410
+                ? 'Gone'
+                : 'Not Found'
+        })`,
       };
       await saveToCache(cache, cacheKey, result);
       return result;
@@ -256,10 +264,10 @@ export async function verifyJobLinkLiveness(
     const message = err instanceof Error ? err.message : String(err);
     logger.debug(`[JobLinkVerifier] Probe error for ${url}: ${message}`);
 
-    // If an aggregator tracking redirect (e.g. Adzuna) fails with connect timeout or connection refused,
+    // If an aggregator tracking redirect (e.g. Adzuna, Tanqeeb) fails with connect timeout or connection refused,
     // the tracking link is broken / unreachable for users.
     if (
-      url.includes('adzuna.') &&
+      (url.includes('adzuna.') || url.includes('tanqeeb.')) &&
       (message.includes('timeout') ||
         message.includes('Timeout') ||
         message.includes('ECONNREFUSED') ||

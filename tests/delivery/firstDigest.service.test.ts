@@ -8,10 +8,19 @@ import {
 
 describe('FirstDigestService (TASK-40.1)', () => {
   let mockPrisma: unknown;
+  let mockLinkVerifier: {
+    verifyJobLinkLiveness: ReturnType<typeof vi.fn>;
+    filterLiveJobs: ReturnType<typeof vi.fn>;
+  };
   let service: FirstDigestService;
 
   beforeEach(() => {
     vi.restoreAllMocks();
+
+    mockLinkVerifier = {
+      verifyJobLinkLiveness: vi.fn().mockResolvedValue({ isAlive: true }),
+      filterLiveJobs: vi.fn().mockImplementation((jobs) => Promise.resolve(jobs)),
+    };
 
     mockPrisma = {
       job: {
@@ -26,7 +35,10 @@ describe('FirstDigestService (TASK-40.1)', () => {
       },
     };
 
-    service = new FirstDigestService(mockPrisma as PrismaClient);
+    service = new FirstDigestService(
+      mockPrisma as PrismaClient,
+      mockLinkVerifier as unknown as any,
+    );
   });
 
   const mockActiveJobs = [
