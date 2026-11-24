@@ -5,7 +5,12 @@ import { prisma } from '../../shared/database/prisma.service.js';
 import { transparentExplanationBuilder } from '../matching/scoreReason.builder.js';
 import type { ScorableJob, ScoringResult } from '../matching/scoring.calculator.js';
 import type { Specialization, RegionPreference } from '../preferences/preference.taxonomy.js';
-import type { DigestCardJob } from '../notifications/telegram/digestCard.formatter.js';
+import {
+  type DigestCardJob,
+  escapeTelegramMarkdown,
+  cleanAndEscapeTitle,
+} from '../notifications/telegram/digestCard.formatter.js';
+import { JobSourceRegistry } from '../jobs/sources/jobSource.registry.js';
 import { jobLinkVerifier, type IJobLinkVerifier } from '../jobs/job.linkVerifier.js';
 import {
   JobExplorerService,
@@ -61,6 +66,7 @@ export interface FirstDigestCandidate {
   jobId: string;
   title: string;
   company: string;
+  source?: string | null;
   url: string;
   applicationUrl?: string | null;
   location?: string | null;
@@ -78,11 +84,6 @@ export interface FirstDigestResult {
   totalPages: number;
   jobs: FirstDigestCandidate[];
   deliveredJobIds: string[];
-}
-
-function escapeMarkdown(text: string): string {
-  if (!text) return '';
-  return text.replace(/([_*[\]()~`>#+\-=|{}.!\\])/g, '\\$1');
 }
 
 export class FirstDigestService {
@@ -257,6 +258,7 @@ export class FirstDigestService {
         jobId: rawJob.id,
         title: rawJob.title || 'Untitled',
         company: rawCompany || 'Company',
+        source: rawJob.source || null,
         url: rawJob.url || rawJob.applicationUrl || '',
         applicationUrl: rawJob.applicationUrl,
         location: rawJob.location,
@@ -332,6 +334,7 @@ export class FirstDigestService {
         id: item.id,
         title: item.title || 'Untitled Role',
         company: rawCompany || 'Company',
+        source: item.source || null,
         url: item.url || item.applicationUrl || '',
         applicationUrl: item.applicationUrl,
         location: item.location,
@@ -376,24 +379,31 @@ export class FirstDigestService {
 
       const jobCards = digest.jobs
         .map((item, idx) => {
-          const safeTitle = escapeMarkdown(item.title);
+          const safeTitle = cleanAndEscapeTitle(item.title);
           const rawCompany = item.company?.trim();
-          const displayCompany =
-            rawCompany &&
-            rawCompany.toLowerCase() !== 'company' &&
-            !rawCompany.toLowerCase().includes('employer')
-              ? escapeMarkdown(rawCompany)
-              : '';
+          const isGenericCompany =
+            !rawCompany ||
+            rawCompany.toLowerCase() === 'company' ||
+            rawCompany.toLowerCase().includes('employer');
+          const displayCompany = !isGenericCompany ? escapeTelegramMarkdown(rawCompany) : '';
+
+          const platformBadge = JobSourceRegistry.formatSourceBadge(
+            item.source,
+            'en',
+            item.applicationUrl || item.url,
+          );
+          const safePlatform = escapeTelegramMarkdown(platformBadge);
+
           const remoteInfo =
             item.remoteScope === 'WORLDWIDE'
               ? '🌍 Worldwide Remote'
               : item.country
-                ? `📍 ${item.country}`
+                ? `📍 ${escapeTelegramMarkdown(item.country)}`
                 : '🏢 Flexible';
 
-          const companyLine = displayCompany
-            ? `🏢 *Company:* ${displayCompany} • ${remoteInfo}`
-            : remoteInfo;
+          const metaLine = displayCompany
+            ? `🏢 *Company:* ${displayCompany} • 🌐 ${safePlatform} • ${remoteInfo}`
+            : `🌐 ${safePlatform} • ${remoteInfo}`;
 
           const titleLine = item.url
             ? `*${idx + 1}.* 💻 [${safeTitle}](${item.url})`
@@ -401,7 +411,7 @@ export class FirstDigestService {
 
           return [
             titleLine,
-            companyLine,
+            metaLine,
             item.explanationEn,
             item.url ? `🔗 [Apply Here](${item.url})` : '',
           ]
@@ -424,24 +434,31 @@ export class FirstDigestService {
 
     const jobCards = digest.jobs
       .map((item, idx) => {
-        const safeTitle = escapeMarkdown(item.title);
+        const safeTitle = cleanAndEscapeTitle(item.title);
         const rawCompany = item.company?.trim();
-        const displayCompany =
-          rawCompany &&
-          rawCompany.toLowerCase() !== 'company' &&
-          !rawCompany.toLowerCase().includes('employer')
-            ? escapeMarkdown(rawCompany)
-            : '';
+        const isGenericCompany =
+          !rawCompany ||
+          rawCompany.toLowerCase() === 'company' ||
+          rawCompany.toLowerCase().includes('employer');
+        const displayCompany = !isGenericCompany ? escapeTelegramMarkdown(rawCompany) : '';
+
+        const platformBadge = JobSourceRegistry.formatSourceBadge(
+          item.source,
+          'ar',
+          item.applicationUrl || item.url,
+        );
+        const safePlatform = escapeTelegramMarkdown(platformBadge);
+
         const remoteInfo =
           item.remoteScope === 'WORLDWIDE'
             ? '🌍 عن بُعد (عالمياً)'
             : item.country
-              ? `📍 ${item.country}`
+              ? `📍 ${escapeTelegramMarkdown(item.country)}`
               : '🏢 مرن';
 
-        const companyLine = displayCompany
-          ? `🏢 *الشركة:* ${displayCompany} • ${remoteInfo}`
-          : remoteInfo;
+        const metaLine = displayCompany
+          ? `🏢 *الشركة:* ${displayCompany} • 🌐 ${safePlatform} • ${remoteInfo}`
+          : `🌐 ${safePlatform} • ${remoteInfo}`;
 
         const titleLine = item.url
           ? `*${idx + 1}.* 💻 [${safeTitle}](${item.url})`
@@ -449,7 +466,7 @@ export class FirstDigestService {
 
         return [
           titleLine,
-          companyLine,
+          metaLine,
           item.explanationAr,
           item.url ? `🔗 [اضغط هنا للتقديم المباشر](${item.url})` : '',
         ]

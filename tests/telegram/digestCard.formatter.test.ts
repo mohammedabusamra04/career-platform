@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   escapeTelegramMarkdown,
+  cleanAndEscapeTitle,
   sanitizeApplicationUrl,
   formatMatchTone,
   formatExperienceLevel,
@@ -15,6 +16,28 @@ import {
 } from '../../src/modules/notifications/telegram/digestCard.formatter.js';
 
 describe('DigestCardFormatter (TASK-43.1)', () => {
+  describe('cleanAndEscapeTitle', () => {
+    it('should strip unnecessary escaping backslashes from hyphens, pluses, and parentheses', () => {
+      expect(cleanAndEscapeTitle('Data Analyst\\-Part Time')).toBe('Data Analyst-Part Time');
+      expect(cleanAndEscapeTitle('REMOTE Data Analyst \\- POWER BI\\+MONGO\\+ DAX EXPERIENCE')).toBe(
+        'REMOTE Data Analyst - POWER BI+MONGO+ DAX EXPERIENCE',
+      );
+      expect(cleanAndEscapeTitle('Data Engineer \\(Remote, US\\)')).toBe('Data Engineer (Remote, US)');
+    });
+
+    it('should escape Telegram Markdown entities (*, _, [, ], `) without escaping normal punctuation', () => {
+      expect(cleanAndEscapeTitle('Backend Developer (Node_js / Go)')).toBe(
+        'Backend Developer (Node\\_js / Go)',
+      );
+      expect(cleanAndEscapeTitle('Senior Engineer [Remote]')).toBe('Senior Engineer \\[Remote\\]');
+    });
+
+    it('should return default title if null or empty', () => {
+      expect(cleanAndEscapeTitle('')).toBe('Untitled Role');
+      expect(cleanAndEscapeTitle(null)).toBe('Untitled Role');
+    });
+  });
+
   describe('escapeTelegramMarkdown', () => {
     it('should escape Telegram Markdown control characters (*, _, [, ], `)', () => {
       const input = 'Senior Software Engineer *Fullstack* [Node_js] `Core`';

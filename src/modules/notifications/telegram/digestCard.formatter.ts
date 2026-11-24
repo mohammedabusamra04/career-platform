@@ -57,6 +57,19 @@ export function escapeTelegramMarkdown(text: string): string {
 }
 
 /**
+ * Sanitizes and cleans job titles, removing accidental backslash escapes
+ * on standard punctuation (-, +, (, ), etc.) and escaping legacy Markdown chars (*, _, [, `, ]).
+ */
+export function cleanAndEscapeTitle(title?: string | null): string {
+  if (!title) return 'Untitled Role';
+  const cleaned = title
+    .replace(/\\([()\-+.!#=>|{}])/g, '$1')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return escapeTelegramMarkdown(cleaned || 'Untitled Role');
+}
+
+/**
  * Sanitizes and validates URLs to strictly enforce secure HTTPS protocol.
  * Automatically upgrades HTTP URLs to HTTPS, validates format via URL parser,
  * and strips unsafe schemes (javascript:, file:, data:, ftp:, etc.).
@@ -237,7 +250,7 @@ export function formatJobCard(
   indexOnPage: number,
   lang: 'ar' | 'en' = 'ar',
 ): string {
-  const safeTitle = escapeTelegramMarkdown(job.title || 'Untitled Role');
+  const safeTitle = cleanAndEscapeTitle(job.title);
   const safeCompany = escapeTelegramMarkdown(job.company || 'Company');
   const targetUrl = sanitizeApplicationUrl(job.applicationUrl || job.url);
 

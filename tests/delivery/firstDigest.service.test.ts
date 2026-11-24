@@ -169,6 +169,51 @@ describe('FirstDigestService (TASK-40.1)', () => {
     expect(messageAr).toContain('نسبة التوافق: 95%');
     expect(messageAr).toContain('في المساء');
 
+    // Regression verification: Company and Platform formatting and Title formatting
+    const compoundTestDigest: FirstDigestResult = {
+      hasMatches: true,
+      totalMatches: 2,
+      page: 1,
+      totalPages: 1,
+      jobs: [
+        {
+          jobId: 'comp-1',
+          title: 'Data Analyst\\-Part Time',
+          company: 'DLN Consulting Group',
+          source: 'workable',
+          url: 'https://apply.workable.com/dln/1',
+          remoteScope: 'WORLDWIDE',
+          score: 88,
+          explanationAr: '🎯 تطابق قوي مع الـ Stack',
+          explanationEn: '🎯 High Stack Fit',
+        },
+        {
+          jobId: 'comp-2',
+          title: 'Data Engineer \\(Remote, US\\)',
+          company: 'LinkedIn Employer',
+          source: 'linkedin',
+          url: 'https://www.linkedin.com/jobs/view/4489568760',
+          remoteScope: 'WORLDWIDE',
+          score: 85,
+          explanationAr: '⚡️ تطابق جيد مع الـ Stack',
+          explanationEn: '⚡️ Solid Fit',
+        },
+      ],
+      deliveredJobIds: ['comp-1', 'comp-2'],
+    };
+
+    const formattedAr = service.formatDigestMessage(compoundTestDigest, { language: 'ar' });
+    // Title 1: should not have backslash on hyphen
+    expect(formattedAr).toContain('[Data Analyst-Part Time](https://apply.workable.com/dln/1)');
+    // Job 1: should show both Company and Platform
+    expect(formattedAr).toContain('🏢 *الشركة:* DLN Consulting Group • 🌐 المنصة: Workable');
+
+    // Title 2: should not have backslashes on parens
+    expect(formattedAr).toContain('[Data Engineer (Remote, US)](https://www.linkedin.com/jobs/view/4489568760)');
+    // Job 2: should show Platform and not display generic 'LinkedIn Employer' company
+    expect(formattedAr).toContain('🌐 المنصة: لينكدإن (LinkedIn)');
+    expect(formattedAr).not.toContain('LinkedIn Employer');
+
     const messageEn = service.formatDigestMessage(mockDigestResult, {
       singleDailyRunTime: '21:00',
       language: 'en',

@@ -12,6 +12,7 @@ import { equivalenceMatchingService } from '../matching/equivalenceMatching.serv
 import { mapToScorableJob, type RawDatabaseJob } from '../delivery/firstDigest.service.js';
 import {
   escapeTelegramMarkdown,
+  cleanAndEscapeTitle,
   sanitizeApplicationUrl,
   formatRemoteScope,
   formatExperienceLevel,
@@ -507,7 +508,7 @@ export class JobExplorerService {
     const jobCards = result.jobs
       .map((job, idx) => {
         const indexOnPage = idx + 1;
-        const safeTitle = escapeTelegramMarkdown(job.title || 'Untitled Role');
+        const safeTitle = cleanAndEscapeTitle(job.title);
         const safeCompany = escapeTelegramMarkdown(job.company || 'Company');
         const targetUrl = sanitizeApplicationUrl(job.applicationUrl || job.url);
 
