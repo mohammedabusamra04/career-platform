@@ -3,6 +3,10 @@ import ms from 'ms';
 import { prisma as defaultPrisma } from './prisma.service.js';
 import { verifyJobLinkLiveness } from '../../modules/jobs/job.linkVerifier.js';
 import { negativeExclusionMatcher } from '../../modules/jobs/classifier/negativeExclusion.matcher.js';
+import {
+  DeterministicJobClassifier,
+  deterministicJobClassifier,
+} from '../../modules/jobs/classifier/job.classifier.js';
 import type { Cache } from '../../cache/cache.interface.js';
 import logger from '../utils/logger.js';
 
@@ -179,6 +183,83 @@ export class PruningService {
     }
 
     return { closedNonTechCount, correctedSourceCount };
+  }
+
+  /**
+   * Reclassifies all stored ACTIVE jobs with the latest deterministic classifier.
+   * Updates primarySpecialization, secondarySpecialization, remoteScope, experienceLevel, workType.
+   * If a job is excluded by negative exclusion or has no primarySpecialization, marks it as CLOSED.
+   */
+  public async reclassifyActiveJobs(
+    classifier: DeterministicJobClassifier = deterministicJobClassifier,
+  ): Promise<{ updatedCount: number; closedOrExpiredCount: number }> {
+    const activeJobs = await this.db.job.findMany({
+      where: { status: 'ACTIVE' },
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        skills: true,
+        country: true,
+        location: true,
+        primarySpecialization: true,
+        secondarySpecialization: true,
+        remoteScope: true,
+        experienceLevel: true,
+        workType: true,
+      },
+    });
+
+    let updatedCount = 0;
+    let closedOrExpiredCount = 0;
+
+    for (const job of activeJobs) {
+      const classification = classifier.classify({
+        title: job.title,
+        description: job.description || '',
+        skills: job.skills,
+        country: job.country,
+        location: job.location,
+      });
+
+      if (classification.isExcluded || !classification.primarySpecialization) {
+        await this.db.job.update({
+          where: { id: job.id },
+          data: { status: 'CLOSED' },
+        });
+        closedOrExpiredCount++;
+        logger.info(
+          `[PruningService] Reclassify: closed excluded or non-specialized job: "${job.title}" (${classification.exclusionReason || 'NO_SPEC'})`,
+        );
+        continue;
+      }
+
+      const hasChanged =
+        job.primarySpecialization !== classification.primarySpecialization ||
+        job.secondarySpecialization !== classification.secondarySpecialization ||
+        job.remoteScope !== classification.remoteScope ||
+        job.experienceLevel !== classification.experienceLevel ||
+        job.workType !== classification.workType;
+
+      if (hasChanged) {
+        await this.db.job.update({
+          where: { id: job.id },
+          data: {
+            primarySpecialization: classification.primarySpecialization,
+            secondarySpecialization: classification.secondarySpecialization,
+            remoteScope: classification.remoteScope,
+            experienceLevel: classification.experienceLevel,
+            workType: classification.workType,
+          },
+        });
+        updatedCount++;
+        logger.info(
+          `[PruningService] Reclassified job "${job.title}": ${job.primarySpecialization} -> ${classification.primarySpecialization} (remote: ${job.remoteScope} -> ${classification.remoteScope})`,
+        );
+      }
+    }
+
+    return { updatedCount, closedOrExpiredCount };
   }
 
   /**

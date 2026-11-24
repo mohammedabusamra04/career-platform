@@ -5,8 +5,18 @@ import logger from '../shared/utils/logger.js';
 
 async function main(): Promise<void> {
   try {
+    const shouldReclassify = process.argv.includes('--reclassify');
     logger.info('Executing standalone database retention pruning script...');
     const result = await pruningService.runAllPruning();
+
+    let reclassifiedCount = 0;
+    let reclassifyClosedCount = 0;
+    if (shouldReclassify) {
+      logger.info('Executing active jobs reclassification (--reclassify enabled)...');
+      const reclassifyResult = await pruningService.reclassifyActiveJobs();
+      reclassifiedCount = reclassifyResult.updatedCount;
+      reclassifyClosedCount = reclassifyResult.closedOrExpiredCount;
+    }
 
     console.log('--- Database Pruning Summary ---');
     console.log(`Sent Jobs pruned (>60d):       ${result.sentJobsDeleted}`);
@@ -16,6 +26,10 @@ async function main(): Promise<void> {
     console.log(`Dead/Expired Links marked EXPIRED:      ${result.deadLinksExpired}`);
     console.log(`Non-Tech Jobs Closed:                   ${result.closedNonTechJobs ?? 0}`);
     console.log(`Fake Source Badges Corrected:           ${result.correctedSources ?? 0}`);
+    if (shouldReclassify) {
+      console.log(`Active Jobs Reclassified:               ${reclassifiedCount}`);
+      console.log(`Active Jobs Closed during Reclassify:   ${reclassifyClosedCount}`);
+    }
     console.log(`Total records cleaned:         ${result.totalDeleted}`);
     console.log(`Duration:                      ${result.durationMs}ms (${ms(result.durationMs)})`);
     console.log('--------------------------------');

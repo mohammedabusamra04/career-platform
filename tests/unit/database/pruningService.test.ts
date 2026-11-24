@@ -207,4 +207,66 @@ describe('PruningService - Data Retention & Pruning Lifecycle (TASK-24.2)', () =
       expect(result.totalDeleted).toBe(10);
     });
   });
+
+  describe('reclassifyActiveJobs', () => {
+    it('reclassifies misclassified jobs (e.g. QA -> BACKEND for Remote Laravel PHP Dev)', async () => {
+      mockPrisma.job.findMany.mockResolvedValue([
+        {
+          id: 'job-1',
+          title: 'Remote Laravel PHP Dev',
+          description: 'Build backend APIs with Laravel and MySQL. Coordinate with QA.',
+          skills: ['PHP', 'Laravel'],
+          country: null,
+          location: 'Remote',
+          primarySpecialization: 'QA',
+          secondarySpecialization: null,
+          remoteScope: 'LOCAL_ONLY',
+          experienceLevel: 'JUNIOR',
+          workType: 'FULL_TIME',
+        },
+      ]);
+
+      const result = await service.reclassifyActiveJobs();
+
+      expect(mockPrisma.job.update).toHaveBeenCalledWith({
+        where: { id: 'job-1' },
+        data: {
+          primarySpecialization: 'BACKEND',
+          secondarySpecialization: null,
+          remoteScope: 'WORLDWIDE',
+          experienceLevel: 'UNKNOWN',
+          workType: 'UNKNOWN',
+        },
+      });
+      expect(result.updatedCount).toBe(1);
+      expect(result.closedOrExpiredCount).toBe(0);
+    });
+
+    it('closes jobs that fail negative exclusion during reclassify', async () => {
+      mockPrisma.job.findMany.mockResolvedValue([
+        {
+          id: 'job-2',
+          title: 'Customer Service Representative',
+          description: 'Answer customer calls.',
+          skills: [],
+          country: null,
+          location: 'Remote',
+          primarySpecialization: 'BACKEND',
+          secondarySpecialization: null,
+          remoteScope: 'WORLDWIDE',
+          experienceLevel: 'MID',
+          workType: 'FULL_TIME',
+        },
+      ]);
+
+      const result = await service.reclassifyActiveJobs();
+
+      expect(mockPrisma.job.update).toHaveBeenCalledWith({
+        where: { id: 'job-2' },
+        data: { status: 'CLOSED' },
+      });
+      expect(result.closedOrExpiredCount).toBe(1);
+      expect(result.updatedCount).toBe(0);
+    });
+  });
 });
