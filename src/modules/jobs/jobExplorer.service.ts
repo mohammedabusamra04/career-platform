@@ -38,6 +38,20 @@ export interface JobExplorerOptions {
   pageSize?: number;
   sort?: JobSortOrder;
   cursor?: string;
+  preferences?: {
+    specializations: Specialization[];
+    regionPreference: RegionPreference;
+    experienceLevel?: string | null;
+    workType?: string | null;
+    preferenceHash?: string;
+  };
+}
+
+export interface IJobExplorerService {
+  getJobsForUser(
+    userId: string,
+    options?: JobExplorerOptions,
+  ): Promise<JobExplorerResult>;
 }
 
 export interface ExplorerJobItem {
@@ -186,9 +200,11 @@ export class JobExplorerService {
     const sort = options?.sort || 'BEST_MATCH';
 
     // 1. Fetch user's active preferences
-    const userPref = await this.db.userPreference.findUnique({
-      where: { userId },
-    });
+    const userPref =
+      options?.preferences ||
+      (await this.db.userPreference.findUnique({
+        where: { userId },
+      }));
 
     if (!userPref || !userPref.specializations || userPref.specializations.length === 0) {
       return {
@@ -260,6 +276,7 @@ export class JobExplorerService {
         { publishedAt: 'desc' },
         { id: 'desc' },
       ],
+      take: 250,
     });
 
     // 3. Filter jobs by regional and experience level compatibility (strictly ACTIVE, not stale, excluding navigation URLs and non-technical roles)
@@ -317,7 +334,9 @@ export class JobExplorerService {
     const scorableJobs = regionallyFiltered.map((j) => mapToScorableJob(j as RawDatabaseJob));
     const scoredJobs = equivalenceMatchingService.matchGroup(
       {
-        preferenceHash: userPref.preferenceHash || 'jobs-explorer',
+        preferenceHash: userPref.preferenceHash
+          ? `${userPref.preferenceHash}-${userId}`
+          : `jobs-explorer-${userId}-${Date.now()}`,
         specializations: specs,
         regionPreference: regionPref,
         experienceLevel: userPref.experienceLevel ?? null,
@@ -375,7 +394,7 @@ export class JobExplorerService {
         const timeA = a.publishedAt ? new Date(a.publishedAt).getTime() : 0;
         const timeB = b.publishedAt ? new Date(b.publishedAt).getTime() : 0;
         if (timeB !== timeA) return timeB - timeA;
-        return b.id.localeCompare(a.id);
+        return a.id.localeCompare(b.id);
       });
     }
 

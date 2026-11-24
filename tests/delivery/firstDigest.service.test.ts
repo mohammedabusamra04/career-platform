@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { PrismaClient } from '@prisma/client';
 import { FirstDigestService } from '../../src/modules/delivery/firstDigest.service.js';
+import { equivalenceMatchingService } from '../../src/modules/matching/equivalenceMatching.service.js';
 import {
   Specialization,
   RegionPreference,
@@ -16,6 +17,7 @@ describe('FirstDigestService (TASK-40.1)', () => {
 
   beforeEach(() => {
     vi.restoreAllMocks();
+    equivalenceMatchingService.clearRunCache();
 
     mockLinkVerifier = {
       verifyJobLinkLiveness: vi.fn().mockResolvedValue({ isAlive: true }),

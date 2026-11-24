@@ -8,6 +8,11 @@ import type { ScorableJob } from '../matching/scoring.calculator.js';
 import type { Specialization, RegionPreference } from '../preferences/preference.taxonomy.js';
 import type { DigestCardJob } from '../notifications/telegram/digestCard.formatter.js';
 import { jobLinkVerifier, type IJobLinkVerifier } from '../jobs/job.linkVerifier.js';
+import {
+  JobExplorerService,
+  type IJobExplorerService,
+  type ExplorerJobItem,
+} from '../jobs/jobExplorer.service.js';
 import logger from '../../shared/utils/logger.js';
 
 export const HISTORICAL_SENT_WINDOW = ms('4h');
@@ -82,10 +87,24 @@ function escapeMarkdown(text: string): string {
 }
 
 export class FirstDigestService {
+  private jobExplorer?: IJobExplorerService;
+
   constructor(
     private readonly db: PrismaClient = prisma,
     private readonly linkVerifier: IJobLinkVerifier = jobLinkVerifier,
-  ) {}
+    jobExplorer?: IJobExplorerService,
+  ) {
+    if (jobExplorer) {
+      this.jobExplorer = jobExplorer;
+    }
+  }
+
+  private getJobExplorer(): IJobExplorerService {
+    if (!this.jobExplorer) {
+      this.jobExplorer = new JobExplorerService(this.db);
+    }
+    return this.jobExplorer;
+  }
 
   /**
    * Queries active jobs, matches them against the new user's preferences,
@@ -108,40 +127,16 @@ export class FirstDigestService {
   ): Promise<FirstDigestResult> {
     const startTime = Date.now();
 
-    // 1. Fetch active jobs from PostgreSQL filtered by candidate specializations
-    let activeJobs = await this.db.job.findMany({
-      where: {
-        status: 'ACTIVE',
-        OR: [
-          { primarySpecialization: { in: preferences.specializations } },
-          { secondarySpecialization: { in: preferences.specializations } },
-        ],
-      },
-      select: {
-        id: true,
-        title: true,
-        company: true,
-        source: true,
-        url: true,
-        applicationUrl: true,
-        location: true,
-        country: true,
-        remoteScope: true,
-        primarySpecialization: true,
-        secondarySpecialization: true,
-        experienceLevel: true,
-        workType: true,
-        publishedAt: true,
-      },
-      orderBy: {
-        publishedAt: 'desc',
-      },
-      take: 250,
+    // 1. Fetch candidate jobs via JobExplorerService (single source of truth for querying & DB-level regional/cutoff filters)
+    let explorerResult = await this.getJobExplorer().getJobsForUser(userId, {
+      pageSize: 20,
+      sort: 'BEST_MATCH',
+      preferences,
     });
 
     // If shared pool currently has 0 active jobs for this stack (e.g. fresh environment or first subscriber),
     // trigger an on-demand collection from configured sources so user receives matches immediately!
-    if (activeJobs.length === 0 && process.env.NODE_ENV !== 'test') {
+    if ((!explorerResult.jobs || explorerResult.jobs.length === 0) && process.env.NODE_ENV !== 'test') {
       try {
         const { jobCollectionService } = await import('../../config/services.js');
         if (jobCollectionService) {
@@ -153,35 +148,11 @@ export class FirstDigestService {
             experienceLevel: (preferences.experienceLevel as any) || undefined,
           });
 
-          // Re-query database after collection
-          activeJobs = await this.db.job.findMany({
-            where: {
-              status: 'ACTIVE',
-              OR: [
-                { primarySpecialization: { in: preferences.specializations } },
-                { secondarySpecialization: { in: preferences.specializations } },
-              ],
-            },
-            select: {
-              id: true,
-              title: true,
-              company: true,
-              source: true,
-              url: true,
-              applicationUrl: true,
-              location: true,
-              country: true,
-              remoteScope: true,
-              primarySpecialization: true,
-              secondarySpecialization: true,
-              experienceLevel: true,
-              workType: true,
-              publishedAt: true,
-            },
-            orderBy: {
-              publishedAt: 'desc',
-            },
-            take: 250,
+          // Re-query via JobExplorerService after collection
+          explorerResult = await this.getJobExplorer().getJobsForUser(userId, {
+            pageSize: 20,
+            sort: 'BEST_MATCH',
+            preferences,
           });
         }
       } catch (err: unknown) {
@@ -189,7 +160,7 @@ export class FirstDigestService {
       }
     }
 
-    if (activeJobs.length === 0) {
+    if (!explorerResult.jobs || explorerResult.jobs.length === 0) {
       return {
         hasMatches: false,
         totalMatches: 0,
@@ -201,36 +172,15 @@ export class FirstDigestService {
     }
 
     // 2. Fetch user's existing sent jobs (if any)
-    const existingSent = await this.db.sentJob.findMany({
-      where: { userId },
-      select: { jobId: true },
-    });
+    const existingSent =
+      (await this.db.sentJob?.findMany?.({
+        where: { userId },
+        select: { jobId: true },
+      })) || [];
     const sentJobIds = new Set(existingSent.map((s) => s.jobId));
+    const freshJobs = explorerResult.jobs.filter((j) => !sentJobIds.has(j.id));
 
-    // 3. Match and score jobs using equivalenceMatchingService
-    const group = {
-      preferenceHash: preferences.preferenceHash || 'first-digest-adhoc',
-      specializations: preferences.specializations,
-      regionPreference: preferences.regionPreference,
-      experienceLevel: preferences.experienceLevel ?? null,
-      workType: preferences.workType ?? null,
-      userIds: [userId],
-    };
-
-    const scorableJobs = activeJobs.map(mapToScorableJob);
-    const scoredGroupJobs = equivalenceMatchingService.matchGroup(
-      group,
-      scorableJobs,
-    );
-
-    // 4. Personalize by subtracting already sent jobs (up to 20 top matches)
-    const personalizedMatches = equivalenceMatchingService.personalizeForMember(
-      scoredGroupJobs,
-      sentJobIds,
-      20,
-    );
-
-    if (personalizedMatches.length === 0) {
+    if (freshJobs.length === 0) {
       return {
         hasMatches: false,
         totalMatches: 0,
@@ -241,20 +191,21 @@ export class FirstDigestService {
       };
     }
 
-    // 5. Filter live links so new users never receive 504 / dead links
-    const topCandidates = personalizedMatches.slice(0, pageSize * 2);
+    // 3. Filter live links so new users never receive 504 / dead links
+    const topCandidates = freshJobs.slice(0, pageSize * 2);
     const liveMatches = await this.linkVerifier.filterLiveJobs(
       topCandidates.map((m) => ({
         ...m,
-        url: m.job.url || m.job.applicationUrl || '',
-        applicationUrl: m.job.applicationUrl,
-        title: m.job.title,
+        job: m,
+        url: m.url || m.applicationUrl || '',
+        applicationUrl: m.applicationUrl,
+        title: m.title,
       })),
     );
 
     const validPageJobs = (liveMatches.length > 0 ? liveMatches : topCandidates).slice(0, pageSize);
     const deliveredJobIds = validPageJobs
-      .map((p) => p.job.id as string)
+      .map((p) => ('id' in p ? p.id : (p as any).job?.id) as string)
       .filter((id) => typeof id === 'string' && id.length > 0);
 
     const durationMs = Date.now() - startTime;
@@ -263,8 +214,9 @@ export class FirstDigestService {
     );
 
     const candidates: FirstDigestCandidate[] = validPageJobs.map((item) => {
+      const rawJob: ExplorerJobItem = 'id' in item && item.id ? (item as ExplorerJobItem) : (item as any).job;
       const explanationContext = {
-        job: item.job,
+        job: rawJob,
         preferences: {
           specializations: preferences.specializations,
           regionPreference: preferences.regionPreference,
@@ -272,41 +224,42 @@ export class FirstDigestService {
         },
       };
 
+      const scoreObj = { score: rawJob.score ?? 70, confidence: 1.0, breakdown: [] };
       const explanationAr = transparentExplanationBuilder.formatScoreReport(
-        item.scoring,
+        scoreObj,
         explanationContext,
         'ar',
       );
 
       const explanationEn = transparentExplanationBuilder.formatScoreReport(
-        item.scoring,
+        scoreObj,
         explanationContext,
         'en',
       );
 
       const rawCompany =
-        'company' in item.job ? String((item.job as { company?: unknown }).company || '') : '';
+        'company' in rawJob ? String((rawJob as { company?: unknown }).company || '') : '';
 
       return {
-        jobId: item.job.id as string,
-        title: item.job.title || 'Untitled',
+        jobId: rawJob.id,
+        title: rawJob.title || 'Untitled',
         company: rawCompany || 'Company',
-        url: item.job.url || item.job.applicationUrl || '',
-        applicationUrl: item.job.applicationUrl,
-        location: item.job.location,
-        country: item.job.country,
-        remoteScope: item.job.remoteScope,
-        score: item.scoring.score,
+        url: rawJob.url || rawJob.applicationUrl || '',
+        applicationUrl: rawJob.applicationUrl,
+        location: rawJob.location,
+        country: rawJob.country,
+        remoteScope: rawJob.remoteScope,
+        score: rawJob.score ?? 70,
         explanationAr,
         explanationEn,
       };
     });
 
-    const totalPages = Math.ceil(personalizedMatches.length / pageSize);
+    const totalPages = Math.ceil(freshJobs.length / pageSize);
 
     return {
       hasMatches: true,
-      totalMatches: personalizedMatches.length,
+      totalMatches: freshJobs.length,
       page: 1,
       totalPages,
       jobs: candidates,
@@ -334,45 +287,12 @@ export class FirstDigestService {
    * used for in-place pagination across digest pages.
    */
   public async getPersonalizedDigestJobs(userId: string): Promise<DigestCardJob[]> {
-    const userPref = await this.db.userPreference.findUnique({
-      where: { userId },
+    const explorerResult = await this.getJobExplorer().getJobsForUser(userId, {
+      pageSize: 20,
+      sort: 'BEST_MATCH',
     });
 
-    if (!userPref || !userPref.specializations?.length) {
-      return [];
-    }
-
-    const specs = userPref.specializations as Specialization[];
-    const activeJobs = await this.db.job.findMany({
-      where: {
-        status: 'ACTIVE',
-        OR: [
-          { primarySpecialization: { in: specs } },
-          { secondarySpecialization: { in: specs } },
-        ],
-      },
-      select: {
-        id: true,
-        title: true,
-        company: true,
-        url: true,
-        applicationUrl: true,
-        location: true,
-        country: true,
-        remoteScope: true,
-        primarySpecialization: true,
-        secondarySpecialization: true,
-        experienceLevel: true,
-        workType: true,
-        publishedAt: true,
-      },
-      orderBy: {
-        publishedAt: 'desc',
-      },
-      take: 250,
-    });
-
-    if (activeJobs.length === 0) {
+    if (!explorerResult.jobs || explorerResult.jobs.length === 0) {
       return [];
     }
 
@@ -387,42 +307,25 @@ export class FirstDigestService {
     });
     const historicalSentIds = new Set(historicalSent.map((s) => s.jobId));
 
-    const group = {
-      preferenceHash: userPref.preferenceHash || 'digest-pagination',
-      specializations: specs,
-      regionPreference: userPref.regionPreference as RegionPreference,
-      experienceLevel: userPref.experienceLevel ?? null,
-      workType: userPref.workType ?? null,
-      userIds: [userId],
-    };
-
-    const scorableJobs = activeJobs.map(mapToScorableJob);
-    const scored = equivalenceMatchingService.matchGroup(
-      group,
-      scorableJobs,
-    );
-
-    const personalized = equivalenceMatchingService.personalizeForMember(
-      scored,
-      historicalSentIds,
-      20,
-    );
+    const personalized = explorerResult.jobs
+      .filter((j) => !historicalSentIds.has(j.id))
+      .slice(0, 20);
 
     return personalized.map((item) => {
       const rawCompany =
-        'company' in item.job ? String((item.job as { company?: unknown }).company || '') : '';
+        'company' in item ? String((item as { company?: unknown }).company || '') : '';
 
       return {
-        id: item.job.id as string,
-        title: item.job.title || 'Untitled Role',
+        id: item.id,
+        title: item.title || 'Untitled Role',
         company: rawCompany || 'Company',
-        url: item.job.url || item.job.applicationUrl || '',
-        applicationUrl: item.job.applicationUrl,
-        location: item.job.location,
-        country: item.job.country,
-        remoteScope: item.job.remoteScope,
-        experienceLevel: item.job.experienceLevel,
-        score: item.scoring.score,
+        url: item.url || item.applicationUrl || '',
+        applicationUrl: item.applicationUrl,
+        location: item.location,
+        country: item.country,
+        remoteScope: item.remoteScope,
+        experienceLevel: item.experienceLevel,
+        score: item.score ?? 70,
       };
     });
   }
