@@ -34,7 +34,6 @@ import type {
 } from './classificationTypes.js';
 import {
   NegativeExclusionStage,
-  negativeExclusionStage,
 } from './stages/negativeExclusionStage.js';
 import {
   TitleRoleLockStage,
@@ -152,7 +151,7 @@ export class DeterministicJobClassifier {
       return {
         primarySpecialization: null,
         secondarySpecialization: null,
-        remoteScope: RemoteScope.UNSPECIFIED,
+        remoteScope: RemoteScope.UNKNOWN,
         country: job.country ?? null,
         experienceLevel: ExperienceLevel.MID,
         workType: WorkType.FULL_TIME,

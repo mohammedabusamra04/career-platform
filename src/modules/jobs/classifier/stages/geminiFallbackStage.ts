@@ -5,7 +5,6 @@ import type {
   AmbiguityResolver,
 } from '../classificationTypes.js';
 import {
-  GeminiAmbiguityResolver,
   geminiAmbiguityResolver,
 } from '../geminiAmbiguity.resolver.js';
 import logger from '../../../../shared/utils/logger.js';

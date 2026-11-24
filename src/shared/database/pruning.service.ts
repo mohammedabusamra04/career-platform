@@ -218,8 +218,8 @@ export class PruningService {
         title: job.title,
         description: job.description || '',
         skills: job.skills,
-        country: job.country,
-        location: job.location,
+        country: job.country ?? undefined,
+        location: job.location ?? undefined,
       });
 
       if (classification.isExcluded || !classification.primarySpecialization) {
