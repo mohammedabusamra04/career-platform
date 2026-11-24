@@ -1619,4 +1619,162 @@ describe('DeterministicJobClassifier - 10-Domain Specialization Classifier (TASK
       expect(result.classificationMethod).toBe('RULE_TITLE');
     });
   });
+
+  describe('Domain Misclassification Regression & Anti-Signal Traps (TDD RED)', () => {
+    it('classifies "Remote Laravel PHP Dev" as BACKEND and never QA even with testing in description', () => {
+      const job = {
+        title: 'Remote Laravel PHP Dev',
+        description:
+          'We are seeking a Remote Laravel PHP Dev. You will collaborate with QA testers, write unit testing, ensure quality assurance, and design database schemas with PostgreSQL and Redis.',
+        skills: ['PHP', 'Laravel', 'Testing', 'QA'],
+      };
+
+      const result = classifier.classify(job);
+      expect(result.primarySpecialization).toBe(Specialization.BACKEND);
+      expect(result.classificationMethod).toBe('RULE_TITLE');
+      expect(result.confidence).toBeGreaterThanOrEqual(0.95);
+      expect(classifier.isAmbiguous(job, result)).toBe(false);
+    });
+
+    it('classifies "PHP Developer (Laravel & Symfony)" as BACKEND even when description mentions automated testing and QA standards', () => {
+      const job = {
+        title: 'PHP Developer (Laravel & Symfony)',
+        description:
+          'Senior PHP Developer wanted. Maintain high QA standards and participate in automated testing procedures while building RESTful microservices.',
+        skills: ['PHP', 'Laravel', 'Symfony'],
+      };
+
+      const result = classifier.classify(job);
+      expect(result.primarySpecialization).toBe(Specialization.BACKEND);
+      expect(result.classificationMethod).toBe('RULE_TITLE');
+      expect(classifier.isAmbiguous(job, result)).toBe(false);
+    });
+
+    it('locks role for "Backend Developer (m/w/d) – Vision AI Platform" as BACKEND without being hijacked by AI_ENGINEER', () => {
+      const job = {
+        title: 'Backend Developer (m/w/d) – Vision AI Platform',
+        description:
+          'Join our Vision AI team! Our platform utilizes computer vision and deep learning models. Your role is purely backend: designing high-throughput APIs, caching with Redis, and managing PostgreSQL data pipelines.',
+        skills: ['Go', 'Python', 'PostgreSQL', 'Docker'],
+      };
+
+      const result = classifier.classify(job);
+      expect(result.primarySpecialization).toBe(Specialization.BACKEND);
+      expect(result.classificationMethod).toBe('RULE_TITLE');
+      expect(result.primarySpecialization).not.toBe(Specialization.AI_ENGINEER);
+    });
+
+    it('classifies "Backend Software Developer" as BACKEND despite Docker, Security, SQL, and QA in description', () => {
+      const job = {
+        title: 'Backend Software Developer',
+        description:
+          'We need a Backend Software Developer. Responsibilities: containerize with Docker, implement JWT and OAuth security, optimize SQL queries, and coordinate with QA on integration testing.',
+        skills: ['Node.js', 'PostgreSQL', 'Docker'],
+      };
+
+      const result = classifier.classify(job);
+      expect(result.primarySpecialization).toBe(Specialization.BACKEND);
+      expect(result.classificationMethod).toBe('RULE_TITLE');
+      expect(result.primarySpecialization).not.toBe(Specialization.DEVOPS);
+      expect(result.primarySpecialization).not.toBe(Specialization.SECURITY);
+      expect(result.primarySpecialization).not.toBe(Specialization.DATA);
+      expect(result.primarySpecialization).not.toBe(Specialization.QA);
+    });
+
+    it('classifies Arabic title "مبرمج متخصص في منصة Lovable لإعادة تهيئة موقع قائم" as FRONTEND or FULLSTACK and NEVER QA', () => {
+      const job = {
+        title: 'مبرمج متخصص في منصة Lovable لإعادة تهيئة موقع قائم',
+        description: 'مطلوب مبرمج ذو خبرة في منصة Lovable وتصميم المواقع التفاعلية لإعادة تهيئة موقع إلكتروني قائم وتحسين الواجهة.',
+        skills: ['Lovable', 'JavaScript', 'Web Design'],
+      };
+
+      const result = classifier.classify(job);
+      expect([Specialization.FRONTEND, Specialization.FULLSTACK]).toContain(result.primarySpecialization);
+      expect(result.primarySpecialization).not.toBe(Specialization.QA);
+    });
+
+    it('classifies "React Developer" as FRONTEND without being stolen by DEVOPS despite Docker & CI/CD in description', () => {
+      const job = {
+        title: 'React Developer',
+        description:
+          'Build responsive UI with React and Next.js. Deploy using Docker containers and Gitlab CI/CD pipelines. Work alongside QA for regression test runs.',
+        skills: ['React', 'Next.js', 'TypeScript', 'Docker', 'CI/CD'],
+      };
+
+      const result = classifier.classify(job);
+      expect(result.primarySpecialization).toBe(Specialization.FRONTEND);
+      expect(result.classificationMethod).toBe('RULE_TITLE');
+    });
+
+    it('classifies dedicated test engineer "Senior SDET / Playwright Automation Engineer" as QA', () => {
+      const job = {
+        title: 'Senior SDET / Playwright Automation Engineer',
+        description: 'Build robust test automation suites in TypeScript with Playwright and Cypress.',
+        skills: ['Playwright', 'Cypress', 'TypeScript'],
+      };
+
+      const result = classifier.classify(job);
+      expect(result.primarySpecialization).toBe(Specialization.QA);
+      expect(result.classificationMethod).toBe('RULE_TITLE');
+    });
+
+    it('classifies generic "Software Engineer" with exclusive test automation tooling as QA via contextual description', () => {
+      const job = {
+        title: 'Software Engineer',
+        description:
+          'Focus purely on automated end-to-end testing with Selenium, Cypress, TestRail, and creating regression test suites across multiple web applications.',
+        skills: ['Selenium', 'Cypress', 'TestRail'],
+      };
+
+      const result = classifier.classify(job);
+      expect(result.primarySpecialization).toBe(Specialization.QA);
+      expect(result.classificationMethod).toBe('RULE_DESCRIPTION');
+    });
+
+    it('classifies "Senior PHP Dev" as BACKEND and never QA even when title uses "Dev" and description mentions testing', () => {
+      const job = {
+        title: 'Senior PHP Dev',
+        description:
+          'Join our engineering team. We value automated testing and quality assurance across our deployment pipeline.',
+        skills: ['PHP', 'MySQL'],
+      };
+
+      const result = classifier.classify(job);
+      expect(result.primarySpecialization).toBe(Specialization.BACKEND);
+      expect(result.classificationMethod).toBe('RULE_TITLE');
+      expect(result.primarySpecialization).not.toBe(Specialization.QA);
+    });
+
+    it('locks role for "Vision AI Platform - Backend Developer" and "AI Platform Backend Engineer" as BACKEND', () => {
+      const job = {
+        title: 'Vision AI Platform - Backend Developer',
+        description: 'Design distributed backend systems for our AI product suite.',
+        skills: ['Go', 'PostgreSQL'],
+      };
+
+      const result = classifier.classify(job);
+      expect(result.primarySpecialization).toBe(Specialization.BACKEND);
+      expect(result.classificationMethod).toBe('RULE_TITLE');
+      expect(result.primarySpecialization).not.toBe(Specialization.AI_ENGINEER);
+    });
+
+    it('accurately distinguishes Kotlin Backend Engineer from Android Kotlin Developer', () => {
+      const backendJob = {
+        title: 'Kotlin Backend Engineer',
+        description: 'Develop high-performance Spring Boot microservices with Kotlin and PostgreSQL.',
+        skills: ['Kotlin', 'Spring Boot'],
+      };
+      const mobileJob = {
+        title: 'Android Kotlin Developer',
+        description: 'Build native Android apps using Kotlin, Jetpack Compose, and Coroutines.',
+        skills: ['Kotlin', 'Android', 'Jetpack Compose'],
+      };
+
+      const backendResult = classifier.classify(backendJob);
+      const mobileResult = classifier.classify(mobileJob);
+
+      expect(backendResult.primarySpecialization).toBe(Specialization.BACKEND);
+      expect(mobileResult.primarySpecialization).toBe(Specialization.MOBILE);
+    });
+  });
 });
