@@ -348,5 +348,66 @@ describe('FirstDigestService (TASK-40.1)', () => {
         }),
       );
     });
+
+    it('delegates candidate retrieval to JobExplorerService enforcing DB-level regional and freshness parity', async () => {
+      const mockJobExplorer = {
+        getJobsForUser: vi.fn().mockResolvedValue({
+          hasMatches: true,
+          totalMatches: 2,
+          currentPage: 1,
+          totalPages: 1,
+          pageSize: 5,
+          sort: 'BEST_MATCH',
+          jobs: [
+            {
+              id: 'job-exp-1',
+              title: 'Backend Engineer',
+              company: 'ExploreCorp',
+              url: 'https://example.com/exp1',
+              remoteScope: 'WORLDWIDE',
+              country: 'AE',
+              location: 'Dubai, UAE',
+              score: 95,
+              experienceLevel: 'MID',
+            },
+            {
+              id: 'job-exp-2',
+              title: 'Senior Backend Engineer',
+              company: 'ExploreCorp',
+              url: 'https://example.com/exp2',
+              remoteScope: 'WORLDWIDE',
+              country: 'AE',
+              location: 'Dubai, UAE',
+              score: 90,
+              experienceLevel: 'SENIOR',
+            },
+          ],
+          executionTimeMs: 42,
+        }),
+      };
+
+      const customService = new FirstDigestService(
+        mockPrisma as PrismaClient,
+        mockLinkVerifier as unknown as any,
+        mockJobExplorer as any,
+      );
+
+      const result = await customService.generateAndDeliverFirstDigest(
+        'user-uuid-explorer',
+        {
+          specializations: [Specialization.BACKEND],
+          regionPreference: RegionPreference.ARAB,
+          experienceLevel: 'MID',
+        },
+        5,
+      );
+
+      expect(mockJobExplorer.getJobsForUser).toHaveBeenCalledWith(
+        'user-uuid-explorer',
+        expect.objectContaining({ pageSize: 20 }),
+      );
+      expect(result.jobs).toHaveLength(2);
+      expect(result.jobs[0].jobId).toBe('job-exp-1');
+    });
   });
 });

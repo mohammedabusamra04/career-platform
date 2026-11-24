@@ -1776,5 +1776,46 @@ describe('DeterministicJobClassifier - 10-Domain Specialization Classifier (TASK
       expect(backendResult.primarySpecialization).toBe(Specialization.BACKEND);
       expect(mobileResult.primarySpecialization).toBe(Specialization.MOBILE);
     });
+
+    it('arbitrates compound and conflicting titles between competing domain qualifiers and platform/infra roles', () => {
+      // 1. Data Platform Engineer with data pipeline skills vs kubernetes
+      const dataPlatformJob = {
+        title: 'Data Platform Engineer',
+        description: 'Build robust data infrastructure, ETL pipelines, Kafka event streaming, Spark jobs, Airflow DAGs and manage deployments on Kubernetes.',
+        skills: ['ETL', 'Spark', 'Airflow', 'Kafka', 'Kubernetes'],
+      };
+      const dataPlatformResult = classifier.classify(dataPlatformJob);
+      expect(dataPlatformResult.primarySpecialization).toBe(Specialization.DATA);
+      expect(dataPlatformResult.secondarySpecialization).toBe(Specialization.DEVOPS);
+
+      // 2. AI Platform Engineer with LLM/PyTorch skills vs kubernetes
+      const aiPlatformJob = {
+        title: 'AI Platform Engineer',
+        description: 'Develop scalable infrastructure for model training, PyTorch pipelines, LLM fine-tuning, RAG services on Kubernetes clusters.',
+        skills: ['PyTorch', 'LLM', 'RAG', 'Kubernetes'],
+      };
+      const aiPlatformResult = classifier.classify(aiPlatformJob);
+      expect(aiPlatformResult.primarySpecialization).toBe(Specialization.AI_ENGINEER);
+      expect(aiPlatformResult.secondarySpecialization).toBe(Specialization.DEVOPS);
+
+      // 3. Security Platform Engineer with AppSec/SIEM vs terraform
+      const secPlatformJob = {
+        title: 'Security Platform Engineer',
+        description: 'Design secure cloud infrastructure, SIEM monitoring, AppSec automation, Burp Suite vulnerability scans and Terraform provisioning.',
+        skills: ['SIEM', 'AppSec', 'Burp Suite', 'Terraform'],
+      };
+      const secPlatformResult = classifier.classify(secPlatformJob);
+      expect(secPlatformResult.primarySpecialization).toBe(Specialization.SECURITY);
+      expect(secPlatformResult.secondarySpecialization).toBe(Specialization.DEVOPS);
+
+      // 4. Pure Senior Platform Engineer
+      const purePlatformJob = {
+        title: 'Senior Platform Engineer',
+        description: 'Maintain Kubernetes clusters, Terraform modules, Helm charts, and CI/CD automation pipelines.',
+        skills: ['Kubernetes', 'Terraform', 'CI/CD'],
+      };
+      const purePlatformResult = classifier.classify(purePlatformJob);
+      expect(purePlatformResult.primarySpecialization).toBe(Specialization.DEVOPS);
+    });
   });
 });

@@ -91,9 +91,14 @@ describe('TASK-35.2: Interactive Summary Review & Transactional Preference Save 
     it('formats summary card in English', () => {
       const card = formatSummaryCard([Specialization.AI_ENGINEER], RegionPreference.INTERNATIONAL, 'en');
       expect(card).toContain('Review Your DeployMe Pipeline Config');
-      expect(card).toContain('AI_ENGINEER');
       expect(card).toContain('International & Global Remote Only');
       expect(card).toContain('curated daily digest of matching tech roles every evening ⚡');
+    });
+
+    it('formats AI_ENGINEER and compound specializations safely without unescaped underscores that break Telegram Markdown', () => {
+      const card = formatSummaryCard([Specialization.SECURITY, Specialization.AI_ENGINEER], RegionPreference.BOTH, 'ar');
+      expect(card).not.toMatch(/(?<!\\)AI_ENGINEER/);
+      expect(card).toMatch(/AI \/ ML|AI\\_ENGINEER/);
     });
   });
 
