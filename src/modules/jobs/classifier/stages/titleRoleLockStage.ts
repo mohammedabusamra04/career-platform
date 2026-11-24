@@ -7,10 +7,103 @@ import type {
 } from '../classificationTypes.js';
 import { TAXONOMY_TOKEN_MAP } from '../specializationTaxonomy.js';
 
+export const SHARED_ROLE_PATTERNS = [
+  /\b(?:platform|infrastructure|infra|cloud)\s+(?:engineer|developer|architect|lead|specialist)\b/i,
+];
+
+export const DOMAIN_QUALIFIERS: Array<{ spec: Specialization; regex: RegExp }> = [
+  {
+    spec: Specialization.AI_ENGINEER,
+    regex: /\b(?:ai|ml|machine learning|deep learning|nlp|llm|computer vision|artificial intelligence|ذكاء اصطناعي|تعلم الآلة)\b/i,
+  },
+  {
+    spec: Specialization.DATA,
+    regex: /\b(?:data|analytics|big data|etl|bi|database|بيانات|علم البيانات)\b/i,
+  },
+  {
+    spec: Specialization.SECURITY,
+    regex: /\b(?:security|cybersecurity|infosec|appsec|secops|أمن سيبراني|أمن معلومات)\b/i,
+  },
+  {
+    spec: Specialization.MOBILE,
+    regex: /\b(?:mobile|ios|android|flutter|react native|swift|kotlin|موبايل)\b/i,
+  },
+  {
+    spec: Specialization.QA,
+    regex: /\b(?:qa|quality assurance|testing|test|sdet|جودة|اختبار)\b/i,
+  },
+  {
+    spec: Specialization.FRONTEND,
+    regex: /\b(?:frontend|front-end|ui|web|واجهات أمامية)\b/i,
+  },
+  {
+    spec: Specialization.BACKEND,
+    regex: /\b(?:backend|back-end|api|خلفي)\b/i,
+  },
+  {
+    spec: Specialization.UIUX,
+    regex: /\b(?:ui\/ux|ux\/ui|product design|تصميم)\b/i,
+  },
+  {
+    spec: Specialization.FULLSTACK,
+    regex: /\b(?:fullstack|full stack|full-stack|شامل)\b/i,
+  },
+  {
+    spec: Specialization.DEVOPS,
+    regex: /\b(?:devops|sre|platform|infrastructure|cloud|sysadmin|سحابي|ديف اوبس)\b/i,
+  },
+];
+
+export interface TitleConflictArbitrationResult {
+  hasConflict: boolean;
+  competingSpecialization: Specialization | null;
+  sharedRoleSpecialization: Specialization | null;
+}
+
 export class TitleRoleLockStage implements IClassificationStage {
   public readonly name = 'TITLE_ROLE_LOCK';
 
+  /**
+   * Dynamically detects compound titles where a domain qualifier (Data, AI, Security, Mobile, etc.)
+   * competes with a shared role (Platform, Infrastructure, Cloud).
+   */
+  public detectTitleConflict(title: string): TitleConflictArbitrationResult {
+    if (!title || !title.trim()) {
+      return { hasConflict: false, competingSpecialization: null, sharedRoleSpecialization: null };
+    }
+
+    const normalized = this.normalizeTitleForTokens(title);
+
+    const hasSharedRole = SHARED_ROLE_PATTERNS.some((pattern) => pattern.test(normalized));
+    if (!hasSharedRole) {
+      return { hasConflict: false, competingSpecialization: null, sharedRoleSpecialization: null };
+    }
+
+    for (const { spec, regex } of DOMAIN_QUALIFIERS) {
+      if (spec === Specialization.DEVOPS) continue;
+      if (regex.test(normalized)) {
+        return {
+          hasConflict: true,
+          competingSpecialization: spec,
+          sharedRoleSpecialization: Specialization.DEVOPS,
+        };
+      }
+    }
+
+    return { hasConflict: false, competingSpecialization: null, sharedRoleSpecialization: null };
+  }
+
   public execute(context: StageContext): StageResult | null {
+    // If competing domains exist and description/skills are present, defer to contextual arbitration
+    const conflict = this.detectTitleConflict(context.title);
+    const hasDescOrSkills = Boolean(
+      (context.description && context.description.trim().length > 0) ||
+      (context.skills && context.skills.length > 0),
+    );
+    if (conflict.hasConflict && hasDescOrSkills) {
+      return null;
+    }
+
     const classification = this.classifyTitle(context.title);
     if (!classification) {
       return null;
@@ -34,6 +127,17 @@ export class TitleRoleLockStage implements IClassificationStage {
   public classifyTitle(title: string): TitleClassificationResult | null {
     if (!title || !title.trim()) {
       return null;
+    }
+
+    const conflict = this.detectTitleConflict(title);
+    if (conflict.hasConflict && conflict.competingSpecialization) {
+      return {
+        primarySpecialization: conflict.competingSpecialization,
+        secondarySpecialization: conflict.sharedRoleSpecialization || Specialization.DEVOPS,
+        confidence: 0.95,
+        classificationMethod: 'RULE_TITLE',
+        matchedTokens: [title],
+      };
     }
 
     const normalized = this.normalizeTitleForTokens(title);

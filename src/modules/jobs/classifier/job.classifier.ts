@@ -162,29 +162,62 @@ export class DeterministicJobClassifier {
       };
     }
 
-    // Stage 2: Title Role Lock
-    const titleResult = this.titleStage.execute(context);
-
     let primarySpecialization: Specialization | null = null;
     let secondarySpecialization: Specialization | null = null;
     let confidence = 0;
     let classificationMethod: ClassificationMethod = 'DEFAULT';
     let matchedTokens: string[] | undefined;
 
-    if (titleResult && titleResult.primarySpecialization) {
-      primarySpecialization = titleResult.primarySpecialization;
-      secondarySpecialization = titleResult.secondarySpecialization ?? null;
-      confidence = titleResult.confidence;
-      classificationMethod = titleResult.classificationMethod;
-      matchedTokens = titleResult.matchedTokens;
+    // Check for dynamic title conflict between domain qualifiers and shared roles
+    const titleConflict = this.titleStage.detectTitleConflict(cleanTitle);
+    const hasDescOrSkills = Boolean(
+      (context.description && context.description.trim().length > 0) ||
+      (context.skills && context.skills.length > 0),
+    );
+
+    if (titleConflict.hasConflict && titleConflict.competingSpecialization && hasDescOrSkills) {
+      const competingSpec = titleConflict.competingSpecialization;
+      const sharedSpec = titleConflict.sharedRoleSpecialization || Specialization.DEVOPS;
+
+      const descScores = this.descriptionStage.scoreDescription(
+        context.description || '',
+        (context.skills || []).join(' '),
+      );
+
+      const qualifierScore = descScores.get(competingSpec) || 0;
+      const sharedScore = descScores.get(sharedSpec) || 0;
+
+      // Arbitrate: domain qualifier takes primary if supported by evidence or tied
+      if (qualifierScore >= sharedScore || qualifierScore > 0) {
+        primarySpecialization = competingSpec;
+        secondarySpecialization = sharedSpec;
+      } else {
+        primarySpecialization = sharedSpec;
+        secondarySpecialization = competingSpec;
+      }
+
+      confidence = 0.95;
+      classificationMethod = 'RULE_TITLE';
+      matchedTokens = [cleanTitle];
     } else {
-      // Stage 3: Contextual Description with Anti-Signal protection
-      const descResult = this.descriptionStage.execute(context);
-      if (descResult && descResult.primarySpecialization) {
-        primarySpecialization = descResult.primarySpecialization;
-        secondarySpecialization = descResult.secondarySpecialization ?? null;
-        confidence = descResult.confidence;
-        classificationMethod = descResult.classificationMethod;
+      // Stage 2: Title Role Lock
+      const titleResult = this.titleStage.execute(context);
+
+      if (titleResult && titleResult.primarySpecialization) {
+        primarySpecialization = titleResult.primarySpecialization;
+        secondarySpecialization = titleResult.secondarySpecialization ?? null;
+        confidence = titleResult.confidence;
+        classificationMethod = titleResult.classificationMethod;
+        matchedTokens = titleResult.matchedTokens;
+      } else {
+        // Stage 3: Contextual Description with Anti-Signal protection
+        const descResult = this.descriptionStage.execute(context);
+        if (descResult && descResult.primarySpecialization) {
+          primarySpecialization = descResult.primarySpecialization;
+          secondarySpecialization = descResult.secondarySpecialization ?? null;
+          confidence = descResult.confidence;
+          classificationMethod = descResult.classificationMethod;
+        }
       }
     }
 
