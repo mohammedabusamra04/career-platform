@@ -1,10 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { BotContext } from '../../../src/bot/context.js';
-import { deduplicateMiddleware } from '../../../src/bot/middleware/deduplicate.middleware.js';
+import { deduplicateMiddleware, clearDeduplicationCache } from '../../../src/bot/middleware/deduplicate.middleware.js';
 
 describe('DeduplicateMiddleware', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    clearDeduplicationCache();
   });
 
   it('drops actual retry duplicates that have the exact same callbackQuery.id', async () => {
