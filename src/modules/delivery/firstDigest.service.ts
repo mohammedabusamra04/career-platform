@@ -2,9 +2,8 @@ import type { PrismaClient } from '@prisma/client';
 import { InlineKeyboard } from 'grammy';
 import ms from 'ms';
 import { prisma } from '../../shared/database/prisma.service.js';
-import { equivalenceMatchingService } from '../matching/equivalenceMatching.service.js';
 import { transparentExplanationBuilder } from '../matching/scoreReason.builder.js';
-import type { ScorableJob } from '../matching/scoring.calculator.js';
+import type { ScorableJob, ScoringResult } from '../matching/scoring.calculator.js';
 import type { Specialization, RegionPreference } from '../preferences/preference.taxonomy.js';
 import type { DigestCardJob } from '../notifications/telegram/digestCard.formatter.js';
 import { jobLinkVerifier, type IJobLinkVerifier } from '../jobs/job.linkVerifier.js';
@@ -224,7 +223,21 @@ export class FirstDigestService {
         },
       };
 
-      const scoreObj = { score: rawJob.score ?? 70, confidence: 1.0, breakdown: [] };
+      const scoreVal = rawJob.score ?? 70;
+      const scoreObj: ScoringResult = {
+        score: scoreVal,
+        isEligibleForDigest: true,
+        breakdown: {
+          specializationScore: 50,
+          levelScore: 10,
+          regionScore: 10,
+          freshnessScore: 0,
+          atsScore: 0,
+          rawTotal: scoreVal,
+          totalScore: scoreVal,
+        },
+      };
+
       const explanationAr = transparentExplanationBuilder.formatScoreReport(
         scoreObj,
         explanationContext,

@@ -43,6 +43,7 @@ describe('FirstDigestService (TASK-40.1)', () => {
     );
   });
 
+  const mockBaseDate = new Date();
   const mockActiveJobs = [
     {
       id: 'job-1',
@@ -58,7 +59,7 @@ describe('FirstDigestService (TASK-40.1)', () => {
       secondarySpecialization: null,
       experienceLevel: 'SENIOR',
       workType: 'FULL_TIME',
-      publishedAt: new Date(),
+      publishedAt: new Date(mockBaseDate.getTime() + 1000),
     },
     {
       id: 'job-2',
@@ -73,7 +74,7 @@ describe('FirstDigestService (TASK-40.1)', () => {
       secondarySpecialization: null,
       experienceLevel: 'SENIOR',
       workType: 'FULL_TIME',
-      publishedAt: new Date(),
+      publishedAt: mockBaseDate,
     },
     {
       id: 'job-3',
@@ -88,7 +89,7 @@ describe('FirstDigestService (TASK-40.1)', () => {
       secondarySpecialization: null,
       experienceLevel: 'MID',
       workType: 'FULL_TIME',
-      publishedAt: new Date(),
+      publishedAt: mockBaseDate,
     },
   ];
 
