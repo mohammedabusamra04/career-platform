@@ -12,6 +12,12 @@ jobs:
     name: Lint, Test & Build
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    env:
+      NODE_ENV: test
+      TELEGRAM_BOT_TOKEN: "123456:mock_bot_token"
+      DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/career_platform?schema=public"
+      SESSION_SECRET: "test-session-secret-key-32-chars-minimum"
+      PIPELINE_API_KEY: "test-pipeline-api-key"
 
     steps:
       - name: Checkout Code

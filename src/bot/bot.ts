@@ -22,11 +22,15 @@ import { registerHelpHandler } from './handlers/help.handler.js';
 import { deduplicateMiddleware } from './middleware/deduplicate.middleware.js';
 import { callbackValidationMiddleware } from './middleware/callbackValidation.middleware.js';
 
-if (!env.telegramBotToken) {
+const botToken =
+  env.telegramBotToken ||
+  (process.env.NODE_ENV === 'test' || process.env.VITEST ? '123456:mock_test_token' : '');
+
+if (!botToken) {
   throw new Error('TELEGRAM_BOT_TOKEN is not configured');
 }
 
-export const bot = new Bot<BotContext>(env.telegramBotToken);
+export const bot = new Bot<BotContext>(botToken);
 
 bot.use(deduplicateMiddleware);
 bot.use(callbackValidationMiddleware);
