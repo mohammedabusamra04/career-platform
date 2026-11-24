@@ -83,7 +83,7 @@ describe('TASK-35.2: Interactive Summary Review & Transactional Preference Save 
     it('formats summary card in Arabic with delivery note without fixed hour constraint', () => {
       const card = formatSummaryCard([Specialization.BACKEND, Specialization.DEVOPS], RegionPreference.BOTH, 'ar');
       expect(card).toContain('ملخص إعدادات الـ Pipeline تبعك');
-      expect(card).toContain('BACKEND, DEVOPS');
+      expect(card).toContain('Backend, DevOps');
       expect(card).toContain('السوق العربي والدولي معاً');
       expect(card).toContain('رح توصلك تجميعة يومية بأفضل الفرص التقنية المطابقة لمجالك كل مساء ⚡');
     });
@@ -91,6 +91,7 @@ describe('TASK-35.2: Interactive Summary Review & Transactional Preference Save 
     it('formats summary card in English', () => {
       const card = formatSummaryCard([Specialization.AI_ENGINEER], RegionPreference.INTERNATIONAL, 'en');
       expect(card).toContain('Review Your DeployMe Pipeline Config');
+      expect(card).toContain('AI / ML');
       expect(card).toContain('International & Global Remote Only');
       expect(card).toContain('curated daily digest of matching tech roles every evening ⚡');
     });

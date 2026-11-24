@@ -8,8 +8,12 @@ import {
   RegionPreference,
   Specialization,
 } from '../../modules/preferences/preference.taxonomy.js';
-import { buildSpecializationKeyboard } from '../keyboards/specialization.keyboard.js';
+import {
+  buildSpecializationKeyboard,
+  SPECIALIZATION_OPTIONS,
+} from '../keyboards/specialization.keyboard.js';
 import { buildDigestPaginationKeyboard } from '../keyboards/digestPagination.keyboard.js';
+import { escapeTelegramMarkdown } from '../../modules/notifications/telegram/digestCard.formatter.js';
 import { getWelcomeMessage } from './start.handler.js';
 import type { SupportedLanguage } from '../session.js';
 import {
@@ -43,6 +47,14 @@ const REGION_LABELS = {
   },
 };
 
+export function formatSpecializationDisplay(spec: Specialization | string): string {
+  const option = SPECIALIZATION_OPTIONS.find((opt) => opt.key === spec);
+  if (option) {
+    return escapeTelegramMarkdown(option.label);
+  }
+  return escapeTelegramMarkdown(String(spec));
+}
+
 function formatExperienceDisplay(level?: string | null, lang: SupportedLanguage = 'ar'): string {
   const norm = level ? level.toUpperCase() : 'ALL';
   const isAr = lang === 'ar';
@@ -64,11 +76,16 @@ export function formatSummaryCard(
   lang: SupportedLanguage = 'ar',
   experienceLevel?: string | null,
 ): string {
-  const specsList = specializations.length > 0 ? specializations.join(', ') : 'None';
-  const regionLabel = REGION_LABELS[region]
-    ? REGION_LABELS[region][lang]
-    : REGION_LABELS[RegionPreference.BOTH][lang];
-  const expLabel = formatExperienceDisplay(experienceLevel, lang);
+  const specsList =
+    specializations.length > 0
+      ? specializations.map(formatSpecializationDisplay).join(', ')
+      : 'None';
+  const regionLabel = escapeTelegramMarkdown(
+    REGION_LABELS[region]
+      ? REGION_LABELS[region][lang]
+      : REGION_LABELS[RegionPreference.BOTH][lang],
+  );
+  const expLabel = escapeTelegramMarkdown(formatExperienceDisplay(experienceLevel, lang));
 
   if (lang === 'en') {
     return (

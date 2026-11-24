@@ -10,7 +10,11 @@ import {
 } from '../../modules/preferences/preference.taxonomy.js';
 import type { ExperienceLevel } from '../../shared/types/job.js';
 import { buildSettingsKeyboard } from '../keyboards/settings.keyboard.js';
-import { buildSpecializationKeyboard } from '../keyboards/specialization.keyboard.js';
+import {
+  buildSpecializationKeyboard,
+  SPECIALIZATION_OPTIONS,
+} from '../keyboards/specialization.keyboard.js';
+import { escapeTelegramMarkdown } from '../../modules/notifications/telegram/digestCard.formatter.js';
 import { buildRegionKeyboard } from '../keyboards/region.keyboard.js';
 import { getRegionPromptMessage } from './region.handler.js';
 import { getWelcomeMessage } from './start.handler.js';
@@ -103,11 +107,21 @@ export function formatSettingsDashboard(
   lang: SupportedLanguage = 'ar',
   experienceLevel?: string | null,
 ): string {
-  const specsList = specializations.length > 0 ? specializations.join(', ') : 'None';
-  const regionLabel = REGION_LABELS[region]
-    ? REGION_LABELS[region][lang]
-    : REGION_LABELS[RegionPreference.BOTH][lang];
-  const expLabel = formatExperienceDisplay(experienceLevel, lang);
+  const specsList =
+    specializations.length > 0
+      ? specializations
+          .map((s) => {
+            const opt = SPECIALIZATION_OPTIONS.find((o) => o.key === s);
+            return opt ? escapeTelegramMarkdown(opt.label) : escapeTelegramMarkdown(String(s));
+          })
+          .join(', ')
+      : 'None';
+  const regionLabel = escapeTelegramMarkdown(
+    REGION_LABELS[region]
+      ? REGION_LABELS[region][lang]
+      : REGION_LABELS[RegionPreference.BOTH][lang],
+  );
+  const expLabel = escapeTelegramMarkdown(formatExperienceDisplay(experienceLevel, lang));
 
   const statusLabel =
     status === 'PAUSED'

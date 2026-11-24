@@ -88,7 +88,7 @@ describe('TASK-36.1: /settings Interactive Preference Editor (#105)', () => {
 
       expect(dashboard).toContain('DeployMe');
       expect(dashboard).toContain('Live');
-      expect(dashboard).toContain('BACKEND, FULLSTACK');
+      expect(dashboard).toContain('Backend, Full-Stack');
       expect(dashboard).toContain('السوق العربي والدولي معاً');
     });
 
@@ -102,7 +102,7 @@ describe('TASK-36.1: /settings Interactive Preference Editor (#105)', () => {
 
       expect(dashboard).toContain('DeployMe');
       expect(dashboard).toContain('Paused');
-      expect(dashboard).toContain('AI_ENGINEER');
+      expect(dashboard).toContain('AI / ML');
       expect(dashboard).toContain('International & Global Remote Only');
     });
   });
