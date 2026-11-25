@@ -235,7 +235,7 @@ export class TitleRoleLockStage implements IClassificationStage {
     const primarySpecialization = sortedSpecs[0][0];
     let secondarySpecialization: Specialization | null = null;
 
-    const nonBackendPrimaries = [
+    const nonBackendPrimaries: Specialization[] = [
       Specialization.DATA,
       Specialization.AI_ENGINEER,
       Specialization.QA,

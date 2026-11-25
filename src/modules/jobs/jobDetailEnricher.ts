@@ -60,7 +60,7 @@ export function extractJobPostingDetails(html: string): JobEnrichedData | null {
           let cleanedDesc = '';
           if (typeof rawDesc === 'string') {
             cleanedDesc = rawDesc.includes('<')
-              ? cheerio.load(rawDesc).text().replace(/\s+/g, ' ').trim()
+              ? cheerio.load(rawDesc)('body').text().replace(/\s+/g, ' ').trim()
               : rawDesc.replace(/\s+/g, ' ').trim();
           }
 

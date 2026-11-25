@@ -33,7 +33,7 @@ export class ContextualDescriptionStage implements IClassificationStage {
     if (sortedSpecs.length > 1) {
       const second = sortedSpecs[1];
       if (second[1] >= 16) {
-        const nonBackendPrimaries = [
+        const nonBackendPrimaries: Specialization[] = [
           Specialization.DATA,
           Specialization.AI_ENGINEER,
           Specialization.QA,

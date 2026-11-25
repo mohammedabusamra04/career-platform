@@ -94,7 +94,7 @@ export class MostaqlJobSource extends BaseJobSource {
     return `https://mostaql.com/projects?${params.toString()}`;
   }
 
-  private parseCandidates(html: string, query?: JobSearchQuery): CandidateProject[] {
+  private parseCandidates(html: string, _query?: JobSearchQuery): CandidateProject[] {
     const $ = cheerio.load(html);
     const candidates: CandidateProject[] = [];
 

@@ -56,7 +56,7 @@ export class RemotiveJobSource extends BaseJobSource {
     }
   }
 
-  private mapToJob(item: RemotiveJobItem, query: JobSearchQuery): Job {
+  private mapToJob(item: RemotiveJobItem, _query: JobSearchQuery): Job {
     const cleanDescription = (item.description || '')
       .replace(/<[^>]*>?/gm, ' ')
       .replace(/\s+/g, ' ')
