@@ -87,7 +87,7 @@ export class WeWorkRemotelyJobSource extends BaseJobSource {
         location: 'Remote',
         remote: true,
         workType: WorkType.REMOTE,
-        experienceLevel: query?.experienceLevel || ExperienceLevel.MID,
+        experienceLevel: ExperienceLevel.UNKNOWN,
         description: cleanDescription,
         skills: query?.skills || [],
         publicationDate: validPubDate,

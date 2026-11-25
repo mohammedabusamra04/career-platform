@@ -281,18 +281,7 @@ export class RemoteScopeClassifier {
       };
     }
 
-    // 4. Remote position without geographic restrictions (e.g. source remote flag, title has "Remote", or location is "Remote")
-    if (job.remote || titleHasRemote || locationIsRemote) {
-      return {
-        scope: RemoteScope.WORLDWIDE,
-        country: null,
-        confidence: 0.8,
-        evidence: 'Remote position without geographic restrictions',
-        hasContradiction: false,
-      };
-    }
-
-    // 5. Default: Insufficient data or unverified remote claims
+    // 4. Default: Without affirmative worldwide evidence, unverified remote claims remain UNKNOWN
     return {
       scope: RemoteScope.UNKNOWN,
       country: null,

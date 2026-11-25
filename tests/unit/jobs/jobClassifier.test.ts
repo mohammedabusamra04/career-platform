@@ -6,6 +6,7 @@ import {
   negativeExclusionMatcher,
   RemoteScopeClassifier,
   remoteScopeClassifier,
+  SeniorityClassifier,
   type AmbiguityResolver,
   GeminiAmbiguityResolver,
   AIAmbiguityResolutionSchema,
@@ -1075,18 +1076,18 @@ describe('DeterministicJobClassifier - 10-Domain Specialization Classifier (TASK
         expect(result.remoteScope).toBe(RemoteScope.WORLDWIDE);
       });
 
-      it('classifies unconstrained remote positions as WORLDWIDE even without explicit "worldwide" token', () => {
+      it('leaves unconstrained remote positions as UNKNOWN without explicit worldwide affirmative evidence', () => {
         const titleRemote = classifier.classify({
           title: 'Senior Backend Developer (Remote)',
         });
-        expect(titleRemote.remoteScope).toBe(RemoteScope.WORLDWIDE);
+        expect(titleRemote.remoteScope).toBe(RemoteScope.UNKNOWN);
         expect(titleRemote.country).toBeNull();
 
         const locRemote = classifier.classify({
           title: 'Fullstack Engineer',
           location: 'Remote',
         });
-        expect(locRemote.remoteScope).toBe(RemoteScope.WORLDWIDE);
+        expect(locRemote.remoteScope).toBe(RemoteScope.UNKNOWN);
         expect(locRemote.country).toBeNull();
       });
     });
@@ -1251,13 +1252,13 @@ describe('DeterministicJobClassifier - 10-Domain Specialization Classifier (TASK
       expect(result.remoteScope).toBe(RemoteScope.COUNTRY);
     });
 
-    it('falls back to Worldwide if remote flag is true without restrictions', () => {
+    it('leaves remote positions without geographic restrictions or affirmative evidence as UNKNOWN', () => {
       const result = classifier.classify({
         title: 'Fullstack Developer',
         remote: true,
       });
 
-      expect(result.remoteScope).toBe(RemoteScope.WORLDWIDE);
+      expect(result.remoteScope).toBe(RemoteScope.UNKNOWN);
     });
   });
 
@@ -1816,6 +1817,92 @@ describe('DeterministicJobClassifier - 10-Domain Specialization Classifier (TASK
       };
       const purePlatformResult = classifier.classify(purePlatformJob);
       expect(purePlatformResult.primarySpecialization).toBe(Specialization.DEVOPS);
+    });
+  });
+
+  describe('Regression: Strict Specialization, Seniority, and RemoteScope Constraints', () => {
+    it('classifies Arabic data cleaning and visualization as DATA and does not attach BACKEND as secondary', () => {
+      const result = classifier.classify({
+        title: 'تنظيف و تحليل بيانات باستخدام بايثون (data cleaning and visualization)',
+        description: 'المطلوب تنظيف وتحليل مجموعات بيانات ضخمة وعمل dashboards ورسوم بيانية.',
+      });
+
+      expect(result.primarySpecialization).toBe(Specialization.DATA);
+      expect(result.secondarySpecialization).not.toBe(Specialization.BACKEND);
+    });
+
+    it('classifies Junior Inhouse Consultant Data Engineering as DATA without secondary BACKEND leak', () => {
+      const result = classifier.classify({
+        title: 'Junior Inhouse Consultant Data Engineering (all genders)',
+        description: 'Join our data platform team building data pipelines with Python, SQL, PostgreSQL, and REST APIs for enterprise reporting.',
+      });
+
+      expect(result.primarySpecialization).toBe(Specialization.DATA);
+      expect(result.secondarySpecialization).not.toBe(Specialization.BACKEND);
+    });
+
+    it('prevents non-backend primary roles (AI_ENGINEER, QA, DEVOPS, SECURITY, UIUX) from leaking BACKEND as secondary merely due to Python/SQL/APIs', () => {
+      const roles = [
+        {
+          title: 'Senior QA Automation Engineer',
+          expectedPrimary: Specialization.QA,
+          description: 'Automate test suites using Python, SQL queries for DB validation, and API testing with Postman.',
+        },
+        {
+          title: 'Cloud DevOps Engineer',
+          expectedPrimary: Specialization.DEVOPS,
+          description: 'Deploy Kubernetes clusters and automate infrastructure using Python scripts, SQL database migrations, and cloud APIs.',
+        },
+        {
+          title: 'Cybersecurity Threat Analyst',
+          expectedPrimary: Specialization.SECURITY,
+          description: 'Analyze security logs, write Python automation scripts, inspect SQL injections, and query security APIs.',
+        },
+        {
+          title: 'Product UI/UX Designer & Prototyper',
+          expectedPrimary: Specialization.UIUX,
+          description: 'Design Figma interfaces, build interactive prototypes connecting to backend APIs using basic SQL and Python mock servers.',
+        },
+      ];
+
+      for (const role of roles) {
+        const res = classifier.classify(role);
+        expect(res.primarySpecialization).toBe(role.expectedPrimary);
+        expect(res.secondarySpecialization).not.toBe(Specialization.BACKEND);
+      }
+    });
+
+    it('Seniority: evaluates title seniority tokens BEFORE trusting conflicting source field', () => {
+      const seniorityClassifierInstance = new SeniorityClassifier();
+      const classifiedLevel = seniorityClassifierInstance.classify({
+        title: 'Senior Backend Developer',
+        experienceLevel: ExperienceLevel.JUNIOR,
+      });
+
+      expect(classifiedLevel).toBe(ExperienceLevel.SENIOR);
+    });
+
+    it('RemoteScope: does NOT guess WORLDWIDE for generic remote titles with short/empty description and no worldwide keywords', () => {
+      const remoteClassifierInstance = new RemoteScopeClassifier();
+      const classifiedScope = remoteClassifierInstance.classify({
+        title: 'Remote Backend Developer',
+        description: '',
+      });
+
+      // Must not invent certainty or guess WORLDWIDE without affirmative evidence
+      expect(classifiedScope.scope).not.toBe(RemoteScope.WORLDWIDE);
+      expect(classifiedScope.scope).toBe(RemoteScope.UNKNOWN);
+    });
+
+    it('RemoteScope: maps Baeed regional Arabic label "عن بعد (الوطن العربي)" to REGION', () => {
+      const remoteClassifierInstance = new RemoteScopeClassifier();
+      const classifiedScope = remoteClassifierInstance.classify({
+        title: 'مطور برمجيات',
+        location: 'عن بعد (الوطن العربي)',
+        description: 'وظيفة عن بعد مخصصة للمطورين في الوطن العربي.',
+      });
+
+      expect(classifiedScope.scope).toBe(RemoteScope.REGION);
     });
   });
 });

@@ -235,6 +235,16 @@ export class TitleRoleLockStage implements IClassificationStage {
     const primarySpecialization = sortedSpecs[0][0];
     let secondarySpecialization: Specialization | null = null;
 
+    const nonBackendPrimaries: Specialization[] = [
+      Specialization.DATA,
+      Specialization.AI_ENGINEER,
+      Specialization.QA,
+      Specialization.DEVOPS,
+      Specialization.SECURITY,
+      Specialization.UIUX,
+    ];
+    const hasExplicitBackendInTitle = /\b(?:back[- ]?end|خلفي|خلفية|server[- ]side)\b/i.test(title);
+
     if (sortedSpecs.length > 1) {
       const second = sortedSpecs[1];
       if (second[1] >= 60 && second[0] !== primarySpecialization) {
@@ -243,6 +253,18 @@ export class TitleRoleLockStage implements IClassificationStage {
             ([spec, score]) =>
               spec !== Specialization.FRONTEND &&
               spec !== Specialization.BACKEND &&
+              score >= 60,
+          );
+          secondarySpecialization = distinct ? distinct[0] : null;
+        } else if (
+          nonBackendPrimaries.includes(primarySpecialization) &&
+          second[0] === Specialization.BACKEND &&
+          !hasExplicitBackendInTitle
+        ) {
+          const distinct = sortedSpecs.slice(1).find(
+            ([spec, score]) =>
+              spec !== Specialization.BACKEND &&
+              spec !== primarySpecialization &&
               score >= 60,
           );
           secondarySpecialization = distinct ? distinct[0] : null;

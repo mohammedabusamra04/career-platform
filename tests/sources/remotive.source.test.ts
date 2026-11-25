@@ -26,7 +26,7 @@ describe('RemotiveJobSource (TASK-25.2: Fixture Testing)', () => {
 
     const jobs = await source.fetchJobs({
       jobTitle: 'Fullstack',
-      experienceLevel: ExperienceLevel.SENIOR,
+      experienceLevel: ExperienceLevel.UNKNOWN,
     });
 
     expect(jobs).toHaveLength(2);
@@ -43,7 +43,7 @@ describe('RemotiveJobSource (TASK-25.2: Fixture Testing)', () => {
       location: 'Worldwide',
       remote: true,
       workType: WorkType.REMOTE,
-      experienceLevel: ExperienceLevel.SENIOR,
+      experienceLevel: ExperienceLevel.UNKNOWN,
       skills: ['Node.js', 'React', 'PostgreSQL', 'TypeScript'],
     });
     expect(job1.description).toBe(

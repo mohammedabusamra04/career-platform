@@ -452,10 +452,118 @@ describe('FirstDigestService (TASK-40.1)', () => {
 
       expect(mockJobExplorer.getJobsForUser).toHaveBeenCalledWith(
         'user-uuid-explorer',
-        expect.objectContaining({ pageSize: 20 }),
+        expect.objectContaining({ pageSize: 50 }),
       );
       expect(result.jobs).toHaveLength(2);
       expect(result.jobs[0].jobId).toBe('job-exp-1');
+    });
+
+    it('collects up to 5 live jobs when 6 of the first 10 fail link verification', async () => {
+      // 20 jobs from JobExplorer: jobs 1-6 are dead, 7-10 are live (4 live), 11-15 are live (more available)
+      const mockJobs = Array.from({ length: 20 }, (_, i) => ({
+        id: `job-deadcheck-${i + 1}`,
+        title: `Engineer ${i + 1}`,
+        company: `Company ${i + 1}`,
+        url: `https://example.com/job-${i + 1}`,
+        remoteScope: 'WORLDWIDE',
+        score: 90 - i,
+      }));
+
+      const mockJobExplorer = {
+        getJobsForUser: vi.fn().mockResolvedValue({
+          hasMatches: true,
+          totalMatches: 20,
+          currentPage: 1,
+          totalPages: 1,
+          pageSize: 50,
+          sort: 'BEST_MATCH',
+          jobs: mockJobs,
+        }),
+      };
+
+      // Dead links: jobs 1 to 6 fail verification; 7 to 15 pass
+      const deadJobIds = new Set(['job-deadcheck-1', 'job-deadcheck-2', 'job-deadcheck-3', 'job-deadcheck-4', 'job-deadcheck-5', 'job-deadcheck-6']);
+      const customVerifier = {
+        filterLiveJobs: vi.fn().mockImplementation(async (candidates: any[]) => {
+          return candidates.filter((c) => !deadJobIds.has(c.id || c.job?.id));
+        }),
+        verifyJobLink: vi.fn().mockResolvedValue({ isAlive: true }),
+      };
+
+      const customService = new FirstDigestService(
+        mockPrisma as PrismaClient,
+        customVerifier as any,
+        mockJobExplorer as any,
+      );
+
+      (mockPrisma as { sentJob: { findMany: ReturnType<typeof vi.fn> } }).sentJob.findMany.mockResolvedValueOnce([]);
+      (mockPrisma as { sentJob: { createMany: ReturnType<typeof vi.fn> } }).sentJob.createMany.mockResolvedValueOnce({ count: 5 });
+
+      const digest = await customService.generateAndDeliverFirstDigest('user-live-check', {
+        specializations: [Specialization.BACKEND],
+        regionPreference: RegionPreference.BOTH,
+      });
+
+      // MUST scan deep enough to return exactly 5 live jobs (jobs 7, 8, 9, 10, 11)
+      expect(digest.jobs).toHaveLength(5);
+      expect(digest.deliveredJobIds).toHaveLength(5);
+      expect(digest.deliveredJobIds).toEqual([
+        'job-deadcheck-7',
+        'job-deadcheck-8',
+        'job-deadcheck-9',
+        'job-deadcheck-10',
+        'job-deadcheck-11',
+      ]);
+      expect(digest.totalPages).toBe(1);
+    });
+
+    it('scans deeper (up to 50 candidates) when top 20 candidates are already in sentJob', async () => {
+      // 35 jobs returned by explorer
+      const mockJobs = Array.from({ length: 35 }, (_, i) => ({
+        id: `job-deep-${i + 1}`,
+        title: `Engineer ${i + 1}`,
+        company: `Company ${i + 1}`,
+        url: `https://example.com/deep-${i + 1}`,
+        remoteScope: 'WORLDWIDE',
+        score: 95 - i,
+      }));
+
+      const mockJobExplorer = {
+        getJobsForUser: vi.fn().mockResolvedValue({
+          hasMatches: true,
+          totalMatches: 35,
+          currentPage: 1,
+          totalPages: 1,
+          pageSize: 50,
+          sort: 'BEST_MATCH',
+          jobs: mockJobs,
+        }),
+      };
+
+      // Top 20 jobs were already sent
+      const top20Sent = mockJobs.slice(0, 20).map((j) => ({ jobId: j.id }));
+      (mockPrisma as { sentJob: { findMany: ReturnType<typeof vi.fn> } }).sentJob.findMany.mockResolvedValueOnce(top20Sent);
+      (mockPrisma as { sentJob: { createMany: ReturnType<typeof vi.fn> } }).sentJob.createMany.mockResolvedValueOnce({ count: 5 });
+
+      const customService = new FirstDigestService(
+        mockPrisma as PrismaClient,
+        mockLinkVerifier as any,
+        mockJobExplorer as any,
+      );
+
+      const digest = await customService.generateAndDeliverFirstDigest('user-deep-scan', {
+        specializations: [Specialization.BACKEND],
+        regionPreference: RegionPreference.BOTH,
+      });
+
+      // Must scan past the first 20 and return 5 fresh un-sent jobs (jobs 21-25)
+      expect(mockJobExplorer.getJobsForUser).toHaveBeenCalledWith(
+        'user-deep-scan',
+        expect.objectContaining({ pageSize: 50 }),
+      );
+      expect(digest.hasMatches).toBe(true);
+      expect(digest.jobs).toHaveLength(5);
+      expect(digest.deliveredJobIds[0]).toBe('job-deep-21');
     });
   });
 });

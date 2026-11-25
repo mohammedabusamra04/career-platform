@@ -56,7 +56,7 @@ export class RemotiveJobSource extends BaseJobSource {
     }
   }
 
-  private mapToJob(item: RemotiveJobItem, query: JobSearchQuery): Job {
+  private mapToJob(item: RemotiveJobItem, _query: JobSearchQuery): Job {
     const cleanDescription = (item.description || '')
       .replace(/<[^>]*>?/gm, ' ')
       .replace(/\s+/g, ' ')
@@ -73,10 +73,10 @@ export class RemotiveJobSource extends BaseJobSource {
       applicationUrl,
       url: applicationUrl,
       location: item.candidate_required_location || 'Remote (Worldwide)',
-      country: item.candidate_required_location || undefined,
+      country: undefined,
       remote: true,
       workType: WorkType.REMOTE,
-      experienceLevel: query.experienceLevel || ExperienceLevel.MID,
+      experienceLevel: ExperienceLevel.UNKNOWN,
       description: cleanDescription,
       skills: Array.isArray(item.tags) ? item.tags : [],
       publicationDate: validPubDate,

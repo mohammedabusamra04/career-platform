@@ -12,4 +12,5 @@ export enum ExperienceLevel {
   SENIOR = 'senior',
   LEAD = 'lead',
   ANY = 'any',
+  UNKNOWN = 'UNKNOWN',
 }

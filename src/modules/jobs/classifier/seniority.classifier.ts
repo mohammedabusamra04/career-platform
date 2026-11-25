@@ -31,18 +31,10 @@ export class SeniorityClassifier {
     description?: string | null;
     experienceLevel?: string | ExperienceLevel | null;
   }): ExperienceLevel {
-    // 1. Structured source field mapping
-    if (job.experienceLevel) {
-      const structured = this.normalizeStructuredLevel(job.experienceLevel);
-      if (structured !== ExperienceLevel.UNKNOWN) {
-        return structured;
-      }
-    }
-
     const title = (job.title || '').trim();
     const descSample = (job.description || '').slice(0, 1000);
 
-    // 2. Title Seniority Token Matching (Highest Confidence)
+    // 1. Title Seniority Token Matching (Highest Confidence - overrides conflicting source hints)
     const hasSeniorTitle = SeniorityClassifier.SENIOR_TITLE_REGEX.test(title);
     const hasJuniorTitle = SeniorityClassifier.JUNIOR_TITLE_REGEX.test(title);
     const hasMidTitle = SeniorityClassifier.MID_TITLE_REGEX.test(title);
@@ -57,11 +49,19 @@ export class SeniorityClassifier {
     if (hasJuniorTitle) return ExperienceLevel.JUNIOR;
     if (hasMidTitle) return ExperienceLevel.MID;
 
-    // 3. Years of Experience Numerical Analysis (Title + Description)
+    // 2. Years of Experience Numerical Analysis (Title + Description)
     const combinedText = `${title} ${descSample}`;
     const yearsLevel = this.extractYearsOfExperience(combinedText);
     if (yearsLevel && yearsLevel !== ExperienceLevel.UNKNOWN) {
       return yearsLevel;
+    }
+
+    // 3. Structured source field mapping (when title does not specify seniority)
+    if (job.experienceLevel) {
+      const structured = this.normalizeStructuredLevel(job.experienceLevel);
+      if (structured !== ExperienceLevel.UNKNOWN) {
+        return structured;
+      }
     }
 
     // 4. Description Keyword Heuristics

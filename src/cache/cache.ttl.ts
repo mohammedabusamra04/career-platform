@@ -13,4 +13,6 @@ export const CACHE_TTL = {
   SENT_JOB: ms('30d') / 1000,
 
   LINK_LIVENESS: ms('24h') / 1000,
+
+  JOB_ENRICHMENT: ms('24h') / 1000,
 };

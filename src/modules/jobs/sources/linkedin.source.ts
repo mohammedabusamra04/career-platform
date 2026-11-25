@@ -94,7 +94,7 @@ export class LinkedinJobSource extends BaseJobSource {
       country: item.job_country || undefined,
       remote: Boolean(item.job_is_remote),
       workType: item.job_is_remote ? WorkType.REMOTE : query.workType || WorkType.ON_SITE,
-      experienceLevel: query.experienceLevel || ExperienceLevel.MID,
+      experienceLevel: ExperienceLevel.UNKNOWN,
       description: item.job_description || item.job_title || '',
       skills: Array.isArray(item.job_required_skills) ? item.job_required_skills : query.skills || [],
       publicationDate: validPubDate,

@@ -33,11 +33,30 @@ export class ContextualDescriptionStage implements IClassificationStage {
     if (sortedSpecs.length > 1) {
       const second = sortedSpecs[1];
       if (second[1] >= 16) {
+        const nonBackendPrimaries: Specialization[] = [
+          Specialization.DATA,
+          Specialization.AI_ENGINEER,
+          Specialization.QA,
+          Specialization.DEVOPS,
+          Specialization.SECURITY,
+          Specialization.UIUX,
+        ];
         if (primarySpecialization === Specialization.FULLSTACK) {
           const distinct = sortedSpecs.slice(1).find(
             ([spec, score]) =>
               spec !== Specialization.FRONTEND &&
               spec !== Specialization.BACKEND &&
+              score >= 16,
+          );
+          secondarySpecialization = distinct ? distinct[0] : null;
+        } else if (
+          nonBackendPrimaries.includes(primarySpecialization) &&
+          second[0] === Specialization.BACKEND
+        ) {
+          const distinct = sortedSpecs.slice(1).find(
+            ([spec, score]) =>
+              spec !== Specialization.BACKEND &&
+              spec !== primarySpecialization &&
               score >= 16,
           );
           secondarySpecialization = distinct ? distinct[0] : null;
