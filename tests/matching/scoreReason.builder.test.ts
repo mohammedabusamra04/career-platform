@@ -97,7 +97,7 @@ describe('TransparentExplanationBuilder (TASK-38.2)', () => {
       );
 
       // Must display UI/UX, NOT DevOps from specializations[0]
-      expect(reasons[0]).toContain('تصميم واجهات وتجربة المستخدم (UI/UX)');
+      expect(reasons[0]).toContain('تصميم واجهة وتجربة المستخدم (UI/UX)');
       expect(reasons[0]).not.toContain('ديف أوبس');
     });
 
