@@ -394,21 +394,6 @@ export class FirstDigestService {
       const jobCards = digest.jobs
         .map((item, idx) => {
           const safeTitle = cleanAndEscapeTitle(item.title);
-          const rawCompany = item.company?.trim();
-          const isGenericCompany =
-            !rawCompany ||
-            rawCompany.toLowerCase() === 'company' ||
-            rawCompany.toLowerCase() === 'employer';
-          let displayCompany = '';
-          if (rawCompany && !isGenericCompany) {
-            if (/linkedin employer/i.test(rawCompany)) {
-              displayCompany = 'LinkedIn';
-            } else {
-              displayCompany = escapeTelegramMarkdown(rawCompany);
-            }
-          } else {
-            displayCompany = 'Verified Employer';
-          }
 
           const remoteInfo =
             item.remoteScope === 'WORLDWIDE'
@@ -459,21 +444,6 @@ export class FirstDigestService {
     const jobCards = digest.jobs
       .map((item, idx) => {
         const safeTitle = cleanAndEscapeTitle(item.title);
-        const rawCompany = item.company?.trim();
-        const isGenericCompany =
-          !rawCompany ||
-          rawCompany.toLowerCase() === 'company' ||
-          rawCompany.toLowerCase() === 'employer';
-        let displayCompany = '';
-        if (rawCompany && !isGenericCompany) {
-          if (/linkedin employer/i.test(rawCompany)) {
-            displayCompany = 'لينكدإن (LinkedIn)';
-          } else {
-            displayCompany = escapeTelegramMarkdown(rawCompany);
-          }
-        } else {
-          displayCompany = 'جهة توظيف معتمدة';
-        }
 
         const remoteInfo =
           item.remoteScope === 'WORLDWIDE'
