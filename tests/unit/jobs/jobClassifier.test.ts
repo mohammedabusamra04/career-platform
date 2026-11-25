@@ -1904,5 +1904,16 @@ describe('DeterministicJobClassifier - 10-Domain Specialization Classifier (TASK
 
       expect(classifiedScope.scope).toBe(RemoteScope.REGION);
     });
+
+    it('excludes "Tier III Service Desk Engineer" as non-technical support / IT service desk (NEGATIVE_EXCLUSION)', () => {
+      const result = classifier.classify({
+        title: 'Tier III Service Desk Engineer',
+        skills: ['Windows', 'Active Directory', 'Hardware'],
+      });
+
+      expect(result.isExcluded).toBe(true);
+      expect(result.classificationMethod).toBe('NEGATIVE_EXCLUSION');
+      expect(result.primarySpecialization).toBeUndefined();
+    });
   });
 });

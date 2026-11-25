@@ -165,9 +165,14 @@ describe('TASK-29.2: Consecutive Failure Detection & Source Health Telemetry (#9
       monitor.recordRun('remotive', { success: false, jobCount: 0, error: 'glitch' });
       expect(monitor.getOverallHealth()).toBe('DEGRADED');
 
-      // 1 source unhealthy -> overall UNHEALTHY
+      // 1 source unhealthy out of 3 (< 50% minority) -> overall DEGRADED
       monitor.recordRun('jooble', { success: false, jobCount: 0, error: 'down 1' });
       monitor.recordRun('jooble', { success: false, jobCount: 0, error: 'down 2' });
+      expect(monitor.getOverallHealth()).toBe('DEGRADED');
+
+      // Majority of sources unhealthy (2 out of 3 >= 50%) -> overall UNHEALTHY
+      monitor.recordRun('tanqeeb', { success: false, jobCount: 0, error: 'down 1' });
+      monitor.recordRun('tanqeeb', { success: false, jobCount: 0, error: 'down 2' });
       expect(monitor.getOverallHealth()).toBe('UNHEALTHY');
     });
   });
