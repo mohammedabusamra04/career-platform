@@ -205,14 +205,16 @@ describe('FirstDigestService (TASK-40.1)', () => {
     const formattedAr = service.formatDigestMessage(compoundTestDigest, { language: 'ar' });
     // Title 1: should not have backslash on hyphen
     expect(formattedAr).toContain('[Data Analyst-Part Time](https://apply.workable.com/dln/1)');
-    // Job 1: should show both Company and Platform
-    expect(formattedAr).toContain('🏢 *الشركة:* DLN Consulting Group • 🌐 المنصة: Workable');
+    // Job 1: should show Company and Work Type on separate lines
+    expect(formattedAr).toContain('🏢 *الشركة:* DLN Consulting Group');
+    expect(formattedAr).toContain('🌍 *نوع العمل:* عن بُعد (عالمياً)');
 
     // Title 2: should not have backslashes on parens
     expect(formattedAr).toContain('[Data Engineer (Remote, US)](https://www.linkedin.com/jobs/view/4489568760)');
-    // Job 2: should show Platform and not display generic 'LinkedIn Employer' company
-    expect(formattedAr).toContain('🌐 المنصة: لينكدإن (LinkedIn)');
+    // Job 2: should show Company as LinkedIn instead of generic 'LinkedIn Employer'
+    expect(formattedAr).toContain('🏢 *الشركة:* لينكدإن (LinkedIn)');
     expect(formattedAr).not.toContain('LinkedIn Employer');
+    expect(formattedAr).toContain('⚡️ لتصفح كل الفرص المتاحة والفرز حسب الأنسب اضغط /jobs');
 
     const messageEn = service.formatDigestMessage(mockDigestResult, {
       singleDailyRunTime: '21:00',

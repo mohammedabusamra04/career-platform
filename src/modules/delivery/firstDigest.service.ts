@@ -10,7 +10,6 @@ import {
   escapeTelegramMarkdown,
   cleanAndEscapeTitle,
 } from '../notifications/telegram/digestCard.formatter.js';
-import { JobSourceRegistry } from '../jobs/sources/jobSource.registry.js';
 import { jobLinkVerifier, type IJobLinkVerifier } from '../jobs/job.linkVerifier.js';
 import {
   JobExplorerService,
@@ -398,26 +397,29 @@ export class FirstDigestService {
           const isGenericCompany =
             !rawCompany ||
             rawCompany.toLowerCase() === 'company' ||
-            rawCompany.toLowerCase().includes('employer');
-          const displayCompany = !isGenericCompany ? escapeTelegramMarkdown(rawCompany) : '';
-
-          const platformBadge = JobSourceRegistry.formatSourceBadge(
-            item.source,
-            'en',
-            item.applicationUrl || item.url,
-          );
-          const safePlatform = escapeTelegramMarkdown(platformBadge);
+            rawCompany.toLowerCase() === 'employer';
+          let displayCompany = '';
+          if (rawCompany && !isGenericCompany) {
+            if (/linkedin employer/i.test(rawCompany)) {
+              displayCompany = 'LinkedIn';
+            } else {
+              displayCompany = escapeTelegramMarkdown(rawCompany);
+            }
+          } else {
+            displayCompany = 'Verified Employer';
+          }
 
           const remoteInfo =
             item.remoteScope === 'WORLDWIDE'
-              ? '🌍 Worldwide Remote'
-              : item.country
-                ? `📍 ${escapeTelegramMarkdown(item.country)}`
-                : '🏢 Flexible';
+              ? 'Worldwide Remote'
+              : item.remoteScope === 'REGION'
+                ? 'Regional Remote'
+                : item.country
+                  ? `Remote (${escapeTelegramMarkdown(item.country)})`
+                  : 'Flexible';
 
-          const metaLine = displayCompany
-            ? `🏢 *Company:* ${displayCompany} • 🌐 ${safePlatform} • ${remoteInfo}`
-            : `🌐 ${safePlatform} • ${remoteInfo}`;
+          const companyLine = `🏢 *Company:* ${displayCompany}`;
+          const workTypeLine = `🌍 *Work Type:* ${remoteInfo}`;
 
           const titleLine = item.url
             ? `*${idx + 1}.* 💻 [${safeTitle}](${item.url})`
@@ -425,7 +427,8 @@ export class FirstDigestService {
 
           return [
             titleLine,
-            metaLine,
+            companyLine,
+            workTypeLine,
             item.explanationEn,
             item.url ? `🔗 [Apply Here](${item.url})` : '',
           ]
@@ -436,7 +439,8 @@ export class FirstDigestService {
 
       const footer =
         `\n\n────────────────────\n` +
-        `📬 **Note:** You will receive your daily updated digest once every evening at your leisure time.`;
+        `📬 **Note:** You will receive your daily updated digest once every evening at your leisure time.\n\n` +
+        `⚡️ To browse all available opportunities and filter by match, tap /jobs`;
 
       return `${header}${jobCards}${footer}`;
     }
@@ -453,26 +457,29 @@ export class FirstDigestService {
         const isGenericCompany =
           !rawCompany ||
           rawCompany.toLowerCase() === 'company' ||
-          rawCompany.toLowerCase().includes('employer');
-        const displayCompany = !isGenericCompany ? escapeTelegramMarkdown(rawCompany) : '';
-
-        const platformBadge = JobSourceRegistry.formatSourceBadge(
-          item.source,
-          'ar',
-          item.applicationUrl || item.url,
-        );
-        const safePlatform = escapeTelegramMarkdown(platformBadge);
+          rawCompany.toLowerCase() === 'employer';
+        let displayCompany = '';
+        if (rawCompany && !isGenericCompany) {
+          if (/linkedin employer/i.test(rawCompany)) {
+            displayCompany = 'لينكدإن (LinkedIn)';
+          } else {
+            displayCompany = escapeTelegramMarkdown(rawCompany);
+          }
+        } else {
+          displayCompany = 'جهة توظيف معتمدة';
+        }
 
         const remoteInfo =
           item.remoteScope === 'WORLDWIDE'
-            ? '🌍 عن بُعد (عالمياً)'
-            : item.country
-              ? `📍 ${escapeTelegramMarkdown(item.country)}`
-              : '🏢 مرن';
+            ? 'عن بُعد (عالمياً)'
+            : item.remoteScope === 'REGION'
+              ? 'عن بُعد (إقليمياً)'
+              : item.country
+                ? `عن بُعد (${escapeTelegramMarkdown(item.country)})`
+                : 'عن بُعد / مرن';
 
-        const metaLine = displayCompany
-          ? `🏢 *الشركة:* ${displayCompany} • 🌐 ${safePlatform} • ${remoteInfo}`
-          : `🌐 ${safePlatform} • ${remoteInfo}`;
+        const companyLine = `🏢 *الشركة:* ${displayCompany}`;
+        const workTypeLine = `🌍 *نوع العمل:* ${remoteInfo}`;
 
         const titleLine = item.url
           ? `*${idx + 1}.* 💻 [${safeTitle}](${item.url})`
@@ -480,7 +487,8 @@ export class FirstDigestService {
 
         return [
           titleLine,
-          metaLine,
+          companyLine,
+          workTypeLine,
           item.explanationAr,
           item.url ? `🔗 [اضغط هنا للتقديم المباشر](${item.url})` : '',
         ]
@@ -491,7 +499,8 @@ export class FirstDigestService {
 
     const footer =
       `\n\n────────────────────\n` +
-      `📬 **ملاحظة:** سنرسل لك ملخصك المحدث تلقائياً مرة واحدة يومياً في المساء.`;
+      `📬 **ملاحظة:** سنرسل لك ملخصك المحدث تلقائياً مرة واحدة يومياً في المساء.\n\n` +
+      `⚡️ لتصفح كل الفرص المتاحة والفرز حسب الأنسب اضغط /jobs`;
 
     return `${header}${jobCards}${footer}`;
   }

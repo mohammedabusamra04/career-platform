@@ -153,3 +153,4 @@ describe('Regression: All 13 Job Sources Must Not Inject Synthetic Defaults', ()
     expect(jobs[0].country).not.toBe('الشرق الأوسط / عن بعد');
   });
 });
+
