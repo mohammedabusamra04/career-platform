@@ -1913,7 +1913,7 @@ describe('DeterministicJobClassifier - 10-Domain Specialization Classifier (TASK
 
       expect(result.isExcluded).toBe(true);
       expect(result.classificationMethod).toBe('NEGATIVE_EXCLUSION');
-      expect(result.primarySpecialization).toBeUndefined();
+      expect(result.primarySpecialization).toBeNull();
     });
   });
 });

@@ -27,10 +27,10 @@ export class NegativeExclusionMatcher {
         /\b(?:marketing specialist|marketing manager|digital marketing|content writer|copywriter)\b/i,
       label: 'marketing/writing',
     },
-    // 4. Support & Administration (e.g. "Customer Support Specialist", "Executive Assistant")
+    // 4. Support & Administration (e.g. "Customer Support Specialist", "Executive Assistant", "Tier III Service Desk Engineer")
     {
       pattern:
-        /\b(?:customer support|customer service|executive assistant|office manager)\b/i,
+        /\b(?:customer support|customer service|executive assistant|office manager|service desk|help desk|desktop support|it support(?: technician| engineer| specialist)?)\b/i,
       label: 'support/admin',
     },
     // 5. Native Arabic non-technical patterns
