@@ -452,7 +452,7 @@ describe('FirstDigestService (TASK-40.1)', () => {
 
       expect(mockJobExplorer.getJobsForUser).toHaveBeenCalledWith(
         'user-uuid-explorer',
-        expect.objectContaining({ pageSize: 20 }),
+        expect.objectContaining({ pageSize: 50 }),
       );
       expect(result.jobs).toHaveLength(2);
       expect(result.jobs[0].jobId).toBe('job-exp-1');

@@ -129,7 +129,7 @@ export class FirstDigestService {
 
     // 1. Fetch candidate jobs via JobExplorerService (single source of truth for querying & DB-level regional/cutoff filters)
     let explorerResult = await this.getJobExplorer().getJobsForUser(userId, {
-      pageSize: 20,
+      pageSize: 50,
       sort: 'BEST_MATCH',
       preferences,
     });
@@ -150,7 +150,7 @@ export class FirstDigestService {
 
           // Re-query via JobExplorerService after collection
           explorerResult = await this.getJobExplorer().getJobsForUser(userId, {
-            pageSize: 20,
+            pageSize: 50,
             sort: 'BEST_MATCH',
             preferences,
           });
@@ -192,18 +192,32 @@ export class FirstDigestService {
     }
 
     // 3. Filter live links so new users never receive 504 / dead links
-    const topCandidates = freshJobs.slice(0, pageSize * 2);
-    const liveMatches = await this.linkVerifier.filterLiveJobs(
-      topCandidates.map((m) => ({
-        ...m,
-        job: m,
-        url: m.url || m.applicationUrl || '',
-        applicationUrl: m.applicationUrl,
-        title: m.title,
-      })),
-    );
+    // Iteratively verify candidates in batches until reaching pageSize (5) live jobs or candidates exhausted
+    const liveJobs: ExplorerJobItem[] = [];
+    const batchChunkSize = 5;
+    for (let i = 0; i < freshJobs.length && liveJobs.length < pageSize; i += batchChunkSize) {
+      const chunk = freshJobs.slice(i, i + batchChunkSize);
+      const verifiedChunk = await this.linkVerifier.filterLiveJobs(
+        chunk.map((m) => ({
+          ...m,
+          job: m,
+          url: m.url || m.applicationUrl || '',
+          applicationUrl: m.applicationUrl,
+          title: m.title,
+        })),
+      );
 
-    const validPageJobs = (liveMatches.length > 0 ? liveMatches : topCandidates).slice(0, pageSize);
+      for (const verified of verifiedChunk) {
+        const originalJob =
+          'id' in verified && verified.id ? (verified as ExplorerJobItem) : (verified as any).job;
+        liveJobs.push(originalJob);
+        if (liveJobs.length >= pageSize) {
+          break;
+        }
+      }
+    }
+
+    const validPageJobs = (liveJobs.length > 0 ? liveJobs : freshJobs).slice(0, pageSize);
     const deliveredJobIds = validPageJobs
       .map((p) => ('id' in p ? p.id : (p as any).job?.id) as string)
       .filter((id) => typeof id === 'string' && id.length > 0);
@@ -270,7 +284,7 @@ export class FirstDigestService {
       };
     });
 
-    const totalPages = Math.ceil(freshJobs.length / pageSize);
+    const totalPages = validPageJobs.length > 0 ? 1 : 0;
 
     return {
       hasMatches: true,
