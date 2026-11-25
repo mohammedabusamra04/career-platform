@@ -316,6 +316,17 @@ describe('TASK-35.2: Interactive Summary Review & Transactional Preference Save 
         }),
       );
 
+      // Verify onboarding first-digest message has NO pagination buttons (digest:page:* or digest:noop)
+      const editCall = (mockCtx.api.editMessageText as any).mock.calls[0];
+      const replyMarkup = editCall[3]?.reply_markup;
+      if (replyMarkup?.inline_keyboard) {
+        const flatButtons = replyMarkup.inline_keyboard.flat();
+        const paginationButtons = flatButtons.filter((b: any) =>
+          b.callback_data && (b.callback_data.startsWith('digest:page:') || b.callback_data === 'digest:noop')
+        );
+        expect(paginationButtons).toHaveLength(0);
+      }
+
       // Verify delivered jobs recorded post-edit
       expect(mockDigestService.recordDeliveredJobs).toHaveBeenCalledWith('user-db-123', ['job-1']);
     });
