@@ -1076,18 +1076,18 @@ describe('DeterministicJobClassifier - 10-Domain Specialization Classifier (TASK
         expect(result.remoteScope).toBe(RemoteScope.WORLDWIDE);
       });
 
-      it('classifies unconstrained remote positions as WORLDWIDE even without explicit "worldwide" token', () => {
+      it('leaves unconstrained remote positions as UNKNOWN without explicit worldwide affirmative evidence', () => {
         const titleRemote = classifier.classify({
           title: 'Senior Backend Developer (Remote)',
         });
-        expect(titleRemote.remoteScope).toBe(RemoteScope.WORLDWIDE);
+        expect(titleRemote.remoteScope).toBe(RemoteScope.UNKNOWN);
         expect(titleRemote.country).toBeNull();
 
         const locRemote = classifier.classify({
           title: 'Fullstack Engineer',
           location: 'Remote',
         });
-        expect(locRemote.remoteScope).toBe(RemoteScope.WORLDWIDE);
+        expect(locRemote.remoteScope).toBe(RemoteScope.UNKNOWN);
         expect(locRemote.country).toBeNull();
       });
     });
@@ -1252,13 +1252,13 @@ describe('DeterministicJobClassifier - 10-Domain Specialization Classifier (TASK
       expect(result.remoteScope).toBe(RemoteScope.COUNTRY);
     });
 
-    it('falls back to Worldwide if remote flag is true without restrictions', () => {
+    it('leaves remote positions without geographic restrictions or affirmative evidence as UNKNOWN', () => {
       const result = classifier.classify({
         title: 'Fullstack Developer',
         remote: true,
       });
 
-      expect(result.remoteScope).toBe(RemoteScope.WORLDWIDE);
+      expect(result.remoteScope).toBe(RemoteScope.UNKNOWN);
     });
   });
 

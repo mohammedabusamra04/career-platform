@@ -143,7 +143,7 @@ export class MostaqlJobSource extends BaseJobSource {
         title,
         url: link,
         briefDescription,
-        experienceLevel: query?.experienceLevel || ExperienceLevel.MID,
+        experienceLevel: ExperienceLevel.UNKNOWN,
       });
     });
 
@@ -240,10 +240,10 @@ export class MostaqlJobSource extends BaseJobSource {
       applicationUrl: candidate.url,
       url: candidate.url,
       location: 'عن بعد (Freelance)',
-      country: 'الشرق الأوسط / عن بعد',
+      country: undefined,
       remote: true,
       workType: WorkType.REMOTE,
-      experienceLevel: candidate.experienceLevel || ExperienceLevel.MID,
+      experienceLevel: ExperienceLevel.UNKNOWN,
       description: description || candidate.briefDescription,
       skills, // Strictly real extracted skills or [] (never query.skills)
       publicationDate: new Date(),
