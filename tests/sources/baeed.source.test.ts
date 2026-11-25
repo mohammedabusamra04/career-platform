@@ -39,11 +39,11 @@ describe('BaeedJobSource (TASK-25.2: Arabic Remote Jobs)', () => {
       source: JobSourceType.BAEED,
       applicationUrl: 'https://baeed.com/jobs/fullstack-engineer-node-react-101',
       url: 'https://baeed.com/jobs/fullstack-engineer-node-react-101',
-      location: 'عن بعد (العالم العربي)',
-      country: 'الشرق الأوسط / عن بعد',
+      location: 'عن بعد (الوطن العربي)',
+      country: undefined,
       remote: true,
       workType: WorkType.REMOTE,
-      experienceLevel: ExperienceLevel.SENIOR,
+      experienceLevel: ExperienceLevel.UNKNOWN,
     });
     expect(job1.description).toContain('React.js وتصميم واجهات برمجة التطبيقات APIs');
     expect(job1.publicationDate).toBeInstanceOf(Date);

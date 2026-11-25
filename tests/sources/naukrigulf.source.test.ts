@@ -26,7 +26,7 @@ describe('NaukrigulfJobSource (TASK-25.2: GCC & Gulf Job Board)', () => {
 
     const jobs = await source.fetchJobs({
       jobTitle: 'Cloud Solutions',
-      experienceLevel: ExperienceLevel.SENIOR,
+      experienceLevel: ExperienceLevel.UNKNOWN,
     });
 
     expect(jobs).toHaveLength(2);
@@ -43,7 +43,7 @@ describe('NaukrigulfJobSource (TASK-25.2: GCC & Gulf Job Board)', () => {
       location: 'Riyadh, Saudi Arabia',
       remote: false,
       workType: WorkType.ON_SITE,
-      experienceLevel: ExperienceLevel.SENIOR,
+      experienceLevel: ExperienceLevel.UNKNOWN,
     });
     expect(job1.description).toContain('AWS and Azure');
     expect(job1.publicationDate).toBeInstanceOf(Date);

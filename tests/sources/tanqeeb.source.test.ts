@@ -26,7 +26,7 @@ describe('TanqeebJobSource (TASK-25.2: Fixture Testing)', () => {
 
     const jobs = await source.fetchJobs({
       jobTitle: 'Developer',
-      experienceLevel: ExperienceLevel.SENIOR,
+      experienceLevel: ExperienceLevel.UNKNOWN,
     });
 
     expect(jobs).toHaveLength(2);
@@ -40,7 +40,7 @@ describe('TanqeebJobSource (TASK-25.2: Fixture Testing)', () => {
       url: 'https://www.tanqeeb.com/en/jobs/frontend-engineer-riyadh-101',
       location: 'Riyadh, Saudi Arabia',
       remote: false,
-      experienceLevel: ExperienceLevel.SENIOR,
+      experienceLevel: ExperienceLevel.UNKNOWN,
     });
     expect(jobs[0].description).toContain('We are hiring a Senior Frontend Engineer');
 

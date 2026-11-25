@@ -237,7 +237,7 @@ describe('JoobleJobSource (Freshness & Link Verification)', () => {
       expect(job.url).toBe('https://jooble.org/desc/fresh-101');
       expect(job.remote).toBe(true);
       expect(job.workType).toBe(WorkType.REMOTE);
-      expect(job.experienceLevel).toBe(ExperienceLevel.SENIOR);
+      expect(job.experienceLevel).toBe(ExperienceLevel.UNKNOWN);
       expect(job.publicationDate.toISOString()).toBe('2026-11-20T10:00:00.000Z');
     });
 

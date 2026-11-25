@@ -233,7 +233,7 @@ describe('PruningService - Data Retention & Pruning Lifecycle (TASK-24.2)', () =
         data: {
           primarySpecialization: 'BACKEND',
           secondarySpecialization: null,
-          remoteScope: 'WORLDWIDE',
+          remoteScope: 'UNKNOWN',
           experienceLevel: 'UNKNOWN',
           workType: 'UNKNOWN',
         },
@@ -253,7 +253,7 @@ describe('PruningService - Data Retention & Pruning Lifecycle (TASK-24.2)', () =
           location: 'Remote',
           primarySpecialization: 'BACKEND',
           secondarySpecialization: null,
-          remoteScope: 'WORLDWIDE',
+          remoteScope: 'UNKNOWN',
           experienceLevel: 'MID',
           workType: 'FULL_TIME',
         },

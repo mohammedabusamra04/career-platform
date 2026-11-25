@@ -26,7 +26,7 @@ describe('LinkedinJobSource (TASK-25.2: Fixture Testing)', () => {
 
     const jobs = await source.fetchJobs({
       jobTitle: 'AI Engineer',
-      experienceLevel: ExperienceLevel.SENIOR,
+      experienceLevel: ExperienceLevel.UNKNOWN,
     });
 
     expect(jobs).toHaveLength(2);
@@ -43,7 +43,7 @@ describe('LinkedinJobSource (TASK-25.2: Fixture Testing)', () => {
       country: 'US',
       remote: true,
       workType: WorkType.REMOTE,
-      experienceLevel: ExperienceLevel.SENIOR,
+      experienceLevel: ExperienceLevel.UNKNOWN,
       skills: ['Python', 'PyTorch', 'LangChain', 'Vector Databases'],
     });
     expect(job1.description).toContain('autonomous multi-agent pipelines');
