@@ -16,6 +16,7 @@ import {
   type IJobExplorerService,
   type ExplorerJobItem,
 } from '../jobs/jobExplorer.service.js';
+import { JobSourceRegistry } from '../jobs/sources/jobSource.registry.js';
 import logger from '../../shared/utils/logger.js';
 
 export const HISTORICAL_SENT_WINDOW = ms('4h');
@@ -393,21 +394,6 @@ export class FirstDigestService {
       const jobCards = digest.jobs
         .map((item, idx) => {
           const safeTitle = cleanAndEscapeTitle(item.title);
-          const rawCompany = item.company?.trim();
-          const isGenericCompany =
-            !rawCompany ||
-            rawCompany.toLowerCase() === 'company' ||
-            rawCompany.toLowerCase() === 'employer';
-          let displayCompany = '';
-          if (rawCompany && !isGenericCompany) {
-            if (/linkedin employer/i.test(rawCompany)) {
-              displayCompany = 'LinkedIn';
-            } else {
-              displayCompany = escapeTelegramMarkdown(rawCompany);
-            }
-          } else {
-            displayCompany = 'Verified Employer';
-          }
 
           const remoteInfo =
             item.remoteScope === 'WORLDWIDE'
@@ -418,7 +404,12 @@ export class FirstDigestService {
                   ? `Remote (${escapeTelegramMarkdown(item.country)})`
                   : 'Flexible';
 
-          const companyLine = `🏢 *Company:* ${displayCompany}`;
+          const platformBadge = JobSourceRegistry.formatSourceBadge(
+            item.source,
+            'en',
+            item.applicationUrl || item.url,
+          );
+          const platformLine = `🌐 ${escapeTelegramMarkdown(platformBadge)}`;
           const workTypeLine = `🌍 *Work Type:* ${remoteInfo}`;
 
           const titleLine = item.url
@@ -427,7 +418,7 @@ export class FirstDigestService {
 
           return [
             titleLine,
-            companyLine,
+            platformLine,
             workTypeLine,
             item.explanationEn,
             item.url ? `🔗 [Apply Here](${item.url})` : '',
@@ -453,21 +444,6 @@ export class FirstDigestService {
     const jobCards = digest.jobs
       .map((item, idx) => {
         const safeTitle = cleanAndEscapeTitle(item.title);
-        const rawCompany = item.company?.trim();
-        const isGenericCompany =
-          !rawCompany ||
-          rawCompany.toLowerCase() === 'company' ||
-          rawCompany.toLowerCase() === 'employer';
-        let displayCompany = '';
-        if (rawCompany && !isGenericCompany) {
-          if (/linkedin employer/i.test(rawCompany)) {
-            displayCompany = 'لينكدإن (LinkedIn)';
-          } else {
-            displayCompany = escapeTelegramMarkdown(rawCompany);
-          }
-        } else {
-          displayCompany = 'جهة توظيف معتمدة';
-        }
 
         const remoteInfo =
           item.remoteScope === 'WORLDWIDE'
@@ -478,7 +454,12 @@ export class FirstDigestService {
                 ? `عن بُعد (${escapeTelegramMarkdown(item.country)})`
                 : 'عن بُعد / مرن';
 
-        const companyLine = `🏢 *الشركة:* ${displayCompany}`;
+        const platformBadge = JobSourceRegistry.formatSourceBadge(
+          item.source,
+          'ar',
+          item.applicationUrl || item.url,
+        );
+        const platformLine = `🌐 ${escapeTelegramMarkdown(platformBadge)}`;
         const workTypeLine = `🌍 *نوع العمل:* ${remoteInfo}`;
 
         const titleLine = item.url
@@ -487,7 +468,7 @@ export class FirstDigestService {
 
         return [
           titleLine,
-          companyLine,
+          platformLine,
           workTypeLine,
           item.explanationAr,
           item.url ? `🔗 [اضغط هنا للتقديم المباشر](${item.url})` : '',

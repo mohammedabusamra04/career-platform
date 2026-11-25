@@ -171,6 +171,21 @@ export class ScheduledDigestRunner {
         `[ScheduledDigestRunner] Successfully initialized delivery slot ${slotKey} with ${recipientCount} active recipients (Status: ${slot.status})`,
       );
 
+      if (recipientCount > 0 && slot.status !== 'SENT') {
+        logger.info(
+          `[ScheduledDigestRunner] Dispatching delivery slot ${slot.id} (${slotKey}) for ${recipientCount} recipients`,
+        );
+        try {
+          await this.dispatcher.dispatchSlot(slot.id);
+        } catch (err: unknown) {
+          logger.error(
+            `[ScheduledDigestRunner] Failed to dispatch slot ${slot.id}: ${
+              err instanceof Error ? err.message : String(err)
+            }`,
+          );
+        }
+      }
+
       return {
         executed: true,
         slotKey,

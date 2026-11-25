@@ -165,6 +165,25 @@ describe('TASK-46.1: Detailed Health Telemetry Endpoint (#130)', () => {
     });
   });
 
+  it('reports DEGRADED when database is connected but overall source health is DEGRADED (minority source failure)', async () => {
+    vi.mocked(prisma.ping).mockResolvedValueOnce(true);
+    vi.mocked(prisma.getPoolMetrics).mockResolvedValueOnce({
+      total: 8,
+      active: 2,
+      idle: 6,
+      maxPoolSize: 20,
+    });
+    vi.mocked(prisma.deliverySlot.findFirst).mockResolvedValueOnce(null);
+    vi.mocked(jobSourceManager.getOverallHealth).mockReturnValueOnce('DEGRADED');
+
+    const telemetry = await getHealthTelemetry();
+
+    expect(telemetry.status).toBe('DEGRADED');
+    expect(telemetry.database).toMatchObject({
+      status: 'connected',
+    });
+  });
+
   it('falls back gracefully to scheduled runner status when no slot is recorded in database', async () => {
     vi.mocked(prisma.ping).mockResolvedValueOnce(true);
     vi.mocked(prisma.getPoolMetrics).mockResolvedValueOnce({

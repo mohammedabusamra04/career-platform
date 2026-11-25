@@ -176,6 +176,8 @@ export class SourceHealthMonitor {
 
   /**
    * Computes overall source health across all tracked sources.
+   * Reports DEGRADED when a minority (< 50%) of sources are unhealthy or degraded,
+   * reserving UNHEALTHY exclusively for widespread failure (>= 50% of sources failing).
    */
   public getOverallHealth(): HealthStatusLevel {
     const all = Object.values(this.getAllSourceHealth());
@@ -183,11 +185,12 @@ export class SourceHealthMonitor {
       return 'HEALTHY';
     }
 
-    if (all.some((s) => s.status === 'UNHEALTHY')) {
+    const unhealthyCount = all.filter((s) => s.status === 'UNHEALTHY').length;
+    if (unhealthyCount > 0 && unhealthyCount / all.length >= 0.5) {
       return 'UNHEALTHY';
     }
 
-    if (all.some((s) => s.status === 'DEGRADED')) {
+    if (unhealthyCount > 0 || all.some((s) => s.status === 'DEGRADED')) {
       return 'DEGRADED';
     }
 

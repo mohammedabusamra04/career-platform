@@ -68,6 +68,74 @@ describe('TransparentExplanationBuilder (TASK-38.2)', () => {
       expect(reasons[4]).not.toContain('+5');
     });
 
+    it('displays the actual matched primary specialization when user selects multiple specs (e.g. DEVOPS, UIUX)', () => {
+      const breakdown: ScoreBreakdown = {
+        specializationScore: 50,
+        levelScore: 15,
+        regionScore: 15,
+        freshnessScore: 10,
+        atsScore: 0,
+        rawTotal: 90,
+        totalScore: 90,
+      };
+
+      const reasons = builder.buildReasons(
+        breakdown,
+        {
+          preferences: {
+            specializations: [Specialization.DEVOPS, Specialization.UIUX],
+            regionPreference: RegionPreference.BOTH,
+          },
+          job: {
+            title: 'Lead Product Designer',
+            primarySpecialization: Specialization.UIUX,
+            specialization: 'UIUX',
+            remoteScope: 'WORLDWIDE',
+          },
+        },
+        'ar',
+      );
+
+      // Must display UI/UX, NOT DevOps from specializations[0]
+      expect(reasons[0]).toContain('تصميم واجهة وتجربة المستخدم (UI/UX)');
+      expect(reasons[0]).not.toContain('ديف أوبس');
+    });
+
+    it('displays the job actual experience level when candidate preference is ANY or ALL or undefined', () => {
+      const breakdown: ScoreBreakdown = {
+        specializationScore: 50,
+        levelScore: 10,
+        regionScore: 15,
+        freshnessScore: 10,
+        atsScore: 0,
+        rawTotal: 85,
+        totalScore: 85,
+      };
+
+      const reasons = builder.buildReasons(
+        breakdown,
+        {
+          preferences: {
+            specializations: [Specialization.BACKEND],
+            regionPreference: RegionPreference.BOTH,
+            experienceLevel: 'ANY',
+          },
+          job: {
+            title: 'Senior Backend Engineer',
+            specialization: 'BACKEND',
+            experienceLevel: 'SENIOR',
+            remoteScope: 'WORLDWIDE',
+          },
+        },
+        'ar',
+      );
+
+      // Must display job actual experience level (Senior) instead of flexible/unrestricted
+      expect(reasons.some((r) => r.includes('مستوى متقدم / خبير (Senior)'))).toBe(true);
+      expect(reasons.some((r) => r.includes('مستوى الخبرة مرن وغير مقيد'))).toBe(false);
+      expect(reasons.some((r) => r.includes('مفتوحة لكل مستويات الخبرة'))).toBe(false);
+    });
+
     it('generates appropriate explanation for secondary match and Arab market job', () => {
       const breakdown: ScoreBreakdown = {
         specializationScore: 30,

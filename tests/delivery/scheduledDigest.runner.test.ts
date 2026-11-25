@@ -194,6 +194,35 @@ describe('TASK-41.1: Timezone-Aware Scheduled Cron Trigger (Single Evening Slot 
       expect(result.recipientCount).toBe(2);
     });
 
+    it('dispatches the slot via chunked dispatcher when active recipients exist', async () => {
+      const mockDispatcher = {
+        dispatchSlot: vi.fn().mockResolvedValue({
+          slotId: 'slot-uuid-1',
+          totalRecipients: 2,
+          sentCount: 2,
+          failedCount: 0,
+          status: 'SENT',
+        }),
+      };
+      const runner = createRunner({ dispatcher: mockDispatcher as any });
+      const scheduledDate = new Date(Date.UTC(2026, 10, 14, 19, 0, 0));
+      mockSlotRepo.findSlotByKey.mockResolvedValue(null);
+      mockSlotRepo.getOrCreateSlot.mockResolvedValue({
+        id: 'slot-uuid-1',
+        slotKey: 'digest:2026-11-14:2100',
+        scheduledTime: scheduledDate,
+        status: 'PENDING',
+        totalRecipients: 2,
+        sentCount: 0,
+        failedCount: 0,
+        startedAt: new Date(),
+        completedAt: null,
+      } as DeliverySlotEntity);
+
+      await runner.executeScheduledSlot(scheduledDate);
+      expect(mockDispatcher.dispatchSlot).toHaveBeenCalledWith('slot-uuid-1');
+    });
+
     it('skips execution if slot is already marked SENT or has completedAt', async () => {
       const runner = createRunner();
       const scheduledDate = new Date(Date.UTC(2026, 10, 14, 19, 0, 0));

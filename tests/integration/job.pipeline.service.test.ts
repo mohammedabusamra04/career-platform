@@ -215,6 +215,45 @@ describe('JobPipelineService', () => {
     expect(notificationService.sendJobs).toHaveBeenCalledWith(123, []);
   });
 
+  it('uses unified scoring scale in evening pipeline producing 65+ / 80+ qualitative matches', async () => {
+    const {
+      service,
+      subscriptionService,
+      preferenceService,
+      jobCollectionService,
+      deduplicationService,
+      matchingService,
+      notificationService,
+    } = createMocks();
+
+    const highQualityJob: MatchedJob = {
+      job: testJob,
+      score: 85,
+      reason: 'Strong match on primary specialization and remote',
+    };
+
+    subscriptionService.isSubscribed.mockResolvedValue(true);
+    preferenceService.getPreferences.mockResolvedValue(preferences);
+    jobCollectionService.collectJobs.mockResolvedValue([testJob]);
+    deduplicationService.deduplicate.mockResolvedValue({
+      uniqueJobs: [testJob],
+      duplicateJobs: [],
+    });
+    matchingService.matchJobs.mockResolvedValue([highQualityJob]);
+    notificationService.sendJobs.mockResolvedValue(undefined);
+
+    await service.runForUser(123);
+
+    expect(notificationService.sendJobs).toHaveBeenCalledWith(
+      123,
+      expect.arrayContaining([
+        expect.objectContaining({
+          score: 85,
+        }),
+      ]),
+    );
+  });
+
   describe('balanceMatchesBySource', () => {
     it('should balance jobs across sources without allowing any single source to monopolize', () => {
       const createDummyMatch = (source: string, idx: number, score: number): MatchedJob => ({

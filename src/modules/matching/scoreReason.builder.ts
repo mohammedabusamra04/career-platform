@@ -1,5 +1,6 @@
 import { Specialization } from '../preferences/preference.taxonomy.js';
 import { hardFilterEngine } from './hardFilter.engine.js';
+import { formatExperienceLevel } from '../notifications/telegram/digestCard.formatter.js';
 import type {
   ScoreBreakdown,
   ScoringResult,
@@ -71,8 +72,12 @@ export class TransparentExplanationBuilder {
 
     // 1. Specialization explanation
     if (breakdown.specializationScore === 50) {
-      const primarySpec = context?.preferences?.specializations?.[0];
-      const specLabel = primarySpec ? SPECIALIZATION_ARABIC_NAMES[primarySpec] || primarySpec : '';
+      const userSpecs = context?.preferences?.specializations || [];
+      const jobPrimary = context?.job?.primarySpecialization || context?.job?.specialization;
+      const matchedSpec =
+        userSpecs.find((s) => s.toUpperCase() === (jobPrimary || '').toUpperCase()) ||
+        userSpecs[0];
+      const specLabel = matchedSpec ? SPECIALIZATION_ARABIC_NAMES[matchedSpec] || matchedSpec : '';
       reasons.push(
         specLabel
           ? `🎯 تطابق صريح مع تخصصك الأساسي: ${specLabel}`
@@ -86,7 +91,10 @@ export class TransparentExplanationBuilder {
     if (breakdown.levelScore === 15) {
       reasons.push(`💻 مستوى الخبرة مفصّل على بروفايلك`);
     } else if (breakdown.levelScore === 10) {
-      if (!context?.preferences?.experienceLevel || context?.preferences?.experienceLevel === 'ANY') {
+      const jobLevel = context?.job?.experienceLevel;
+      if (jobLevel && jobLevel.toUpperCase() !== 'UNKNOWN') {
+        reasons.push(`💻 مستوى الخبرة المطلوب: ${formatExperienceLevel(jobLevel, 'ar')}`);
+      } else if (!context?.preferences?.experienceLevel || context?.preferences?.experienceLevel === 'ANY' || context?.preferences?.experienceLevel === 'ALL') {
         reasons.push(`💻 مفتوحة لكل مستويات الخبرة`);
       } else {
         reasons.push(`💻 مستوى الخبرة مرن وغير مقيد`);
@@ -138,8 +146,12 @@ export class TransparentExplanationBuilder {
 
     // 1. Specialization explanation
     if (breakdown.specializationScore === 50) {
-      const primarySpec = context?.preferences?.specializations?.[0];
-      const specLabel = primarySpec ? SPECIALIZATION_ENGLISH_NAMES[primarySpec] || primarySpec : '';
+      const userSpecs = context?.preferences?.specializations || [];
+      const jobPrimary = context?.job?.primarySpecialization || context?.job?.specialization;
+      const matchedSpec =
+        userSpecs.find((s) => s.toUpperCase() === (jobPrimary || '').toUpperCase()) ||
+        userSpecs[0];
+      const specLabel = matchedSpec ? SPECIALIZATION_ENGLISH_NAMES[matchedSpec] || matchedSpec : '';
       reasons.push(
         specLabel
           ? `🎯 Direct hit on your primary stack: ${specLabel}`
@@ -153,7 +165,12 @@ export class TransparentExplanationBuilder {
     if (breakdown.levelScore === 15) {
       reasons.push(`💻 Seniority level matches your profile`);
     } else if (breakdown.levelScore === 10) {
-      reasons.push(`💻 Flexible / open seniority level`);
+      const jobLevel = context?.job?.experienceLevel;
+      if (jobLevel && jobLevel.toUpperCase() !== 'UNKNOWN') {
+        reasons.push(`💻 Required seniority: ${formatExperienceLevel(jobLevel, 'en')}`);
+      } else {
+        reasons.push(`💻 Flexible / open seniority level`);
+      }
     }
 
     // 3. Region / Remote Scope explanation

@@ -165,9 +165,14 @@ describe('TASK-29.2: Consecutive Failure Detection & Source Health Telemetry (#9
       monitor.recordRun('remotive', { success: false, jobCount: 0, error: 'glitch' });
       expect(monitor.getOverallHealth()).toBe('DEGRADED');
 
-      // 1 source unhealthy -> overall UNHEALTHY
+      // 1 source unhealthy out of 3 (< 50% minority) -> overall DEGRADED
       monitor.recordRun('jooble', { success: false, jobCount: 0, error: 'down 1' });
       monitor.recordRun('jooble', { success: false, jobCount: 0, error: 'down 2' });
+      expect(monitor.getOverallHealth()).toBe('DEGRADED');
+
+      // Majority of sources unhealthy (2 out of 3 >= 50%) -> overall UNHEALTHY
+      monitor.recordRun('tanqeeb', { success: false, jobCount: 0, error: 'down 1' });
+      monitor.recordRun('tanqeeb', { success: false, jobCount: 0, error: 'down 2' });
       expect(monitor.getOverallHealth()).toBe('UNHEALTHY');
     });
   });
@@ -205,11 +210,12 @@ describe('TASK-29.2: Consecutive Failure Detection & Source Health Telemetry (#9
       // 2 consecutive zero yields -> DEGRADED
       expect(healthMap[JobSourceType.ARBEITNOW].status).toBe('DEGRADED');
       expect(healthMap[JobSourceType.ARBEITNOW].consecutiveZeroYieldRuns).toBe(2);
-      // 2 consecutive failures -> UNHEALTHY
+      // 2 consecutive failures -> UNHEALTHY for this specific source
       expect(healthMap[JobSourceType.JOOBLE].status).toBe('UNHEALTHY');
       expect(healthMap[JobSourceType.JOOBLE].consecutiveFailures).toBe(2);
 
-      expect(manager.getOverallHealth()).toBe('UNHEALTHY');
+      // 1 source unhealthy out of 3 (< 50% minority) -> overall DEGRADED
+      expect(manager.getOverallHealth()).toBe('DEGRADED');
     });
   });
 
@@ -268,7 +274,7 @@ describe('TASK-29.2: Consecutive Failure Detection & Source Health Telemetry (#9
       );
     });
 
-    it('reports status: UNHEALTHY on GET /health when a source experiences >= 2 consecutive failures', async () => {
+    it('reports status: DEGRADED on GET /health when a minority source experiences >= 2 consecutive failures', async () => {
       const monitor = jobSourceManager.getHealthMonitor();
       monitor.recordRun(JobSourceType.TANQEEB, { success: false, jobCount: 0, error: 'HTTP 500' });
       monitor.recordRun(JobSourceType.TANQEEB, { success: false, jobCount: 0, error: 'HTTP 500' });
@@ -283,7 +289,7 @@ describe('TASK-29.2: Consecutive Failure Detection & Source Health Telemetry (#9
       expect(mockRes.success).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({
-            status: 'UNHEALTHY',
+            status: 'DEGRADED',
             sources: expect.objectContaining({
               tanqeeb: expect.objectContaining({
                 status: 'UNHEALTHY',
@@ -291,6 +297,32 @@ describe('TASK-29.2: Consecutive Failure Detection & Source Health Telemetry (#9
                 lastError: 'HTTP 500',
               }),
             }),
+          }),
+        }),
+      );
+    });
+
+    it('reports status: UNHEALTHY on GET /health when a majority of sources fail', async () => {
+      const monitor = jobSourceManager.getHealthMonitor();
+      const allSources = Object.keys(jobSourceManager.getSourceHealthMap());
+      // Fail >= 50% of sources
+      const majorityCount = Math.ceil(allSources.length / 2);
+      for (let i = 0; i < majorityCount; i++) {
+        monitor.recordRun(allSources[i], { success: false, jobCount: 0, error: 'Widespread Outage' });
+        monitor.recordRun(allSources[i], { success: false, jobCount: 0, error: 'Widespread Outage' });
+      }
+
+      const healthHandler = getHealthHandler();
+      const mockRes = {
+        success: vi.fn(),
+      };
+
+      await healthHandler({} as Request, mockRes as unknown as Response);
+
+      expect(mockRes.success).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            status: 'UNHEALTHY',
           }),
         }),
       );

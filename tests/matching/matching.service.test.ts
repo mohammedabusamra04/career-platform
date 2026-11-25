@@ -77,4 +77,24 @@ describe('MatchingService', () => {
     expect(results[0].score).toBeGreaterThan(0);
     expect(results[0].reason).toContain('role matches');
   });
+
+  it('scores qualifying job at 65+ (qualitative match) on rule-based scale even without explicit skills array', async () => {
+    const aiProvider: AIProvider = {
+      match: vi.fn(),
+      analyzeJob: vi.fn(),
+      hasAvailableSlot: () => true,
+    };
+
+    const fingerprintService = {
+      generate: () => 'dummy-fp',
+    };
+
+    const service = new MatchingService(aiProvider, undefined, fingerprintService);
+    const jobWithoutSkills: Job = {
+      ...dummyJob,
+      skills: [],
+    };
+    const results = await service.matchJobs([jobWithoutSkills], dummyPreferences);
+    expect(results[0].score).toBeGreaterThanOrEqual(65);
+  });
 });

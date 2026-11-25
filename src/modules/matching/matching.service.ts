@@ -182,7 +182,7 @@ export class MatchingService {
     const reasons: string[] = [];
 
     /*
-     * Role
+     * Role (Unified scale: 50 points for primary role match)
      */
     if (
       preferences.jobTitle &&
@@ -191,7 +191,7 @@ export class MatchingService {
         preferences.jobTitle,
       )
     ) {
-      score += 35;
+      score += 50;
 
       reasons.push(
         'role matches',
@@ -199,7 +199,7 @@ export class MatchingService {
     }
 
     /*
-     * Skills
+     * Skills (up to 15 points)
      */
     if (
       preferences.skills?.length &&
@@ -217,8 +217,8 @@ export class MatchingService {
 
       if (matchedSkills.length > 0) {
         const skillScore = Math.min(
-          30,
-          matchedSkills.length * 10,
+          15,
+          matchedSkills.length * 5,
         );
 
         score += skillScore;
@@ -230,28 +230,35 @@ export class MatchingService {
     }
 
     /*
-     * Experience level
+     * Experience level (15 points for match, 10 for flexible/any)
      */
-    if (
-  preferences.experienceLevel &&
-  job.experienceLevel
-) {
-  if (
-    this.textMatches(
-      job.experienceLevel,
-      preferences.experienceLevel,
-    )
-  ) {
-    score += 20;
-    reasons.push('experience level matches');
-  } else {
-    score -= 15;
-    reasons.push('experience level does not match');
-  }
-}
+    if (preferences.experienceLevel) {
+      const prefLevel = preferences.experienceLevel.toLowerCase();
+      if (prefLevel === 'any' || prefLevel === 'all') {
+        score += 10;
+        reasons.push('experience level flexible');
+      } else if (job.experienceLevel) {
+        if (
+          this.textMatches(
+            job.experienceLevel,
+            preferences.experienceLevel,
+          )
+        ) {
+          score += 15;
+          reasons.push('experience level matches');
+        } else {
+          score -= 10;
+          reasons.push('experience level does not match');
+        }
+      } else {
+        score += 10;
+      }
+    } else {
+      score += 10;
+    }
 
     /*
-     * Work type
+     * Work type / Remote (15 points)
      */
     if (preferences.workType) {
       if (preferences.workType === 'any') {
@@ -269,6 +276,22 @@ export class MatchingService {
       ) {
         score += 15;
         reasons.push('remote matches');
+      }
+    } else {
+      score += 15;
+    }
+
+    /*
+     * Freshness (up to 10 points for jobs posted/scraped within 24h)
+     */
+    const pubDate = job.publicationDate || job.scrapedAt;
+    if (pubDate) {
+      const ageHours = (Date.now() - new Date(pubDate).getTime()) / (1000 * 60 * 60);
+      if (ageHours <= 24) {
+        score += 10;
+        reasons.push('fresh job (posted within 24h)');
+      } else if (ageHours <= 72) {
+        score += 5;
       }
     }
 
@@ -294,7 +317,7 @@ export class MatchingService {
     const reasons: string[] = [];
 
     /*
-     * Role
+     * Role (Unified scale: 50 points for primary role match)
      */
     if (
       preferences.jobTitle &&
@@ -303,12 +326,12 @@ export class MatchingService {
         preferences.jobTitle,
       )
     ) {
-      score += 35;
+      score += 50;
       reasons.push('role matches');
     }
 
     /*
-     * Skills
+     * Skills (up to 15 points)
      */
     if (preferences.skills?.length) {
       const matchedSkills =
@@ -323,8 +346,8 @@ export class MatchingService {
 
       if (matchedSkills.length > 0) {
         const skillScore = Math.min(
-          30,
-          matchedSkills.length * 10,
+          15,
+          matchedSkills.length * 5,
         );
 
         score += skillScore;
@@ -336,24 +359,35 @@ export class MatchingService {
     }
 
     /*
-     * Experience level
+     * Experience level (15 points for match, 10 for flexible/any)
      */
-    if (
-      preferences.experienceLevel &&
-      this.textMatches(
-        analysis.level,
-        preferences.experienceLevel,
-      )
-    ) {
-      score += 20;
-
-      reasons.push(
-        'experience level matches',
-      );
+    if (preferences.experienceLevel) {
+      const prefLevel = preferences.experienceLevel.toLowerCase();
+      if (prefLevel === 'any' || prefLevel === 'all') {
+        score += 10;
+        reasons.push('experience level flexible');
+      } else if (analysis.level) {
+        if (
+          this.textMatches(
+            analysis.level,
+            preferences.experienceLevel,
+          )
+        ) {
+          score += 15;
+          reasons.push('experience level matches');
+        } else {
+          score -= 10;
+          reasons.push('experience level does not match');
+        }
+      } else {
+        score += 10;
+      }
+    } else {
+      score += 10;
     }
 
     /*
-     * Work type
+     * Work type / Remote (15 points)
      */
     if (preferences.workType) {
       if (preferences.workType === 'any') {
@@ -368,6 +402,22 @@ export class MatchingService {
       ) {
         score += 15;
         reasons.push('work type matches');
+      }
+    } else {
+      score += 15;
+    }
+
+    /*
+     * Freshness (up to 10 points)
+     */
+    const pubDate = _job.publicationDate || _job.scrapedAt;
+    if (pubDate) {
+      const ageHours = (Date.now() - new Date(pubDate).getTime()) / (1000 * 60 * 60);
+      if (ageHours <= 24) {
+        score += 10;
+        reasons.push('fresh job (posted within 24h)');
+      } else if (ageHours <= 72) {
+        score += 5;
       }
     }
 

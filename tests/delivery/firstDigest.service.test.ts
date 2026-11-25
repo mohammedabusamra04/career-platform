@@ -165,7 +165,7 @@ describe('FirstDigestService (TASK-40.1)', () => {
 
     expect(messageAr).toContain('🎉 **أول ملخص مخصص لك فور انضمامك!**');
     expect(messageAr).toContain('Senior Backend Engineer');
-    expect(messageAr).toContain('TechCorp');
+    expect(messageAr).toContain('🌐 المنصة:');
     expect(messageAr).toContain('نسبة التوافق: 95%');
     expect(messageAr).toContain('في المساء');
 
@@ -205,15 +205,17 @@ describe('FirstDigestService (TASK-40.1)', () => {
     const formattedAr = service.formatDigestMessage(compoundTestDigest, { language: 'ar' });
     // Title 1: should not have backslash on hyphen
     expect(formattedAr).toContain('[Data Analyst-Part Time](https://apply.workable.com/dln/1)');
-    // Job 1: should show Company and Work Type on separate lines
-    expect(formattedAr).toContain('🏢 *الشركة:* DLN Consulting Group');
+    // Job 1: should show Platform and Work Type on separate lines (replacing Company)
+    expect(formattedAr).toContain('🌐 المنصة: Workable');
     expect(formattedAr).toContain('🌍 *نوع العمل:* عن بُعد (عالمياً)');
+    expect(formattedAr).not.toContain('🏢 *الشركة:*');
 
     // Title 2: should not have backslashes on parens
     expect(formattedAr).toContain('[Data Engineer (Remote, US)](https://www.linkedin.com/jobs/view/4489568760)');
-    // Job 2: should show Company as LinkedIn instead of generic 'LinkedIn Employer'
-    expect(formattedAr).toContain('🏢 *الشركة:* لينكدإن (LinkedIn)');
+    // Job 2: should show Platform as LinkedIn
+    expect(formattedAr).toContain('🌐 المنصة: لينكدإن (LinkedIn)');
     expect(formattedAr).not.toContain('LinkedIn Employer');
+    expect(formattedAr).not.toContain('🏢 *الشركة:*');
     expect(formattedAr).toContain('⚡️ لتصفح كل الفرص المتاحة والفرز حسب الأنسب اضغط /jobs');
 
     const messageEn = service.formatDigestMessage(mockDigestResult, {
@@ -224,6 +226,8 @@ describe('FirstDigestService (TASK-40.1)', () => {
     expect(messageEn).toContain('🎉 **Your First Personalized Job Digest!**');
     expect(messageEn).toContain('Match Score: 95%');
     expect(messageEn).toContain('leisure time');
+    expect(messageEn).toContain('🌐 Platform:');
+    expect(messageEn).not.toContain('🏢 *Company:*');
   });
 
   it('completes delivery execution in <1.5 seconds (Acceptance Criteria)', async () => {
