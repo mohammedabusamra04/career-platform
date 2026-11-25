@@ -21,4 +21,6 @@ export const cacheKeys = {
   ) => `user:${userId}:sent:${fingerprint}`,
 
   linkLiveness: (hash: string) => `link:liveness:${hash}`,
+
+  jobEnrichment: (hash: string) => `job:enrichment:${hash}`,
 };

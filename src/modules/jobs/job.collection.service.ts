@@ -11,6 +11,7 @@ import {
   deterministicJobClassifier,
   type AmbiguityResolver,
 } from './classifier/job.classifier.js';
+import { JobDetailEnricher } from './jobDetailEnricher.js';
 import {
   AdvisoryLockService,
   JOB_COLLECTION_ADVISORY_LOCK_ID,
@@ -78,6 +79,7 @@ export class JobCollectionService {
     private readonly classifier: DeterministicJobClassifier = deterministicJobClassifier,
     private readonly advisoryLock: IAdvisoryLockService = new AdvisoryLockService(),
     private readonly ambiguityResolver?: AmbiguityResolver,
+    private readonly detailEnricher?: JobDetailEnricher,
   ) {}
 
   /**
@@ -155,6 +157,10 @@ export class JobCollectionService {
         uniqueJobs = dedupeResult.uniqueJobs;
         duplicatesDropped = dedupeResult.duplicateJobs.length;
       }
+
+      // Fast Detail Enrichment (target newly deduplicated jobs with brief/missing description < 350 chars)
+      const enricher = this.detailEnricher ?? new JobDetailEnricher();
+      uniqueJobs = await enricher.enrichJobs(uniqueJobs);
 
       // 5. Deterministic Classify & 6. Upsert to Shared Pool
       let newJobsInserted = 0;

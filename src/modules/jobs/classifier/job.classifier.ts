@@ -221,6 +221,26 @@ export class DeterministicJobClassifier {
       }
     }
 
+    // Guard against non-backend primary roles leaking BACKEND as secondary
+    const nonBackendPrimaries: Specialization[] = [
+      Specialization.DATA,
+      Specialization.AI_ENGINEER,
+      Specialization.QA,
+      Specialization.DEVOPS,
+      Specialization.SECURITY,
+      Specialization.UIUX,
+    ];
+    if (
+      primarySpecialization &&
+      nonBackendPrimaries.includes(primarySpecialization) &&
+      secondarySpecialization === Specialization.BACKEND
+    ) {
+      const hasExplicitBackendInTitle = /\b(?:back[- ]?end|خلفي|خلفية|server[- ]side)\b/i.test(cleanTitle);
+      if (!hasExplicitBackendInTitle) {
+        secondarySpecialization = null;
+      }
+    }
+
     // Determine Remote Scope, Seniority, and Work Type
     const remoteResult = this.resolveRemoteScope(job);
     const experienceLevel = this.resolveExperienceLevel(job);
