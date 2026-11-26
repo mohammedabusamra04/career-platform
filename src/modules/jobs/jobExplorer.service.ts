@@ -1,3 +1,5 @@
+
+
 import type { PrismaClient, Prisma } from '@prisma/client';
 import ms from 'ms';
 import { prisma as defaultPrisma } from '../../shared/database/prisma.service.js';
@@ -68,6 +70,8 @@ export interface ExplorerJobItem {
   experienceLevel?: string | null;
   score?: number | null;
   publishedAt?: Date | null;
+  primarySpecialization?: Specialization | null;
+  secondarySpecialization?: Specialization | null;  
 }
 
 export interface JobExplorerResult {
@@ -376,6 +380,8 @@ export class JobExplorerService {
         remoteScope: item.job.remoteScope,
         experienceLevel: item.job.experienceLevel,
         score: item.scoring.score,
+        primarySpecialization: (item.job.primarySpecialization as Specialization) ?? null,
+        secondarySpecialization: (item.job.secondarySpecialization as Specialization) ?? null,
         publishedAt: item.job.publishedAt ?? null,
       };
     });

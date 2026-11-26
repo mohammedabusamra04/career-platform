@@ -230,7 +230,7 @@ export class FirstDigestService {
     const candidates: FirstDigestCandidate[] = validPageJobs.map((item) => {
       const rawJob: ExplorerJobItem = 'id' in item && item.id ? (item as ExplorerJobItem) : (item as any).job;
       const explanationContext = {
-        job: rawJob,
+        job: rawJob as ScorableJob,
         preferences: {
           specializations: preferences.specializations,
           regionPreference: preferences.regionPreference,

@@ -74,10 +74,12 @@ export class TransparentExplanationBuilder {
     if (breakdown.specializationScore === 50) {
       const userSpecs = context?.preferences?.specializations || [];
       const jobPrimary = context?.job?.primarySpecialization || context?.job?.specialization;
-      const matchedSpec =
-        userSpecs.find((s) => s.toUpperCase() === (jobPrimary || '').toUpperCase()) ||
-        userSpecs[0];
-      const specLabel = matchedSpec ? SPECIALIZATION_ARABIC_NAMES[matchedSpec] || matchedSpec : '';
+      const matchedSpec = jobPrimary
+        ? userSpecs.find((s) => s.toUpperCase() === jobPrimary.toUpperCase()) || jobPrimary
+        : userSpecs[0];
+      const specLabel = matchedSpec
+        ? SPECIALIZATION_ARABIC_NAMES[matchedSpec as Specialization] || matchedSpec
+        : '';
       reasons.push(
         specLabel
           ? `🎯 تطابق صريح مع تخصصك الأساسي: ${specLabel}`
@@ -151,7 +153,9 @@ export class TransparentExplanationBuilder {
       const matchedSpec =
         userSpecs.find((s) => s.toUpperCase() === (jobPrimary || '').toUpperCase()) ||
         userSpecs[0];
-      const specLabel = matchedSpec ? SPECIALIZATION_ENGLISH_NAMES[matchedSpec] || matchedSpec : '';
+      const specLabel = matchedSpec
+        ? SPECIALIZATION_ENGLISH_NAMES[matchedSpec as Specialization] || matchedSpec
+        : '';
       reasons.push(
         specLabel
           ? `🎯 Direct hit on your primary stack: ${specLabel}`
