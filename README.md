@@ -1,66 +1,172 @@
 # ⚡ DeployMe — Automated Career Intelligence Platform
 
-[![Node.js](https://img.shields.io/badge/Node.js-20.x-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
-[![Prisma ORM](https://img.shields.io/badge/Prisma-ORM-2D3748?logo=prisma&logoColor=white)](https://www.prisma.io/)
-[![Redis](https://img.shields.io/badge/Redis-Cache-DC382D?logo=redis&logoColor=white)](https://redis.io/)
-[![Google Gemini](https://img.shields.io/badge/Google_Gemini-Flash-8E75B2?logo=google&logoColor=white)](https://ai.google.dev/)
-[![Telegram Bot](https://img.shields.io/badge/Telegram-@DeployMeRadarBot-26A5E4?logo=telegram&logoColor=white)](https://t.me/DeployMeRadarBot)
-[![Tests](https://img.shields.io/badge/Tests-Vitest_100%25_Passing-6E9F18?logo=vitest&logoColor=white)](https://vitest.dev/)
-[![Production Status](https://img.shields.io/badge/Status-Live_on_Render-2ea44f)](https://career-platform-6p7y.onrender.com/health)
+[[https://img.shields.io/badge/Node.js-20.x-339933?logo=node.js&logoColor=white]](https://nodejs.org/)
+[[https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript&logoColor=white]](https://www.typescriptlang.org/)
+[[https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white]](https://www.postgresql.org/)
+[[https://img.shields.io/badge/Prisma-ORM-2D3748?logo=prisma&logoColor=white]](https://www.prisma.io/)
+[[https://img.shields.io/badge/Redis-Cache-DC382D?logo=redis&logoColor=white]](https://redis.io/)
+[[https://img.shields.io/badge/Google_Gemini-Flash-8E75B2?logo=google&logoColor=white]](https://ai.google.dev/)
+[[https://img.shields.io/badge/Telegram-@DeployMeRadarBot-26A5E4?logo=telegram&logoColor=white]](https://t.me/DeployMeRadarBot)
+[[https://img.shields.io/badge/Tests-Vitest_100%25_Passing-6E9F18?logo=vitest&logoColor=white]](https://vitest.dev/)
+[[https://img.shields.io/badge/Status-Live_on_Render-2ea44f]](https://career-platform-6p7y.onrender.com/health)
 
-> **DeployMe** is an enterprise-grade career radar and automated matching platform. It continuously harvests, analyzes, deduplicates, and filters tech opportunities across **13 international and Arab job portals**, leverages **Google Gemini** for deep semantic evaluation, and delivers hyper-personalized job digests via **Telegram** — engineered to evolve into a full-scale **Web Career Intelligence Portal**.
+**DeployMe** is a backend-driven job aggregation, classification, and matching platform built in **TypeScript**. It collects tech and remote opportunities across **13 international and Arab job sources**, deduplicates and classifies them across 10 engineering specializations, filters out expired or blocked listings, and delivers personalized daily digests and on-demand search via **Telegram**.
 
-**🤖 Try the Live Bot on Telegram:** [https://t.me/DeployMeRadarBot](https://t.me/DeployMeRadarBot)  
-**🌐 Live Production API Health:** [career-platform-6p7y.onrender.com/health](https://career-platform-6p7y.onrender.com/health)
-
----
-
-## 📑 Table of Contents
-
-- [Live Demo & Experience](#-live-demo--interactive-experience)
-- [Overview & Value Proposition](#-overview--value-proposition)
-- [Future Vision: Expanding to a Full Web Platform](#-future-vision-expanding-to-a-full-web-platform)
-- [Key Architectural & Engineering Highlights](#-key-architectural--engineering-highlights)
-- [System Architecture](#-system-architecture)
-- [Supported Job Sources (13 Platforms)](#-supported-job-sources-13-platforms)
-- [Telegram Bot Experience & Commands](#-telegram-bot-experience)
-- [Live Observability & Telemetry](#-live-observability--telemetry)
-- [Tech Stack & Tooling](#-tech-stack--tooling)
-- [Quality Assurance & Testing Standards](#-quality-assurance--testing-standards)
-- [Author & Engineering Leadership](#-author--engineering-leadership)
+- **Live Telegram Bot:** [t.me/DeployMeRadarBot](https://t.me/DeployMeRadarBot)
+- **Production Health Check:** [career-platform-6p7y.onrender.com/health](https://career-platform-6p7y.onrender.com/health)
 
 ---
 
-## 🚀 Live Demo & Interactive Experience
+## Table of Contents
 
-DeployMe is continuously deployed and running live 24/7 in production. You can immediately experience the candidate onboarding, customize your technical Stack preferences, and explore real-time matched opportunities:
-
-👉 **[Launch DeployMe on Telegram (@DeployMeRadarBot)](https://t.me/DeployMeRadarBot)**
-
-*No local setup, database configuration, or API keys required to test — simply click the link above, send `/start`, and select your specialization.*
-
----
-
-## 📌 Overview & Value Proposition
-
-In today's fragmented hiring market, software engineers and tech professionals waste dozens of hours every week scouring disparate boards, dodging duplicate listings, and sifting through misaligned roles (such as "Junior" positions demanding 8 years of experience).
-
-**DeployMe** solves this by engineering a resilient, automated data pipeline that:
-1. **Aggregates from 13 sources simultaneously** (Global Remote + MENA/Arab hubs).
-2. **Eliminates duplicates** using a two-tier composite and semantic fingerprinting algorithm.
-3. **Applies strict hard-filtering** (e.g., Lead/Manager roles are rigorously isolated from Junior candidates).
-4. **Performs deep semantic evaluation** using Gemini Flash with multi-key failover.
-5. **Pushes a daily evening digest** at 21:00 (Asia/Gaza) directly to the user's pocket with zero noise and direct application links.
+- [Live Demo](#live-demo)
+- [Problem & Solution](#problem--solution)
+- [Architecture Overview](#architecture-overview)
+- [Key Engineering Highlights](#key-engineering-highlights)
+- [Supported Job Sources](#supported-job-sources)
+- [Bot Commands](#bot-commands)
+- [Observability & Health](#observability--health)
+- [Tech Stack](#tech-stack)
+- [Testing & CI](#testing--ci)
+- [Roadmap](#roadmap)
+- [Author](#author)
 
 ---
 
-## 🔮 Future Vision: Expanding to a Full Web Platform
+## Live Demo
 
-While DeployMe currently delivers value through Telegram for instant mobile accessibility, the system's modular architecture was purposefully built backend-first to power a comprehensive **Web-based SaaS Career Suite**:
+DeployMe runs 24/7 in production on Render. No local setup is required to test the onboarding, filtering, or `/jobs` explorer:
 
+1. Open [@DeployMeRadarBot](https://t.me/DeployMeRadarBot) on Telegram.
+2. Send `/start`, pick up to 3 specializations, your target market (`Arab`, `International`, or `Both`), and your experience level.
+3. Receive an immediate 5-job onboarding digest and use `/jobs` anytime to browse and sort active matches.
+
+---
+
+## Problem & Solution
+
+Job seekers spend hours each week checking fragmented boards, running into duplicate postings, expired links, and roles whose titles don't match their actual requirements.
+
+DeployMe automates this workflow through a deterministic-first pipeline:
+1. **Collects** listings from 13 global and regional sources (plus a free Gmail Job Alerts ingestion webhook for LinkedIn).
+2. **Enriches & Verifies** short listings via a bounded 40KB streaming JSON-LD (`JobPosting`) reader and rejects dead links (`404`/`410`, soft-404s, WAF blocks, and postings older than 21 days).
+3. **Deduplicates** cross-board listings via SHA-256 fingerprinting and semantic keys.
+4. **Classifies** roles across 10 specializations, seniority levels, and remote scopes before matching and delivering an evening digest at `21:00` (`Asia/Gaza`).
+
+---
+
+## Architecture Overview
+
+```text
+                                 ┌───────────────────────────────┐
+                                 │     Client Interfaces         │
+                                 │  • Telegram Bot (grammY)      │
+                                 │  • REST API / Health Probe    │
+                                 └───────────────┬───────────────┘
+                                                 │
+                                                 ▼
+┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                   DeployMe Core Services                                       │
+│                                                                                                │
+│  [1. Job Aggregators] ─────► [2. Enricher & Link Verifier] ──► [3. Deduplication & Classifier] │
+│   • 13 Sources + Gmail        • 40KB JSON-LD Streaming          • SHA-256 & Semantic Keys      │
+│   • Promise.allSettled        • 404/410 & Soft-404 Filter       • 4-Stage + Gemini Fallback    │
+│                                                                                                │
+│  [4. Delivery Scheduler] ◄─── [5. Hard-Filter Gatekeeper] ◄─── [6. Equivalence Scoring Engine] │
+│   • Evening Digest (21:00)     • Seniority & Experience         • Shared Group Scoring (0-100) │
+│   • Direct Apply Links         • Regional Market Alignment      • Fair Source Balancing        │
+└────────────────────────────────────────────────┬───────────────────────────────────────────────┘
+                                                 │
+                                                 ▼
+                                 ┌───────────────────────────────┐
+                                 │     Persistence Layer         │
+                                 │  • PostgreSQL (Source of Truth│
+                                 │  • Redis (Optional Cache)     │
+                                 └───────────────────────────────┘
 ```
+
+---
+
+## Key Engineering Highlights
+
+### 1. PostgreSQL as Source of Truth + Graceful Redis Cache
+- **PostgreSQL (Prisma ORM)** stores users, preferences, active jobs, delivery slots, and `SentJob` history, and enforces distributed mutual exclusion via native advisory locks (`pg_try_advisory_lock`).
+- **Redis** acts strictly as an optional performance cache (Gemini analysis results, link-liveness checks, rate-limiting keys). If Redis is unavailable, `RedisAdapter` degrades gracefully to cache-free mode with warning logs without crashing the server or pipeline.
+
+### 2. 4-Stage Classification Pipeline & Title Conflict Arbitration
+Job classification is structured as a decoupled `Chain of Responsibility` pipeline over pure TypeScript domain types (isolated from Prisma):
+1. **Negative Exclusion:** Filters out non-engineering roles (recruiting, sales, marketing, IT service/help desk).
+2. **Title Role Lock & Conflict Arbitration:** Locks clear titles (`Laravel`, `Frontend`) immediately, and arbitrates compound titles (e.g., `Data Platform Engineer` vs `AI Platform Engineer`) against description/skill evidence instead of relying on hardcoded title lists.
+3. **Contextual Description Scoring:** Evaluates full descriptions and exclusive tools when titles are ambiguous, preventing generic keywords (`testing`, `Docker`, `Python`) from misclassifying roles.
+4. **Gemini Fallback:** Invoked only for unresolved roles, using multi-key rotation, token-bucket rate limiting, and circuit breakers.
+
+### 3. Fast Streaming Enrichment & Dead-Link Filtering
+- For sources that return only titles or short snippets, `JobDetailEnricher` streams the first ~40KB of HTML with bounded concurrency to extract Schema.org `JobPosting` JSON-LD metadata.
+- `LinkLivenessVerifier` filters out `404`/`410` responses, WAF blocks, and expired soft-404 pages before jobs reach subscribers.
+
+### 4. Analyze-Once & Equivalence Matching
+Each unique job is analyzed once per cycle, and subscribers sharing identical preference hashes (`EquivalenceMatching`) are evaluated as a group rather than running redundant per-user scoring loops.
+
+---
+
+## Supported Job Sources
+
+| Source | Region | Type | Integration |
+|---|---|---|---|
+| **LinkedIn** | Global | Full-time & Remote Tech | Free Gmail Alerts Ingestion + JSearch/Firecrawl fallback |
+| **We Work Remotely** | Worldwide | Remote Tech | RSS Feed |
+| **Remotive** | Worldwide | Remote Tech | REST API |
+| **Arbeitnow** | Europe / Worldwide | Tech & Engineering | REST API |
+| **Adzuna** | Global / UK / US | Broad Tech Listings | Official API |
+| **Jooble** | Worldwide | Aggregate Tech Index | Official API |
+| **Bayt** | MENA / Gulf | Enterprise Tech | HTML Scraper |
+| **Wuzzuf** | Egypt / MENA | Software & Tech | HTML Scraper |
+| **Forasna** | Egypt / MENA | Tech & General | HTML Scraper |
+| **Tanqeeb** | MENA / Gulf | Tech & Corporate | HTML Scraper |
+| **Naukrigulf** | Gulf Region | Tech & Engineering | HTML Scraper |
+| **Baeed** | Arab World | Remote Arabic Tech | HTML Scraper |
+| **Mostaql** | Arab World | Freelance Projects | HTML Scraper |
+
+---
+
+## Bot Commands
+
+- `/start` — Guided onboarding (Specialization, Market Scope, Experience Level).
+- `/jobs` — On-demand paginated explorer with `Best Match` and `Latest` sorting.
+- `/settings` — Update specializations, target region, experience level, or language (`AR`/`EN`).
+- `/pause` / `/resume` — Pause or resume scheduled notifications.
+- `/stop` — Unsubscribe and permanently delete stored user data.
+- `/help` — Command reference.
+
+---
+
+## Observability & Health
+
+- **`GET /health`**: Reports live PostgreSQL pool metrics, Redis cache state, scheduler status, subscriber delivery stats, and per-source health (`HEALTHY`, `DEGRADED`, or `UNHEALTHY`).
+- **Platform Status Summary Workflow**: Read-only GitHub Actions check that queries `/health` and renders a markdown status report.
+
+---
+
+## Tech Stack
+
+- **Runtime & Language:** Node.js 20 LTS, TypeScript 5 (Strict Mode, ESM)
+- **API & Bot:** Express 5, grammY (Telegram Bot API), Zod
+- **Database & Cache:** PostgreSQL 16, Prisma ORM 6, Redis (optional cache)
+- **AI & Parsing:** Google Gemini (`@google/genai`), Cheerio
+- **Testing & CI:** Vitest, ESLint, Prettier, GitHub Actions, Render
+
+---
+
+## Testing & CI
+
+- **113 test files / 1,078 passing tests** covering unit, integration, fixture-based scraper tests, load simulations, and chaos recovery.
+- **GitHub Actions CI (`ci.yml`)** runs `npm ci`, `npm run typecheck`, `npm run lint`, `npm test`, and `npm run build` on every push and pull request.
+
+---
+
+## Roadmap
+
+```text
                        ┌──────────────────────────────────────────┐
                        │          DeployMe Cloud Ecosystem        │
                        └────────────────────┬─────────────────────┘
@@ -73,156 +179,14 @@ While DeployMe currently delivers value through Telegram for instant mobile acce
       🎯 Interactive Settings & /jobs              📄 Resume Matcher & Studio
 ```
 
-### 🗺️ Product Roadmap:
-* **Phase 1: Resilient Core Pipeline (Completed ✅)**
-  * Multi-source aggregators (13 sources), PostgreSQL + Redis hybrid storage, strict seniority filters, multi-key Gemini rotation, and Telegram bot UI.
-* **Phase 2: Modern Web Dashboard (Next Milestone 🚀)**
-  * A full-stack web portal (**Next.js 15, TailwindCSS, Shadcn UI**) providing candidates with an interactive job radar, rich search/filtering, and customized email alerts.
-* **Phase 3: Automated Resume Tailoring & Skills Gap Analysis**
-  * Upload a PDF CV/Resume to extract skills, compare them against live market demands, and receive personalized keyword optimization advice.
-* **Phase 4: Candidate Application Tracking System (ATS Kanban)**
-  * A drag-and-drop Kanban board (`Wishlist` → `Applied` → `Interviewing` → `Offer`) synchronized with incoming alerts.
+- **Phase 1 (Completed):** 13-source aggregation pipeline, PostgreSQL + optional Redis architecture, 4-stage classifier, Telegram bot, and CI/CD.
+- **Phase 2 (Planned):** Web dashboard (Next.js) with saved-job tracking, CV skill matching, and Kanban application board.
 
 ---
 
-## 🛠️ Key Architectural & Engineering Highlights
+## Author
 
-### 1. Robust Distributed Concurrency (PostgreSQL Advisory Locks)
-To guarantee idempotency and prevent race conditions when multiple scheduled triggers (external cron, GitHub Actions, internal scheduler) fire concurrently, DeployMe uses native PostgreSQL advisory locks (`pg_try_advisory_lock`). If a cycle is in-flight, subsequent executions gracefully exit without corrupting state.
+**Mohammed Abu Samra** — Backend & Systems Developer
 
-### 2. High-Performance Hybrid Persistence
-* **PostgreSQL (via Prisma ORM)**: Stores relational schemas, user accounts, preferences, job histories, and delivery slot telemetry with strong integrity and foreign key constraints.
-* **Redis**: Acts as an ultra-fast caching layer for API rate limiting, Gemini response caching (7-day TTL), and real-time distributed locks.
-
-### 3. Analyze-Once Architecture with Multi-Key Rotation
-LLM calls are computationally heavy and subject to rate limits. DeployMe uses an **Analyze-Once** model:
-* Every unique job across all users is evaluated **only once per cycle**.
-* The structured analysis (`skills`, `seniority`, `workType`, `role`) is cached in Redis.
-* User matching is computed in memory against this analysis in milliseconds.
-* A multi-key token-bucket rate limiter with automated circuit-breakers cycles through backup keys if quotas are exhausted.
-
-### 4. Strict Seniority & Experience Guardrails
-A dedicated `SeniorityClassifier` and `HardFilterEngine` strictly enforce candidate boundaries. A Junior applicant will never receive "Lead", "Staff", or "Engineering Manager" roles, regardless of keyword overlaps.
-
-### 5. Fair Source Diversity Balancing
-To prevent high-volume aggregators (like Jooble or Adzuna) from monopolizing candidate digests, the pipeline enforces source diversity balancing, guaranteeing a representative blend of Arabic and global remote opportunities.
-
----
-
-## 🏗️ System Architecture
-
-```
-                                 ┌───────────────────────────────┐
-                                 │     Client Interfaces         │
-                                 │  • Telegram Bot (grammY)      │
-                                 │  • REST API / Health Probe    │
-                                 └───────────────┬───────────────┘
-                                                 │
-                                                 ▼
-┌────────────────────────────────────────────────────────────────────────────────────────────────┐
-│                                   DeployMe Core Services                                       │
-│                                                                                                │
-│  [1. Job Aggregators] ─────► [2. Deduplication Engine] ─────► [3. Semantic Analysis Engine]    │
-│   • 13 Parallel Sources       • Exact Fingerprint (SHA256)     • Google Gemini Flash           │
-│   • Promise.allSettled         • Semantic Cross-board Dedupe    • Multi-key Fallback & Cache   │
-│                                                                                                │
-│  [4. Delivery Scheduler] ◄─── [5. Hard-Filter Gatekeeper] ◄─── [6. Score & Ranking Engine]      │
-│   • Evening Digest (21:00)     • Seniority & Experience        • Stack Overlap (0-100)         │
-│   • Direct Apply Links         • Regional Market Alignment     • Fair Source Balancing         │
-└────────────────────────────────────────────────┬───────────────────────────────────────────────┘
-                                                 │
-                                                 ▼
-                                 ┌───────────────────────────────┐
-                                 │     Persistence Layer         │
-                                 │  • PostgreSQL (Prisma ORM)    │
-                                 │  • Redis (Cache & Locks)      │
-                                 └───────────────────────────────┘
-```
-
----
-
-## 🌐 Supported Job Sources (13 Platforms)
-
-| Source | Geographic Focus | Postings Type | Integration Mode |
-|---|---|---|---|
-| **LinkedIn** | Global / Worldwide | Full-time, Tech, Remote | RapidAPI / JSearch API |
-| **We Work Remotely** | Worldwide | 100% Remote Tech | Live RSS Feed |
-| **Remotive** | Worldwide | Remote Tech & Startup roles | REST API |
-| **Arbeitnow** | Europe / Worldwide | Tech, Engineering, Remote | REST API |
-| **Tanqeeb** | MENA / Gulf Region | Tech & Corporate | Scraper (Direct Links) |
-| **Bayt** | Gulf / Arab World | Enterprise Tech & Engineering | Scraper |
-| **Wuzzuf** | Egypt & Arab Region | Tech & Software Engineering | Scraper |
-| **Forasna** | Egypt & MENA | Tech & General Jobs | Scraper |
-| **Baeed (بعيد)** | Arab World | 100% Remote Arabic Tech | Scraper |
-| **Mostaql (مستقل)**| Arab World | Freelance & Contract Projects | Scraper |
-| **Naukrigulf** | UAE, Saudi, Gulf | Tech & Expat Opportunities | Scraper |
-| **Adzuna** | Global / UK / US | Broad Tech Listings | Official API |
-| **Jooble** | Worldwide | Aggregate Tech Index | Official API |
-
----
-
-## 🤖 Telegram Bot Experience
-
-The bot is designed with seamless UX, full Arabic and English localization, and zero clutter:
-
-* `/start` — ⚡ Interactive step-by-step setup (Choose Stack, Target Market Scope).
-* `/jobs` — Browse latest active roles matching your Stack and experience level on demand.
-* `/settings` — Modify Stack, market scope, experience level (Junior/Mid/Senior), or switch language.
-* `/pause` — Temporarily pause scheduled alerts without losing preferences.
-* `/resume` — Immediately resume notifications.
-* `/stop` — Unsubscribe and permanently purge all stored personal data.
-* `/help` — Quick command guide and reference.
-
----
-
-## 📊 Live Observability & Telemetry
-
-DeployMe provides two non-intrusive ways to monitor production health:
-
-1. **Production Health Endpoint (`GET /health`)**:
-   Returns real-time connection status of PostgreSQL connection pool metrics, Redis cache, scheduler status, and scraper health.
-
-2. **GitHub Actions Status Workflow (`Platform Status Summary`)**:
-   A lightweight, read-only status report that runs in under 5 seconds and renders a markdown summary table directly in GitHub:
-   * System Uptime & Status (`🟢 HEALTHY`)
-   * Total Active & Paused Subscribers
-   * Per-subscriber delivery status (`✅ Delivered` / `⏳ Pending`)
-   * Health of all 13 external job boards
-
----
-
-## 💻 Tech Stack & Tooling
-
-* **Runtime:** Node.js 20 LTS (ES Modules)
-* **Language:** TypeScript 5 (Strict Mode: `noImplicitReturns`, `noUnusedLocals`)
-* **Framework:** Express.js 4
-* **Bot Framework:** grammY (Modern Telegram Bot SDK)
-* **Databases:** PostgreSQL 16, Redis 7
-* **ORM:** Prisma ORM 5
-* **Semantic Engine:** Google Gemini (`@google/genai`)
-* **Testing:** Vitest (Unit & Integration test suites)
-* **HTML Parsing:** Cheerio
-* **Deployment & CI:** Render (Web Service), GitHub Actions
-
----
-
-## 🧪 Quality Assurance & Testing Standards
-
-DeployMe enforces high software engineering quality through comprehensive testing:
-* **Unit Tests**: Mocked unit tests for every scraper, filter engine, scoring calculator, and validator.
-* **Integration Tests**: End-to-end pipeline verification, database transactions, advisory locking, and Telegram bot handlers.
-* **Fixture Tests**: HTML and JSON fixtures ensuring scrapers remain immune to layout shifts.
-* **Automated CI**: GitHub Actions runs TypeScript typecheck, ESLint, and Vitest test suites on every pull request.
-
----
-
-## 👨‍💻 Author & Engineering Leadership
-
-Crafted with care by **Mohammed Abu Samra**  
-Passionate Full-Stack & Systems Engineer dedicated to building scalable, high-impact distributed systems and modern web applications.
-
-* **Telegram Bot:** [@DeployMeRadarBot](https://t.me/DeployMeRadarBot)
-* **GitHub:** [@mohammedabusamra04](https://github.com/mohammedabusamra04)
-
----
-*Distributed under the MIT License. Feel free to inspect, fork, or reach out for inquiries.*
+- GitHub: [@mohammedabusamra04](https://github.com/mohammedabusamra04)
+- Telegram Bot: [@DeployMeRadarBot](https://t.me/DeployMeRadarBot)under the MIT License. Feel free to inspect, fork, or reach out for inquiries.*
