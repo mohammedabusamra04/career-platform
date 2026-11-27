@@ -1,14 +1,14 @@
 # ⚡ DeployMe — Automated Career Intelligence Platform
 
-[[https://img.shields.io/badge/Node.js-20.x-339933?logo=node.js&logoColor=white]](https://nodejs.org/)
-[[https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript&logoColor=white]](https://www.typescriptlang.org/)
-[[https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white]](https://www.postgresql.org/)
-[[https://img.shields.io/badge/Prisma-ORM-2D3748?logo=prisma&logoColor=white]](https://www.prisma.io/)
-[[https://img.shields.io/badge/Redis-Cache-DC382D?logo=redis&logoColor=white]](https://redis.io/)
-[[https://img.shields.io/badge/Google_Gemini-Flash-8E75B2?logo=google&logoColor=white]](https://ai.google.dev/)
-[[https://img.shields.io/badge/Telegram-@DeployMeRadarBot-26A5E4?logo=telegram&logoColor=white]](https://t.me/DeployMeRadarBot)
-[[https://img.shields.io/badge/Tests-Vitest_100%25_Passing-6E9F18?logo=vitest&logoColor=white]](https://vitest.dev/)
-[[https://img.shields.io/badge/Status-Live_on_Render-2ea44f]](https://career-platform-6p7y.onrender.com/health)
+[![Node.js](https://img.shields.io/badge/Node.js-20.x-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![Prisma ORM](https://img.shields.io/badge/Prisma-ORM-2D3748?logo=prisma&logoColor=white)](https://www.prisma.io/)
+[![Redis](https://img.shields.io/badge/Redis-Cache-DC382D?logo=redis&logoColor=white)](https://redis.io/)
+[![Google Gemini](https://img.shields.io/badge/Google_Gemini-Flash-8E75B2?logo=google&logoColor=white)](https://ai.google.dev/)
+[![Telegram Bot](https://img.shields.io/badge/Telegram-@DeployMeRadarBot-26A5E4?logo=telegram&logoColor=white)](https://t.me/DeployMeRadarBot)
+[![Tests](https://img.shields.io/badge/Tests-Vitest_100%25_Passing-6E9F18?logo=vitest&logoColor=white)](https://vitest.dev/)
+[![Production Status](https://img.shields.io/badge/Status-Live_on_Render-2ea44f)](https://career-platform-6p7y.onrender.com/health)
 
 **DeployMe** is a backend-driven job aggregation, classification, and matching platform built in **TypeScript**. It collects tech and remote opportunities across **13 international and Arab job sources**, deduplicates and classifies them across 10 engineering specializations, filters out expired or blocked listings, and delivers personalized daily digests and on-demand search via **Telegram**.
 
