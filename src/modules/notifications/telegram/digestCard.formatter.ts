@@ -9,6 +9,8 @@
  */
 
 import { JobSourceRegistry } from '../../jobs/sources/jobSource.registry.js';
+import { SPECIALIZATION_ARABIC_NAMES, SPECIALIZATION_ENGLISH_NAMES } from '../../matching/scoreReason.builder.js';
+import type { Specialization } from '../../preferences/preference.taxonomy.js';
 import logger from '../../../shared/utils/logger.js';
 
 export interface DigestCardJob {
@@ -23,6 +25,7 @@ export interface DigestCardJob {
   remoteScope?: 'WORLDWIDE' | 'REGION' | 'COUNTRY' | 'UNKNOWN' | string | null;
   experienceLevel?: 'JUNIOR' | 'MID' | 'SENIOR' | 'UNKNOWN' | string | null;
   score?: number | null;
+  primarySpecialization?: string | null;  
   explanationAr?: string | null;
   explanationEn?: string | null;
 }
@@ -270,11 +273,18 @@ export function formatJobCard(
   const platformBadge = JobSourceRegistry.formatSourceBadge(job.source, lang, job.applicationUrl || job.url);
   const platformLine = `🌐 ${escapeTelegramMarkdown(platformBadge)}`;
 
+  const specMap = lang === 'en' ? SPECIALIZATION_ENGLISH_NAMES : SPECIALIZATION_ARABIC_NAMES;
+  const specLabel = job.primarySpecialization
+    ? specMap[job.primarySpecialization as Specialization] || job.primarySpecialization
+    : '';
+  const specLine = specLabel ? `🎯 ${escapeTelegramMarkdown(specLabel)}` : '';
+
   const lines = [
     `*${indexOnPage}.* 💻 ${titleLink}`,
     companyAndLocation,
     platformLine,
     `${escapeTelegramMarkdown(remoteLine)}`,
+    ...(specLine ? [specLine] : []),
     `📊 ${escapeTelegramMarkdown(experienceLine)}`,
     `${escapeTelegramMarkdown(matchToneLine)}`,
   ];

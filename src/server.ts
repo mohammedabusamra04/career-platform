@@ -14,7 +14,16 @@ const server = app.listen(env.port, () => {
   logger.info(`App is running on port ${env.port}`);
 });
 
-await connectRedis();
+try {
+  await connectRedis();
+} catch (err: unknown) {
+  logger.warn(
+    `⚠️ Redis connection failed at startup, continuing without cache: ${
+      err instanceof Error ? err.message : String(err)
+    }`,
+  );
+}
+
 await prisma.connect();
 
 jobNotificationScheduler.start();

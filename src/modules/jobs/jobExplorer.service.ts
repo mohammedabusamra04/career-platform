@@ -1,5 +1,3 @@
-
-
 import type { PrismaClient, Prisma } from '@prisma/client';
 import ms from 'ms';
 import { prisma as defaultPrisma } from '../../shared/database/prisma.service.js';
@@ -10,6 +8,10 @@ import {
   ARAB_COUNTRY_CODES,
   ARAB_SOURCES,
 } from '../matching/hardFilter.engine.js';
+import {
+  SPECIALIZATION_ARABIC_NAMES,
+  SPECIALIZATION_ENGLISH_NAMES,
+} from '../matching/scoreReason.builder.js';
 import { equivalenceMatchingService } from '../matching/equivalenceMatching.service.js';
 import { mapToScorableJob, type RawDatabaseJob } from '../delivery/firstDigest.service.js';
 import {
@@ -534,11 +536,18 @@ export class JobExplorerService {
         const platformBadge = JobSourceRegistry.formatSourceBadge(job.source, lang, targetUrl || job.url);
         const platformLine = `🌐 ${escapeTelegramMarkdown(platformBadge)}`;
 
+        const specMap = isArabic ? SPECIALIZATION_ARABIC_NAMES : SPECIALIZATION_ENGLISH_NAMES;
+        const specLabel = job.primarySpecialization
+          ? specMap[job.primarySpecialization] || job.primarySpecialization
+          : '';
+        const specLine = specLabel ? `🎯 ${escapeTelegramMarkdown(specLabel)}` : '';
+
         const lines = [
           `*${indexOnPage}.* 💼 ${titleLink}`,
           companyAndLocation,
           platformLine,
           remoteLine,
+          ...(specLine ? [specLine] : []),
           experienceLine,
           matchToneLine,
         ];
