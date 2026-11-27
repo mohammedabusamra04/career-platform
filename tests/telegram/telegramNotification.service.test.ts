@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { TelegramNotificationService } from '../../src/modules/notifications/telegram/telegramNotification.service.js';
 import { JobSourceType, type Job } from '../../src/modules/jobs/job.types.js';
+import { ExperienceLevel } from '../../src/shared/types/job.js';
 
 describe('TelegramNotificationService', () => {
   let api: { sendMessage: ReturnType<typeof vi.fn> };
@@ -51,13 +52,15 @@ describe('TelegramNotificationService', () => {
     );
   });
 
-  it('should send a single digest message capped at 20 jobs with apply inline buttons, qualitative match tone, and disabled link previews', async () => {
+  it('should send digest messages capped at 20 jobs with qualitative match tone, specialization, experience level, and disabled link previews', async () => {
     const manyJobs = Array.from({ length: 25 }, (_, i) => ({
       job: {
         ...dummyJob,
         title: `Backend Role ${i + 1}`,
         applicationUrl: `https://example.com/apply/${i + 1}`,
         url: `https://example.com/apply/${i + 1}`,
+        primarySpecialization: 'BACKEND',
+        experienceLevel: ExperienceLevel.JUNIOR,
       },
       score: 85,
       reason: 'Strong match',
@@ -65,15 +68,23 @@ describe('TelegramNotificationService', () => {
 
     await service.sendJobs(123456, manyJobs);
 
-    expect(api.sendMessage).toHaveBeenCalledTimes(1);
-    const [, messageText, options] = api.sendMessage.mock.calls[0];
-    expect(messageText).toContain('Backend Role 1');
-    expect(messageText).toContain('Backend Role 20');
-    expect(messageText).not.toContain('Backend Role 21');
-    expect(messageText).toContain('تطابق قوي');
-    expect(messageText).not.toContain('85%');
-    expect(messageText).toContain('/jobs');
-    expect(messageText).toContain('🔗 [تقديم مباشر](https://example.com/apply/1)');
+    expect(api.sendMessage.mock.calls.length).toBeGreaterThanOrEqual(1);
+    expect(api.sendMessage.mock.calls.length).toBeLessThanOrEqual(2);
+
+    const combinedText = api.sendMessage.mock.calls
+      .map((call) => call[1] as string)
+      .join('\n');
+    const [, , options] = api.sendMessage.mock.calls[0];
+
+    expect(combinedText).toContain('Backend Role 1');
+    expect(combinedText).toContain('Backend Role 20');
+    expect(combinedText).not.toContain('Backend Role 21');
+    expect(combinedText).toContain('تطابق قوي');
+    expect(combinedText).toContain('الواجهات الخلفية (Backend)');
+    expect(combinedText).toContain('مستوى مبتدئ (Junior)');
+    expect(combinedText).not.toContain('85%');
+    expect(combinedText).toContain('/jobs');
+    expect(combinedText).toContain('🔗 [تقديم مباشر](https://example.com/apply/1)');
     expect(options).toEqual(
       expect.objectContaining({
         parse_mode: 'Markdown',

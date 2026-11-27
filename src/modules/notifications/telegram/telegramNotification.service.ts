@@ -2,7 +2,9 @@ import type { Bot } from 'grammy';
 
 import type { MatchedJob } from '../../matching/matching.service.js';
 import type { NotificationService } from '../notification.service.js';
-
+import { SPECIALIZATION_ARABIC_NAMES } from '../../matching/scoreReason.builder.js';
+import type { Specialization } from '../../preferences/preference.taxonomy.js';
+import { formatExperienceLevel } from './digestCard.formatter.js';
 import {
   MAX_DIGEST_TOTAL_JOBS,
   escapeTelegramMarkdown,
@@ -116,10 +118,20 @@ export class TelegramNotificationService implements NotificationService {
         : `*${itemIndex}.* 💻 *${safeTitle}*`;
 
       const directApply = targetUrl ? `\n   🔗 [تقديم مباشر](${targetUrl})` : '';
+      const specKey = (job as { primarySpecialization?: string | null }).primarySpecialization;
+      const specName = specKey
+        ? SPECIALIZATION_ARABIC_NAMES[specKey as Specialization] || specKey
+        : '';
+      const expLabel = formatExperienceLevel(
+        (job as { experienceLevel?: string | null }).experienceLevel,
+        'ar',
+      );
+      const specPart = specName ? `\n   🎯 ${escapeTelegramMarkdown(specName)}` : '';
+      const expPart = `\n   💻 ${escapeTelegramMarkdown(expLabel)}`;
 
       return {
         index: itemIndex,
-        text: `${titleLine}\n   🏢 *${safeCompany}*${safeLocation}\n   🌐 ${safeSource} • ${tone}${directApply}`,
+        text: `${titleLine}\n   🏢 *${safeCompany}*${safeLocation}\n   🌐 ${safeSource} • ${tone}${specPart}${expPart}${directApply}`,
         url: targetUrl,
       };
     });
