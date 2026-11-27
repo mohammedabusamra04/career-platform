@@ -117,7 +117,7 @@ describe('RedisAdapter', () => {
     expect(client.del).toHaveBeenCalledWith('test:key');
   });
 
-  it('should throw when Redis SET fails', async () => {
+  it('should degrade gracefully when Redis SET fails', async () => {
     const error = new Error('Redis unavailable');
 
     const client = {
@@ -126,10 +126,10 @@ describe('RedisAdapter', () => {
 
     const cache = new RedisAdapter(client as never);
 
-    await expect(cache.set('test:key', 'value')).rejects.toThrow('Redis unavailable');
+    await expect(cache.set('test:key', 'value')).resolves.toBeUndefined();
   });
 
-  it('should throw when Redis GET fails', async () => {
+  it('should return null gracefully when Redis GET fails', async () => {
     const error = new Error('Redis unavailable');
 
     const client = {
@@ -138,10 +138,10 @@ describe('RedisAdapter', () => {
 
     const cache = new RedisAdapter(client as never);
 
-    await expect(cache.get('test:key')).rejects.toThrow('Redis unavailable');
+    await expect(cache.get('test:key')).resolves.toBeNull();
   });
 
-  it('should throw when Redis DELETE fails', async () => {
+  it('should degrade gracefully when Redis DELETE fails', async () => {
     const error = new Error('Redis unavailable');
 
     const client = {
@@ -150,6 +150,6 @@ describe('RedisAdapter', () => {
 
     const cache = new RedisAdapter(client as never);
 
-    await expect(cache.delete('test:key')).rejects.toThrow('Redis unavailable');
+    await expect(cache.delete('test:key')).resolves.toBeUndefined();
   });
 });

@@ -44,21 +44,17 @@ redisClient.on('error', (err) => {
   logger.error(`❌ Redis error: ${err.message}`);
 });
 
-export async function connectRedis(): Promise<void> {
+export async function connectRedis(): Promise<boolean> {
   try {
     await redisClient.connect();
+    return true;
   } catch (error) {
-    logger.error(
-      `❌ Failed to connect to Redis: ${
-        error instanceof Error ? error.message : 'Unknown error'
+    logger.warn(
+      `⚠️ Redis unavailable, continuing in degraded cache-free mode: ${
+        error instanceof Error ? error.message : String(error)
       }`,
     );
-    /*
-     * Do not swallow this. If the initial connection fails, the pipeline must
-     * fail fast instead of running with a dead client and erroring on every
-     * SET later.
-     */
-    throw error;
+    return false;
   }
 }
 

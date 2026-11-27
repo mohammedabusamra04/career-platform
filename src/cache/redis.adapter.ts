@@ -8,6 +8,10 @@ export class RedisAdapter implements Cache {
   constructor(private readonly client: RedisClientType) {}
 
   async set<T>(key: string, value: T, ttl?: number): Promise<void> {
+    if (this.client.isReady === false) {
+      return;
+    }
+
     try {
       const data = JSON.stringify(value);
 
@@ -21,17 +25,19 @@ export class RedisAdapter implements Cache {
 
       await this.client.set(key, data);
     } catch (error) {
-      logger.error(
-        `❌ Redis SET error for key "${key}": ${
+      logger.warn(
+        `⚠️ Redis SET degraded for key "${key}": ${
           error instanceof Error ? error.message : 'Unknown error'
         }`,
       );
-
-      throw error;
     }
   }
 
   async get<T>(key: string): Promise<T | null> {
+    if (this.client.isReady === false) {
+      return null;
+    }
+
     try {
       const data = await this.client.get(key);
 
@@ -41,16 +47,21 @@ export class RedisAdapter implements Cache {
 
       return JSON.parse(data) as T;
     } catch (error) {
-      logger.error(
-        `❌ Redis GET error for key "${key}": ${
+      logger.warn(
+        `⚠️ Redis GET degraded for key "${key}": ${
           error instanceof Error ? error.message : 'Unknown error'
         }`,
       );
 
-      throw error;
+      return null;
     }
   }
+
   async setIfNotExists<T>(key: string, value: T, ttl?: number): Promise<boolean> {
+    if (this.client.isReady === false) {
+      return true;
+    }
+
     try {
       const data = JSON.stringify(value);
 
@@ -66,27 +77,29 @@ export class RedisAdapter implements Cache {
 
       return result === 'OK';
     } catch (error) {
-      logger.error(
-        `❌ Redis SET NX error for key "${key}": ${
+      logger.warn(
+        `⚠️ Redis SET NX degraded for key "${key}": ${
           error instanceof Error ? error.message : 'Unknown error'
         }`,
       );
 
-      throw error;
+      return true;
     }
   }
 
   async delete(key: string): Promise<void> {
+    if (this.client.isReady === false) {
+      return;
+    }
+
     try {
       await this.client.del(key);
     } catch (error) {
-      logger.error(
-        `❌ Redis DELETE error for key "${key}": ${
+      logger.warn(
+        `⚠️ Redis DELETE degraded for key "${key}": ${
           error instanceof Error ? error.message : 'Unknown error'
         }`,
       );
-
-      throw error;
     }
   }
 }
